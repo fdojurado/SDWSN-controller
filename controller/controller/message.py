@@ -121,6 +121,22 @@ class Message:
     def __bytes__(self) -> bytes:
         return bytes(self.data)
 
+    def print_packet(self):
+        addr0=str(self.addr0)
+        addr1=str(self.addr1)
+        print("addr:"+addr0+"."+addr1)
+        message_type=str(self.message_type)
+        print("Message type:"+message_type)
+        payload_len=str(self.payload_len)
+        print("payload_len:"+payload_len)
+        reserved0=str(self.reserved0)
+        print("reserved0:"+reserved0)
+        reserved1=str(self.reserved1)
+        print("reserved1:"+reserved1)
+        data=str(self.data)
+        print("data:"+data)
+        return 0
+
     def __copy__(self) -> "Message":
         new = Message(
             addr0=self.addr0,

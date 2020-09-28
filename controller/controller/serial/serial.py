@@ -54,57 +54,13 @@ class SerialBus:
 
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        server_address = (self.host, self.port)
-        print('connecting to %s port %s' % server_address)
-        self.ser.connect(server_address)
-
     def connect(self):
         # Create a TCP/IP socket
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Connect the socket to the port where the server is listening
         server_address = (self.host, self.port)
         print('connecting to %s port %s' % server_address)
-        sock.connect(server_address)
-        # buffer = ''
-        # try:
-        #     # Look for the response
-        #     while True:
-        #         data = sock.recv(1024)
-        #         print(data)
-        #         stringdata = data.decode('utf-8')
-        #         buffer += stringdata
-        #         if not buffer:
-        #             break
-        #         if not buffer.endswith("\n"):
-        #             continue
-        #         if buffer.endswith("\n"):
-        #             print(buffer, end='')
-        #             buffer = ''
-        #     print(ex)
-        # except KeyboardInterrupt as ex:
-        #     print(ex)
-        # except:
-        #     print(sys.exc_info())
-        # finally:
-        #     print('closing socket')
-        #     sock.close()
-
-    def __iter__(self) -> Iterator[Message]:
-        """Allow iteration on messages as they are received.
-
-            >>> for msg in bus:
-            ...     print(msg)
-
-
-        :yields:
-            :class:`Message` msg objects.
-        """
-        print('__iter__')
-        while True:
-            msg = self.recv(timeout=1.0)
-            if msg is not None:
-                yield msg
+        self.ser.connect(server_address)
 
     def recv(self, timeout: Optional[float] = None) -> Optional[Message]:
         """Block waiting for a message from the Bus.
@@ -128,7 +84,6 @@ class SerialBus:
 
             if msg is not None:
                 return msg
-
 
             # if not, and timeout is None, try indefinitely
             if timeout is None:
@@ -175,35 +130,54 @@ class SerialBus:
             # print("rx_byte")
             # print(rx_byte)
         except serial.SerialException:
-            return None, False
+            return None
 
         if rx_byte and ord(rx_byte) == 0x7E:
             print("start of frame found")
-            addr0 = bytearray(self.ser.recv(1))
+            addr0 = ord(bytearray(self.ser.recv(1)))
             print("addr0")
             print(addr0)
-            addr1 = bytearray(self.ser.recv(1))
+            addr1 = ord(bytearray(self.ser.recv(1)))
             print("addr1")
             print(addr1)
-            message_type = bytearray(self.ser.recv(1))
+            message_type = ord(bytearray(self.ser.recv(1)))
             print("message_type")
             print(message_type)
-            payload_len = bytearray(self.ser.recv(1))
+            payload_len = ord(bytearray(self.ser.recv(1)))
             print("payload_len")
             print(payload_len)
-            reserved0 = bytearray(self.ser.recv(1))
+            reserved0 = ord(bytearray(self.ser.recv(1)))
             print("reserved0")
             print(reserved0)
-            reserved1 = bytearray(self.ser.recv(1))
+            reserved1 = ord(bytearray(self.ser.recv(1)))
             print("reserved1")
             print(reserved1)
 
-            data = self.ser.recv(ord(payload_len))
-            print("data")
+            # if chunk == '':
+            #     raise RuntimeError("socket connection broken")
+            # chunks.append(chunk)
+
+            if(payload_len > 0):
+                bytes_recd = 0
+                data = []
+                while bytes_recd < payload_len:
+                    dat = self.ser.recv(
+                        min(payload_len - bytes_recd, 2048))
+                    if dat == '':
+                        raise RuntimeError("socket connection broken")
+                    print("dat")
+                    print(dat)
+                    bytes_recd = bytes_recd + len(dat)
+                    data.append(ord(dat))
+            else:
+                data = 0
+            
+            print('data')
             print(data)
 
             rxd_byte = ord(self.ser.recv(1))
             if rxd_byte == 0x7E:
+                print("correct frame")
                 # received message data okay
                 msg = Message(
                     addr0=addr0,
@@ -214,7 +188,7 @@ class SerialBus:
                     reserved1=reserved1,
                     data=data,
                 )
-                return msg, False
+                return msg
 
         else:
-            return None, False
+            return None

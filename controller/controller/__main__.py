@@ -11,13 +11,15 @@ if __name__ == '__main__':
     """ Start the serial interface """
     serial = SerialBus('localhost', 60001)
     msg = Message()
-    # serial.connect()
+    serial.connect()
     try:
         while True:
             msg = serial.recv(1)
             if msg is not None:
                 print('msg')
                 print(msg.addr1)
+                print(msg)
+                msg.print_packet()
 
     except KeyboardInterrupt:
         pass  # exit normally
