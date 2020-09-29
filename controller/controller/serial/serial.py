@@ -103,6 +103,31 @@ class SerialBus:
                     print('None')
                     return None
 
+    def decodeByte(self, n):
+        data = bytearray()
+        scape_char = 0
+        while len(data) < n:
+            packet = self.ser.recv(n - len(data))
+            if not packet:
+                return None
+            for byte in packet:
+                if scape_char == 1:
+                    # print('inverting')
+                    scape_char = 0
+                    int_packet = byte ^ (0x20)
+                    byte = int_packet
+                    # print(byte)
+                    data.extend(bytes([byte]))
+                elif byte == 0x7D:
+                    # print('escape char found')
+                    scape_char = 1
+                    # n = n + 1
+                else:
+                    data.extend(bytes([byte]))
+            # print('data')
+            # print(data)
+        return data
+
     def _recv_internal(self, timeout):
         """
         Read a message from the serial device.
@@ -134,22 +159,22 @@ class SerialBus:
 
         if rx_byte and ord(rx_byte) == 0x7E:
             print("start of frame found")
-            addr0 = ord(bytearray(self.ser.recv(1)))
+            addr0 = ord(self.decodeByte(1))
             print("addr0")
             print(addr0)
-            addr1 = ord(bytearray(self.ser.recv(1)))
+            addr1 = ord(self.decodeByte(1))
             print("addr1")
             print(addr1)
-            message_type = ord(bytearray(self.ser.recv(1)))
+            message_type = ord(self.decodeByte(1))
             print("message_type")
             print(message_type)
-            payload_len = ord(bytearray(self.ser.recv(1)))
+            payload_len = ord(self.decodeByte(1))
             print("payload_len")
             print(payload_len)
-            reserved0 = ord(bytearray(self.ser.recv(1)))
+            reserved0 = ord(self.decodeByte(1))
             print("reserved0")
             print(reserved0)
-            reserved1 = ord(bytearray(self.ser.recv(1)))
+            reserved1 = ord(self.decodeByte(1))
             print("reserved1")
             print(reserved1)
 
@@ -157,21 +182,8 @@ class SerialBus:
             #     raise RuntimeError("socket connection broken")
             # chunks.append(chunk)
 
-            if(payload_len > 0):
-                bytes_recd = 0
-                data = []
-                while bytes_recd < payload_len:
-                    dat = self.ser.recv(
-                        min(payload_len - bytes_recd, 2048))
-                    if dat == '':
-                        raise RuntimeError("socket connection broken")
-                    print("dat")
-                    print(dat)
-                    bytes_recd = bytes_recd + len(dat)
-                    data.append(ord(dat))
-            else:
-                data = 0
-            
+            data = self.decodeByte(payload_len)
+
             print('data')
             print(data)
 
