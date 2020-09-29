@@ -62,6 +62,36 @@ class SerialBus:
         print('connecting to %s port %s' % server_address)
         self.ser.connect(server_address)
 
+    def send(self, msg, timeout=None):
+        """
+        Send a message over the serial device.
+        """
+        byte_msg = bytearray()
+        byte_msg.append(0x7E)
+        self.check_byte(byte_msg, msg.addr0)
+        self.check_byte(byte_msg, msg.addr1)
+        self.check_byte(byte_msg, msg.message_type)
+        self.check_byte(byte_msg, msg.payload_len)
+        self.check_byte(byte_msg, msg.reserved0)
+        self.check_byte(byte_msg, msg.reserved1)
+
+        for i in range(0, msg.payload_len):
+            # print('msg.data')
+            # print(msg.data[i])
+            self.check_byte(byte_msg, msg.data[i])
+        byte_msg.append(0x7E)
+        print('packet to send')
+        print(byte_msg.hex())
+        self.ser.send(byte_msg)
+
+    def check_byte(self, byte_data, data):
+        if (data == 0x7E or data == 0x7D):
+            byte_data.append(0x7D)
+            invert = data ^ (0x20)
+            byte_data.append(invert)
+        else:
+            byte_data.append(data)
+
     def recv(self, timeout: Optional[float] = None) -> Optional[Message]:
         """Block waiting for a message from the Bus.
 
