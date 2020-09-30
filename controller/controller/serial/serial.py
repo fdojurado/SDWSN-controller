@@ -215,7 +215,7 @@ class SerialBus:
             data = self.decodeByte(payload_len)
 
             print('data')
-            print(data)
+            print(data.hex())
 
             rxd_byte = ord(self.ser.recv(1))
             if rxd_byte == 0x7E:
