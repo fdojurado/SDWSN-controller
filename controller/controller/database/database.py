@@ -8,6 +8,7 @@ class Database(object):
     @staticmethod
     def initialise():
         client = pymongo.MongoClient(Database.URI)
+        client.drop_database('SDN')
         Database.DATABASE = client["SDN"]
         for db in client.list_databases():
             print(db)
@@ -17,8 +18,24 @@ class Database(object):
         return Database.DATABASE[collection].insert(data)
 
     @staticmethod
+    def exist(collection, addr):
+        return Database.DATABASE[collection].find({"_id": addr}).count() > 0
+
+    @staticmethod
+    def push_doc(collection, addr, data):
+        Database.DATABASE[collection].update(
+            {"_id": addr},
+            {"$push": {"data": data}}
+        )
+
+    @staticmethod
     def find(collection, query):
         return Database.DATABASE[collection].find(query)
+
+    @staticmethod
+    def print_documents(collection):
+        for document in Database.DATABASE[collection].find({}):
+            print(document)
 
     @staticmethod
     def find_one(collection, query):
