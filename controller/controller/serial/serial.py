@@ -5,6 +5,10 @@ from controller import Message
 from typing import Optional, Union, Iterator, Tuple
 from time import time
 import struct
+import threading
+from datetime import datetime
+from controller.database.database import Database
+import pandas as pd
 
 try:
     import serial
@@ -20,6 +24,63 @@ try:
 except ImportError:
     list_ports = None
 
+def process_nodes(msg):
+    addr0 = str(msg.addr0)
+    addr1 = str(msg.addr1)
+    addr = addr0+'.'+addr1
+    # print(addr)
+    data = msg.data
+    # print(data)
+    energy = data[0:2]
+    energy = socket.htons(int(energy.hex(), 16))
+    # print(energy)
+    rank = data[2]
+    prev_ranks = data[3]
+    next_ranks = data[4]
+    total_ranks = data[5]
+    total_nb = data[6]
+    alive = data[7]
+    # nodes = Node(addr=addr, energy=energy, rank=rank, prev_ranks=prev_ranks,
+    #  next_ranks=next_ranks, total_ranks=total_ranks, total_nb=total_nb, alive=alive)
+    # nodes.print_packet()
+    data = {
+        'time': datetime.now(),
+        'energy': energy,
+        'rank': rank,
+        'prev_ranks': prev_ranks,
+        'next_ranks': next_ranks,
+        'total_ranks': total_ranks,
+        'total_nb': total_nb,
+        'alive': alive,
+    }
+    node = {
+        '_id': addr,
+        'data': [
+            data,
+        ]
+    }
+    if Database.exist("nodes", addr) == 0:
+        Database.insert("nodes", node)
+    else:
+        Database.push_doc("nodes", addr, data)
+    Database.print_documents("nodes")
+    df = pd.DataFrame()
+    print(df)
+    # Calling DataFrame constructor on list
+    coll = Database.find("nodes", {})
+    for x in coll:
+        print(x)
+        print(x['data'])
+        df = pd.DataFrame(x['data'])
+        print(df)
+        for y in x['data']:
+            print(y)
+
+def handle_serial(msg):
+    msg.print_packet()
+    if(msg.message_type == 2):
+        print("nodes' info")
+        process_nodes(msg)
 
 class SerialBus:
 
@@ -50,7 +111,7 @@ class SerialBus:
         if not host:
             raise ValueError("Must specify a serial host.")
         if not port:
-            raise ValueError("Must specify a serial host.")
+            raise ValueError("Must specify a serial port.")
 
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -61,6 +122,26 @@ class SerialBus:
         server_address = (self.host, self.port)
         print('connecting to %s port %s' % server_address)
         self.ser.connect(server_address)
+        t1 = threading.Thread(target = self.get_data)
+        t1.daemon = True
+        t1.start()
+    
+    def get_data(self):
+        """This function serves the purpose of collecting data from the serial object and storing 
+        the filtered data into a global variable.
+        The function has been put into a thread since the serial event is a blocking function.
+        """
+        msg = Message()
+        while(1):   
+            try:
+                msg = self.recv(0.1)
+                if msg is not None:
+                    print('msg')
+                    print(msg.addr1)
+                    print(msg)
+                    handle_serial(msg)
+            except TypeError:
+                pass
 
     def send(self, msg, timeout=None):
         """
@@ -127,7 +208,7 @@ class SerialBus:
                 time_left = timeout - (time() - start)
 
                 if time_left > 0:
-                    print('time_left')
+                    # print('time_left')
                     continue
                 else:
                     print('None')
