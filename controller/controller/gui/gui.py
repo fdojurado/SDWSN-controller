@@ -9,6 +9,7 @@ import urllib
 import json
 from matplotlib import pyplot as plt
 from controller.serial.serial import SerialBus
+from controller.database.database import Database
 
 import pandas as pd
 import numpy as np
@@ -79,7 +80,7 @@ class SDNcontrollerapp(tk.Tk):
 
         self.frames = {}
 
-        for F in (StartPage, setup_page):
+        for F in (StartPage, setupPage, MainPage):
 
             frame = F(container, self)
 
@@ -105,7 +106,7 @@ class StartPage(tk.Frame):
         label.pack(pady=10, padx=10)
 
         button1 = ttk.Button(self, text="Agree",
-                             command=lambda: controller.show_frame(setup_page))
+                             command=lambda: controller.show_frame(setupPage))
         button1.pack()
 
         button2 = ttk.Button(self, text="Disagree",
@@ -113,19 +114,105 @@ class StartPage(tk.Frame):
         button2.pack()
 
 
-class PageOne(tk.Frame):
+class MainPage(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Page One!!!", font=LARGE_FONT)
+        print('main page')
+        label = tk.Label(
+            self, text="Software-Defined Wireless Sensor Networks", font=LARGE_FONT)
         label.pack(pady=10, padx=10)
 
-        button1 = ttk.Button(self, text="Back to Home",
-                             command=lambda: controller.show_frame(StartPage))
+        label2 = tk.Label(self, text="Serial interface", font=LARGE_FONT)
+        label2.pack(pady=10, padx=10)
+
+        # Calling DataFrame constructor on list
+        # print('database packet')
+        # coll = Database.find("packets", {})
+        # df = pd.DataFrame(coll)
+        # print(df)
+
+        # self.df = df
+
+        # Using treeview widget
+        self.treev = ttk.Treeview(self, selectmode='browse')
+        # Calling pack method w.r.to treeview
+        self.treev.pack()
+
+        self.heading_set = 0
+
+        # Constructing vertical scrollbar
+        # with treeview
+        verscrlbar = ttk.Scrollbar(
+            self,  orient="vertical",  command=self.treev.yview)
+
+        # Calling pack method w.r.to verical
+        # scrollbar
+        verscrlbar.pack(fill='x')
+
+        # Configuring treeview
+        # treev.configure(xscrollcommand=verscrlbar.set)
+
+        # Defining number of columns
+        # self.treev["columns"] = (df.columns.values)
+
+        print('heading')
+
+        self.read_database()
+
+        button1 = ttk.Button(self, text="Back to setup",
+                             command=lambda: controller.show_frame(setupPage))
         button1.pack()
+        self.update_item()
+
+    def update_item(self):
+        """ Check if database already exists in treev """
+        self.read_database()
+        self.after(1000, self.update_item)
+
+    def read_database(self):
+        print('database packet')
+        coll = Database.find("packets", {})
+        self.df = pd.DataFrame(coll)
+
+        # print(df)
+        if not self.df.empty:
+            if self.heading_set == 0:
+
+                # Defining number of columns
+                self.treev["columns"] = (self.df.columns.values)
+                # Defining heading
+                self.treev['show'] = 'headings'
+
+                for x in range(len(self.df.columns.values)):
+                    if x == 1:
+                        self.treev.column(x, width=200)
+                    elif x == 7:
+                        self.treev.column(x, width=150)
+                    else:
+                        self.treev.column(x, width=70)
+                    self.treev.heading(x, text=self.df.columns.values[x])
+                self.heading_set = 1
+
+            for i in range(len(self.df)):
+                """ check if item already exists in treev """
+                id = self.df.iloc[i, :].tolist()[0]
+                if self.in_treeview(str(id)) == 0:
+                    self.treev.insert('', 'end', text="L"+str(i),
+                                      values=(self.df.iloc[i, :].tolist()))
+
+    def in_treeview(self, id):
+        for item in self.treev.get_children():
+            # print(self.treev.item(item)['values'][0])
+            # print(self.df.iloc[i, :].tolist()[0])
+            value = self.treev.item(item)['values'][0]
+            if value == id:
+                print('item in treeview')
+                return 1
+        return 0
 
 
-class setup_page(tk.Frame):
+class setupPage(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -171,15 +258,24 @@ class setup_page(tk.Frame):
         ttk.Button(self, text="Connect",
                    command=lambda: self.connect(self.host, self.port)).grid(row=52, column=2)
 
-        button1 = ttk.Button(self, text="Back to Home",
-                             command=lambda: controller.show_frame(StartPage)).grid(row=101, column=1)
+        ttk.Button(self, text="Back to Home",
+                   command=lambda: controller.show_frame(StartPage)).grid(row=101, column=1)
+
+        ttk.Button(self, text="Main page",
+                   command=lambda: controller.show_frame(MainPage)).grid(row=101, column=3)
 
     def connect(self, host, port):
         """ Start the serial interface """
         print(host)
         print(port)
         serial = SerialBus(host, port)
-        serial.connect()
+        if serial.connect() == 1:
+            print('connection succesful')
+            popupmsg('connection succesful')
+            # controller.show_frame(MainPage)
+        else:
+            print('connection unsuccesful')
+            popupmsg('connection unsuccesful')
 
     def fetch(self, entries):
         # print(entries)

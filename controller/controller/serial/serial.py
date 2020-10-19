@@ -24,6 +24,7 @@ try:
 except ImportError:
     list_ports = None
 
+
 def process_nodes(msg):
     addr0 = str(msg.addr0)
     addr1 = str(msg.addr1)
@@ -76,11 +77,33 @@ def process_nodes(msg):
         for y in x['data']:
             print(y)
 
+
 def handle_serial(msg):
     msg.print_packet()
+    # Save the packet in DB
+    print('printing DB packet1')
+    addr0 = str(msg.addr0)
+    addr1 = str(msg.addr1)
+    addr = addr0+'.'+addr1
+    hex_data=bytes(msg.data).hex()
+    print(hex_data)
+    data = {
+        # '_id': addr,
+        'time': datetime.now(),
+        'addr': addr,
+        'type': msg.message_type,
+        'payload_len': msg.payload_len,
+        'reserved0': msg.reserved0,
+        'reserved1': msg.reserved1,
+        'payload': hex_data,
+    }
+    Database.insert("packets", data)
+    print('printing DB packet2')
+    Database.print_documents("packets")
     if(msg.message_type == 2):
         print("nodes' info")
         process_nodes(msg)
+
 
 class SerialBus:
 
@@ -121,18 +144,22 @@ class SerialBus:
         # Connect the socket to the port where the server is listening
         server_address = (self.host, self.port)
         print('connecting to %s port %s' % server_address)
-        self.ser.connect(server_address)
-        t1 = threading.Thread(target = self.get_data)
-        t1.daemon = True
-        t1.start()
-    
+        result = self.ser.connect_ex(server_address)
+        if result:
+            return 0
+        else:
+            t1 = threading.Thread(target=self.get_data)
+            t1.daemon = True
+            t1.start()
+            return 1
+
     def get_data(self):
         """This function serves the purpose of collecting data from the serial object and storing 
         the filtered data into a global variable.
         The function has been put into a thread since the serial event is a blocking function.
         """
         msg = Message()
-        while(1):   
+        while(1):
             try:
                 msg = self.recv(0.1)
                 if msg is not None:

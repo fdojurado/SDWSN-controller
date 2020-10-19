@@ -8,7 +8,7 @@ class Database(object):
     @staticmethod
     def initialise():
         client = pymongo.MongoClient(Database.URI)
-        client.drop_database('SDN')
+        # client.drop_database('SDN')
         Database.DATABASE = client["SDN"]
         for db in client.list_databases():
             print(db)
