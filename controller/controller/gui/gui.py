@@ -80,7 +80,7 @@ class SDNcontrollerapp(tk.Tk):
 
         self.frames = {}
 
-        for F in (StartPage, setupPage, MainPage):
+        for F in (StartPage, SetupPage, MainPage, NodesInfo):
 
             frame = F(container, self)
 
@@ -106,12 +106,92 @@ class StartPage(tk.Frame):
         label.pack(pady=10, padx=10)
 
         button1 = ttk.Button(self, text="Agree",
-                             command=lambda: controller.show_frame(setupPage))
+                             command=lambda: controller.show_frame(SetupPage))
         button1.pack()
 
         button2 = ttk.Button(self, text="Disagree",
                              command=quit)
         button2.pack()
+
+
+class NodesInfo(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(
+            self, text="Information of sensor devices in the SDWSN", font=LARGE_FONT)
+        label.place(relx=.5, rely=0.05, anchor="center")
+
+        # Using treeview widget
+        self.treev = ttk.Treeview(self, selectmode='browse')
+        # Calling pack method w.r.to treeview
+        self.treev.place(relx=.5, rely=0.25, anchor="center")
+
+        button1 = ttk.Button(self, text="Main page",
+                             command=lambda: controller.show_frame(MainPage))
+        button1.place(relx=.5, rely=0.5, anchor="center")
+
+        self.heading_set = 0
+
+        # self.read_database()
+
+        self.update_item()
+
+    def update_item(self):
+        """ Check if database already exists in treev """
+        self.read_database()
+        self.after(1000, self.update_item)
+
+    def read_database(self):
+        coll = Database.find("nodes", {})
+        for x in coll:
+            df = pd.DataFrame(x)
+            # print(df)
+            df_data = pd.DataFrame(x['data'])
+            # Using DataFrame.insert() to add a column
+            df_data.insert(1, "addr", df['_id'], True)
+            if not df_data.empty:
+                if self.heading_set == 0:
+                    # Defining number of columns
+                    self.treev["columns"] = (df_data.columns.values)
+                    for x in range(len(df_data.columns.values)):
+                        if x == 0:
+                            self.treev.column(x, width=200)
+                        else:
+                            self.treev.column(x, width=100)
+                        self.treev.heading(x, text=df_data.columns.values[x])
+                    # Defining heading
+                    self.treev['show'] = 'headings'
+                    self.heading_set = 1
+            # Add item to treeview
+            id = df_data['addr'][0]
+            last = df_data.iloc[-1, :].tolist()
+            # print(last)
+            if self.in_treeview(str(id)) == 0:
+                # last = df_data.iloc[-1]
+                self.treev.insert('', 'end', text="L",
+                                      values=(last))
+            else:
+                """ update all columns except for addr """
+                self.update_tree(last)
+
+    def in_treeview(self, id):
+        for item in self.treev.get_children():
+            # print(self.treev.item(item)['values'][0])
+            # print(self.df.iloc[i, :].tolist()[0])
+            value = self.treev.item(item)['values'][1]
+            if value == id:
+                # print('item in treeview')
+                return 1
+        return 0
+
+    def update_tree(self, item):
+        for element in self.treev.get_children():
+            data = self.treev.item(element, 'values')
+            if data[1] == item[1]:
+                print('match')
+                """ update fields """
+                self.treev.item(element, text="", values=(item))
 
 
 class MainPage(tk.Frame):
@@ -121,10 +201,10 @@ class MainPage(tk.Frame):
         print('main page')
         label = tk.Label(
             self, text="Software-Defined Wireless Sensor Networks", font=LARGE_FONT)
-        label.pack(pady=10, padx=10)
+        label.place(relx=.5, rely=0.05, anchor="center")
 
         label2 = tk.Label(self, text="Serial interface", font=LARGE_FONT)
-        label2.pack(pady=10, padx=10)
+        label2.place(relx=.5, rely=0.1, anchor="center")
 
         # Calling DataFrame constructor on list
         # print('database packet')
@@ -137,7 +217,7 @@ class MainPage(tk.Frame):
         # Using treeview widget
         self.treev = ttk.Treeview(self, selectmode='browse')
         # Calling pack method w.r.to treeview
-        self.treev.pack()
+        self.treev.place(relx=.5, rely=0.25, anchor="center")
 
         self.heading_set = 0
 
@@ -151,18 +231,23 @@ class MainPage(tk.Frame):
         verscrlbar.pack(fill='x')
 
         # Configuring treeview
-        # treev.configure(xscrollcommand=verscrlbar.set)
+        self.treev.configure(xscrollcommand=verscrlbar.set)
 
         # Defining number of columns
         # self.treev["columns"] = (df.columns.values)
 
-        print('heading')
+        # print('heading')
 
         self.read_database()
 
         button1 = ttk.Button(self, text="Back to setup",
-                             command=lambda: controller.show_frame(setupPage))
-        button1.pack()
+                             command=lambda: controller.show_frame(SetupPage))
+        button1.place(relx=.4, rely=0.5, anchor="center")
+
+        button2 = ttk.Button(self, text="Nodes' info",
+                             command=lambda: controller.show_frame(NodesInfo))
+        button2.place(relx=.6, rely=0.5, anchor="center")
+
         self.update_item()
 
     def update_item(self):
@@ -171,7 +256,7 @@ class MainPage(tk.Frame):
         self.after(1000, self.update_item)
 
     def read_database(self):
-        print('database packet')
+        # print('database packet')
         coll = Database.find("packets", {})
         self.df = pd.DataFrame(coll)
 
@@ -181,9 +266,6 @@ class MainPage(tk.Frame):
 
                 # Defining number of columns
                 self.treev["columns"] = (self.df.columns.values)
-                # Defining heading
-                self.treev['show'] = 'headings'
-
                 for x in range(len(self.df.columns.values)):
                     if x == 1:
                         self.treev.column(x, width=200)
@@ -192,6 +274,8 @@ class MainPage(tk.Frame):
                     else:
                         self.treev.column(x, width=70)
                     self.treev.heading(x, text=self.df.columns.values[x])
+                # Defining heading
+                self.treev['show'] = 'headings'
                 self.heading_set = 1
 
             for i in range(len(self.df)):
@@ -207,12 +291,12 @@ class MainPage(tk.Frame):
             # print(self.df.iloc[i, :].tolist()[0])
             value = self.treev.item(item)['values'][0]
             if value == id:
-                print('item in treeview')
+                # print('item in treeview')
                 return 1
         return 0
 
 
-class setupPage(tk.Frame):
+class SetupPage(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
