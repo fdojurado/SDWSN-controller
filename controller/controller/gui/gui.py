@@ -127,15 +127,83 @@ class NodesInfo(tk.Frame):
         # Calling pack method w.r.to treeview
         self.treev.place(relx=.5, rely=0.25, anchor="center")
 
+        init_energy = tk.Label(
+            self, text="Initial energy (mJ):", font=LARGE_FONT)
+        init_energy.place(relx=.1, rely=0.5, anchor="center")
+
+        ie = tk.StringVar()
+        ie.trace("w", lambda name, index, mode, ie=ie: self.ie_callback(ie))
+        init_energy_value = tk.Entry(self, textvariable=ie)
+        init_energy_value.place(relx=.3, rely=0.5, anchor="center")
+
+        no_sensor = tk.Label(
+            self, text="Number of sensor nodes (N):", font=LARGE_FONT)
+        no_sensor.place(relx=.1, rely=0.54, anchor="center")
+
+        sv = tk.StringVar()
+        sv.trace("w", lambda name, index, mode, sv=sv: self.sv_callback(sv))
+        no_sensor_value = tk.Entry(self, textvariable=sv)
+
+        no_sensor_value.place(relx=.3, rely=0.54, anchor="center")
+
+        total_energy = tk.Label(
+            self, text="Initial Total Energy (J):", font=LARGE_FONT)
+        total_energy.place(relx=.1, rely=0.58, anchor="center")
+
+        self.text = tk.StringVar()
+
+        total_energy_value = tk.Label(
+            self, textvariable=self.text, font=LARGE_FONT)
+        total_energy_value.place(relx=.3, rely=0.58, anchor="center")
+
+        self.init_energy_value = 20000
+        self.no_sensor_value = 10
+
+        if init_energy_value.get() != '':
+            self.init_energy_value = init_energy_value.get()
+        if no_sensor_value.get() != '':
+            self.no_sensor_value = no_sensor_value.get()
+
+        init_energy_value.delete(0, tk.END)
+        init_energy_value.insert(0, self.init_energy_value)
+        no_sensor_value.delete(0, tk.END)
+        no_sensor_value.insert(0, self.no_sensor_value)
+
+        self.tt_energy = int(self.init_energy_value)*int(self.no_sensor_value)
+
+        self.calculate_total_energy()
+
         button1 = ttk.Button(self, text="Main page",
                              command=lambda: controller.show_frame(MainPage))
-        button1.place(relx=.5, rely=0.5, anchor="center")
+        button1.place(relx=.5, rely=0.6, anchor="center")
 
         self.heading_set = 0
 
         # self.read_database()
 
         self.update_item()
+
+    def ie_callback(self, sv):
+        # print(sv.get())
+        if(sv.get() == ''):
+            self.init_energy_value = 0
+        else:
+            self.init_energy_value = sv.get()
+        self.calculate_total_energy()
+
+    def sv_callback(self, sv):
+        # print(sv.get())
+        if(sv.get() == ''):
+            self.no_sensor_value = 0
+        else:
+            self.no_sensor_value = sv.get()
+        self.calculate_total_energy()
+
+    def calculate_total_energy(self):
+        # print('calculating tt energy')
+        self.tt_energy = (int(self.init_energy_value) *
+                          int(self.no_sensor_value))/1e3
+        self.text.set(self.tt_energy)
 
     def update_item(self):
         """ Check if database already exists in treev """
@@ -189,7 +257,7 @@ class NodesInfo(tk.Frame):
         for element in self.treev.get_children():
             data = self.treev.item(element, 'values')
             if data[1] == item[1]:
-                print('match')
+                # print('match')
                 """ update fields """
                 self.treev.item(element, text="", values=(item))
 
