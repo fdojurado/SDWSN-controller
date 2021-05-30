@@ -25,6 +25,9 @@ except ImportError:
     list_ports = None
 
 
+current_time = 0
+
+
 def process_nodes(msg):
     addr0 = str(msg.addr0)
     addr1 = str(msg.addr1)
@@ -45,7 +48,7 @@ def process_nodes(msg):
     #  next_ranks=next_ranks, total_ranks=total_ranks, total_nb=total_nb, alive=alive)
     # nodes.print_packet()
     data = {
-        'time': datetime.now(),
+        'time': current_time,
         'energy': energy,
         'rank': rank,
         'prev_ranks': prev_ranks,
@@ -76,6 +79,23 @@ def process_nodes(msg):
         print(df)
         for y in x['data']:
             print(y)
+    """ Create a current energy database """
+    print('printing energy DB')
+    Database.print_documents("energy")
+    print('creating energy DB')
+    print('address:'+str(addr))
+    data = {
+        '_id': addr,
+        'time': current_time,
+        'energy': energy,
+    }
+    if Database.exist("energy", addr) == 0:
+        Database.insert("energy", data)
+    else:
+        print('updating energy')
+        Database.update_energy("energy", addr, data)
+    print('printing energy DB1')
+    Database.print_documents("energy")
 
 
 def handle_serial(msg):
@@ -85,11 +105,12 @@ def handle_serial(msg):
     addr0 = str(msg.addr0)
     addr1 = str(msg.addr1)
     addr = addr0+'.'+addr1
-    hex_data=bytes(msg.data).hex()
+    hex_data = bytes(msg.data).hex()
     print(hex_data)
+    current_time = datetime.now()
     data = {
         # '_id': addr,
-        'time': datetime.now(),
+        'time': current_time,
         'addr': addr,
         'type': msg.message_type,
         'payload_len': msg.payload_len,
@@ -238,7 +259,7 @@ class SerialBus:
                     # print('time_left')
                     continue
                 else:
-                    print('None')
+                    # print('None')
                     return None
 
     def decodeByte(self, n):

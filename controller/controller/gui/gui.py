@@ -26,7 +26,7 @@ NORM_FONT = ("Helvetica", 10)
 SMALL_FONT = ("Helvetica", 8)
 
 f = Figure()
-a = f.add_subplot(111)
+ax = f.add_subplot(111)
 
 
 def popupmsg(msg):
@@ -50,8 +50,8 @@ def animate(i):
             xList.append(int(x))
             yList.append(int(y))
 
-    a.clear()
-    a.plot(xList, yList)
+    ax.clear()
+    ax.plot(xList, yList)
 
 
 class SDNcontrollerapp(tk.Tk):
@@ -118,43 +118,65 @@ class NodesInfo(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+
+        # # self.tt_energy = int(self.init_energy_value)*int(self.no_sensor_value)
+
+        canvas = tk.Canvas(self)
+        scrollbar = ttk.Scrollbar(
+            self, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+
         label = tk.Label(
             self, text="Information of sensor devices in the SDWSN", font=LARGE_FONT)
-        label.place(relx=.5, rely=0.05, anchor="center")
+        label.pack()
 
         # Using treeview widget
-        self.treev = ttk.Treeview(self, selectmode='browse')
+        self.treev = ttk.Treeview(scrollable_frame, selectmode='browse')
         # Calling pack method w.r.to treeview
-        self.treev.place(relx=.5, rely=0.25, anchor="center")
+        self.treev.grid(row=0, sticky='WE')
+
+        self.labelframe1 = ttk.LabelFrame(
+            scrollable_frame, text="Network information")
+        self.labelframe1.grid(row=1, padx=5, pady=5, sticky="w")
 
         init_energy = tk.Label(
-            self, text="Initial energy (mJ):", font=LARGE_FONT)
-        init_energy.place(relx=.1, rely=0.5, anchor="center")
+            self.labelframe1, text="Initial energy (mJ):", font=LARGE_FONT)
+        init_energy.grid(row=1, padx=5, pady=5, sticky='W')
 
         ie = tk.StringVar()
         ie.trace("w", lambda name, index, mode, ie=ie: self.ie_callback(ie))
-        init_energy_value = tk.Entry(self, textvariable=ie)
-        init_energy_value.place(relx=.3, rely=0.5, anchor="center")
+        init_energy_value = tk.Entry(self.labelframe1, textvariable=ie)
+        init_energy_value.grid(row=1, column=1, padx=5, pady=5, sticky='W')
 
         no_sensor = tk.Label(
-            self, text="Number of sensor nodes (N):", font=LARGE_FONT)
-        no_sensor.place(relx=.1, rely=0.54, anchor="center")
+            self.labelframe1, text="Number of sensor nodes (N):", font=LARGE_FONT)
+        no_sensor.grid(row=2, padx=5, pady=5, sticky='W')
 
         sv = tk.StringVar()
         sv.trace("w", lambda name, index, mode, sv=sv: self.sv_callback(sv))
-        no_sensor_value = tk.Entry(self, textvariable=sv)
-
-        no_sensor_value.place(relx=.3, rely=0.54, anchor="center")
+        no_sensor_value = tk.Entry(self.labelframe1, textvariable=sv)
+        no_sensor_value.grid(row=2, column=1, padx=5, pady=5, sticky='W')
 
         total_energy = tk.Label(
-            self, text="Initial Total Energy (J):", font=LARGE_FONT)
-        total_energy.place(relx=.1, rely=0.58, anchor="center")
+            self.labelframe1, text="Initial Total Energy (J):", font=LARGE_FONT)
+        total_energy.grid(row=3, padx=5, pady=5, sticky='W')
 
         self.text = tk.StringVar()
 
         total_energy_value = tk.Label(
-            self, textvariable=self.text, font=LARGE_FONT)
-        total_energy_value.place(relx=.3, rely=0.58, anchor="center")
+            self.labelframe1, textvariable=self.text, font=LARGE_FONT)
+        total_energy_value.grid(row=3, column=1, padx=5, pady=5, sticky='W')
 
         self.init_energy_value = 20000
         self.no_sensor_value = 10
@@ -169,17 +191,30 @@ class NodesInfo(tk.Frame):
         no_sensor_value.delete(0, tk.END)
         no_sensor_value.insert(0, self.no_sensor_value)
 
-        self.tt_energy = int(self.init_energy_value)*int(self.no_sensor_value)
-
         self.calculate_total_energy()
-
-        button1 = ttk.Button(self, text="Main page",
-                             command=lambda: controller.show_frame(MainPage))
-        button1.place(relx=.5, rely=0.6, anchor="center")
 
         self.heading_set = 0
 
-        # self.read_database()
+        # for i in range(50):
+        #     ttk.Label(scrollable_frame, text="Sample scrolling label").pack()
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        canvas2 = FigureCanvasTkAgg(f, scrollable_frame)
+        canvas2.draw()
+        canvas2.get_tk_widget().grid(row=4, padx=5, pady=5, sticky='WE')
+        # canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+
+        # toolbar = NavigationToolbar2Tk(canvas2, self)
+        # toolbar.update()
+        # canvas2.get_tk_widget().grid(row=5, padx=5, pady=5, sticky='WE')
+
+        # canvas2._tkcanvas.place(relx=.7, rely=0.7, anchor="center")
+
+        button1 = ttk.Button(scrollable_frame, text="Main page",
+                             command=lambda: controller.show_frame(MainPage))
+        button1.grid(row=7)
 
         self.update_item()
 

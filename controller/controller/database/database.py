@@ -8,7 +8,7 @@ class Database(object):
     @staticmethod
     def initialise():
         client = pymongo.MongoClient(Database.URI)
-        # client.drop_database('SDN')
+        client.drop_database('SDN')
         Database.DATABASE = client["SDN"]
         for db in client.list_databases():
             print(db)
@@ -26,6 +26,14 @@ class Database(object):
         Database.DATABASE[collection].update(
             {"_id": addr},
             {"$push": {"data": data}}
+        )
+
+    @staticmethod
+    def update_energy(collection, addr, data):
+        Database.DATABASE[collection].update(
+            {"_id": addr},
+            {"$set": {"time": data['time'],
+                      "energy": data['energy']}}
         )
 
     @staticmethod
