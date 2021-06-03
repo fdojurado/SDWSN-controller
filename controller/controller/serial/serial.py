@@ -9,6 +9,7 @@ import threading
 from datetime import datetime
 from controller.database.database import Database
 import pandas as pd
+import struct
 
 try:
     import serial
@@ -59,26 +60,21 @@ def process_nodes(msg):
     }
     node = {
         '_id': addr,
-        'data': [
+        'info': [
             data,
         ]
     }
     if Database.exist("nodes", addr) == 0:
         Database.insert("nodes", node)
     else:
-        Database.push_doc("nodes", addr, data)
+        Database.push_doc("nodes", addr, 'info', data)
     Database.print_documents("nodes")
     df = pd.DataFrame()
-    print(df)
     # Calling DataFrame constructor on list
     coll = Database.find("nodes", {})
     for x in coll:
-        print(x)
-        print(x['data'])
-        df = pd.DataFrame(x['data'])
+        df = pd.DataFrame(x['info'])
         print(df)
-        for y in x['data']:
-            print(y)
     """ Create a current energy database """
     print('printing energy DB')
     Database.print_documents("energy")
@@ -98,7 +94,47 @@ def process_nodes(msg):
     Database.print_documents("energy")
 
 
+def process_neighbours(msg):
+    addr0 = str(msg.addr0)
+    addr1 = str(msg.addr1)
+    addr = addr0+'.'+addr1
+    payload_len = msg.payload_len
+    blocks = int(payload_len/6)
+    payload = bytes(msg.data)
+    print('range')
+    print(range(1, blocks+1))
+    for x in range(1, blocks+1):
+        sliced_data = payload[(-1+x)*6:x*6]
+        addr0, addr1, rssi, rank = struct.unpack('=bbhh', sliced_data)
+        dst = str(addr0)+'.'+str(addr1)
+        data = {
+            'time': current_time,
+            'scr': addr,
+            'dst': dst,
+            'rssi': rssi,
+            'rank': rank,
+        }
+        node = {
+            '_id': addr,
+            'nbr': [
+                data,
+            ]
+        }
+        if Database.exist("nodes", addr) == 0:
+            Database.insert("nodes", node)
+        else:
+            Database.push_doc("nodes", addr, 'nbr', data)
+    # Database.print_documents("nodes")
+    df = pd.DataFrame()
+    coll = Database.find("nodes", {})
+    for x in coll:
+        df = pd.DataFrame(x['nbr'])
+        print(df)
+
+
 def handle_serial(msg):
+    global current_time
+    current_time = datetime.now()
     msg.print_packet()
     # Save the packet in DB
     print('printing DB packet1')
@@ -107,7 +143,6 @@ def handle_serial(msg):
     addr = addr0+'.'+addr1
     hex_data = bytes(msg.data).hex()
     print(hex_data)
-    current_time = datetime.now()
     data = {
         # '_id': addr,
         'time': current_time,
@@ -124,6 +159,9 @@ def handle_serial(msg):
     if(msg.message_type == 2):
         print("nodes' info")
         process_nodes(msg)
+    if(msg.message_type == 3):
+        print("neighbours info")
+        process_neighbours(msg)
 
 
 class SerialBus:

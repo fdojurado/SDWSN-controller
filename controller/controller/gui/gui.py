@@ -248,11 +248,9 @@ class NodesInfo(tk.Frame):
     def read_database(self):
         coll = Database.find("nodes", {})
         for x in coll:
-            df = pd.DataFrame(x)
-            # print(df)
-            df_data = pd.DataFrame(x['data'])
+            df_data = pd.DataFrame(x['info'])
             # Using DataFrame.insert() to add a column
-            df_data.insert(1, "addr", df['_id'], True)
+            df_data.insert(1, "addr", x['_id'], True)
             if not df_data.empty:
                 if self.heading_set == 0:
                     # Defining number of columns

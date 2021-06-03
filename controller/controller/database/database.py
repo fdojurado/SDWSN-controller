@@ -22,10 +22,10 @@ class Database(object):
         return Database.DATABASE[collection].find({"_id": addr}).count() > 0
 
     @staticmethod
-    def push_doc(collection, addr, data):
+    def push_doc(collection, addr, field, data):
         Database.DATABASE[collection].update(
             {"_id": addr},
-            {"$push": {"data": data}}
+            {"$push": {field: data}}
         )
 
     @staticmethod
