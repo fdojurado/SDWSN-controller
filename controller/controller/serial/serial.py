@@ -67,32 +67,32 @@ def process_nodes(addr, energy, rank, payload):
     # Calling DataFrame constructor on list
     Database.print_documents("nodes")
     coll = Database.find("nodes", {})
-    prev_ranks = 0
-    nxt_ranks = 0
+    # prev_ranks = 0
+    # nxt_ranks = 0
     num_nb = 0
     for x in coll:
         if x['_id'] == addr:
             df = pd.DataFrame(x['nbr'])
             num_nb = df.dst.nunique()
             print(df)
-            nbr_nodes = x['nbr']
-            for nbr in nbr_nodes:
-                print(nbr)
-                if rank > nbr['rank']:
-                    prev_ranks += 1
-                if rank < nbr['rank']:
-                    nxt_ranks += 1
+            # nbr_nodes = x['nbr']
+            # for nbr in nbr_nodes:
+            #     print(nbr)
+            #     if rank > nbr['rank']:
+            #         prev_ranks += 1
+            #     if rank < nbr['rank']:
+            #         nxt_ranks += 1
 
-    print('prev ranks')
-    print(prev_ranks)
+    # print('prev ranks')
+    # print(prev_ranks)
 
-    print('next ranks')
-    print(nxt_ranks)
+    # print('next ranks')
+    # print(nxt_ranks)
 
-    total_ranks = prev_ranks + nxt_ranks
+    # total_ranks = prev_ranks + nxt_ranks
 
-    print('total ranks')
-    print(total_ranks)
+    # print('total ranks')
+    # print(total_ranks)
 
     print('total nbrs')
     print(num_nb)
@@ -104,9 +104,9 @@ def process_nodes(addr, energy, rank, payload):
         'time': current_time,
         'energy': energy,
         'rank': rank,
-        'prev_ranks': prev_ranks,
-        'next_ranks': nxt_ranks,
-        'total_ranks': total_ranks,
+        # 'prev_ranks': prev_ranks,
+        # 'next_ranks': nxt_ranks,
+        # 'total_ranks': total_ranks,
         'total_nb': num_nb,
         # 'alive': alive,
     }
@@ -144,6 +144,22 @@ def process_nodes(addr, energy, rank, payload):
         Database.update_energy("energy", addr, data)
     print('printing energy DB1')
     Database.print_documents("energy")
+    """ after we finish updating the energy field, we
+    want to create/update energy text so the canvas can
+    be updated """
+    coll = Database.find("energy", {})
+    df = pd.DataFrame(coll)
+    print(df)
+    summation = df.energy.sum()
+    print(summation)
+    data = {
+        'time': datetime.now(),
+        'energy': int(summation),
+    }
+    Database.insert("total_energy", data)
+    coll = Database.find("total_energy", {})
+    df = pd.DataFrame(coll)
+    print(df)
 
 
 def process_neighbours(addr, payload_len, payload):

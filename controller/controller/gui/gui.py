@@ -40,18 +40,13 @@ def popupmsg(msg):
 
 
 def animate(i):
-    pullData = open("sampleText.txt", "r").read()
-    dataList = pullData.split('\n')
-    xList = []
-    yList = []
-    for eachLine in dataList:
-        if len(eachLine) > 1:
-            x, y = eachLine.split(',')
-            xList.append(int(x))
-            yList.append(int(y))
-
-    ax.clear()
-    ax.plot(xList, yList)
+    coll = Database.find("total_energy", {})
+    df = pd.DataFrame(coll)
+    if not df.empty:
+        yList = df['energy'].tolist()
+        xList = list(range(0, len(yList)))
+        ax.clear()
+        ax.plot(xList, yList)
 
 
 class SDNcontrollerapp(tk.Tk):
@@ -249,32 +244,33 @@ class NodesInfo(tk.Frame):
         coll = Database.find("nodes", {})
         for x in coll:
             df_data = pd.DataFrame(x['info'])
-            # Using DataFrame.insert() to add a column
-            df_data.insert(1, "addr", x['_id'], True)
             if not df_data.empty:
-                if self.heading_set == 0:
-                    # Defining number of columns
-                    self.treev["columns"] = (df_data.columns.values)
-                    for x in range(len(df_data.columns.values)):
-                        if x == 0:
-                            self.treev.column(x, width=200)
-                        else:
-                            self.treev.column(x, width=100)
-                        self.treev.heading(x, text=df_data.columns.values[x])
-                    # Defining heading
-                    self.treev['show'] = 'headings'
-                    self.heading_set = 1
-            # Add item to treeview
-            id = df_data['addr'][0]
-            last = df_data.iloc[-1, :].tolist()
-            # print(last)
-            if self.in_treeview(str(id)) == 0:
-                # last = df_data.iloc[-1]
-                self.treev.insert('', 'end', text="L",
-                                      values=(last))
-            else:
-                """ update all columns except for addr """
-                self.update_tree(last)
+                # Using DataFrame.insert() to add a column
+                df_data.insert(1, "addr", x['_id'], True)
+                if not df_data.empty:
+                    if self.heading_set == 0:
+                        # Defining number of columns
+                        self.treev["columns"] = (df_data.columns.values)
+                        for x in range(len(df_data.columns.values)):
+                            if x == 0:
+                                self.treev.column(x, width=200)
+                            else:
+                                self.treev.column(x, width=100)
+                            self.treev.heading(x, text=df_data.columns.values[x])
+                        # Defining heading
+                        self.treev['show'] = 'headings'
+                        self.heading_set = 1
+                # Add item to treeview
+                id = df_data['addr'][0]
+                last = df_data.iloc[-1, :].tolist()
+                # print(last)
+                if self.in_treeview(str(id)) == 0:
+                    # last = df_data.iloc[-1]
+                    self.treev.insert('', 'end', text="L",
+                                        values=(last))
+                else:
+                    """ update all columns except for addr """
+                    self.update_tree(last)
 
     def in_treeview(self, id):
         for item in self.treev.get_children():
