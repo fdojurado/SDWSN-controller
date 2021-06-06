@@ -29,22 +29,74 @@ except ImportError:
 current_time = 0
 
 
-def process_nodes(msg):
+def process_cp(msg):
+    # Source address
     addr0 = str(msg.addr0)
     addr1 = str(msg.addr1)
     addr = addr0+'.'+addr1
-    # print(addr)
-    data = msg.data
-    # print(data)
-    energy = data[0:2]
-    energy = socket.htons(int(energy.hex(), 16))
-    # print(energy)
-    rank = data[2]
-    prev_ranks = data[3]
-    next_ranks = data[4]
-    total_ranks = data[5]
-    total_nb = data[6]
-    alive = data[7]
+    # Parse header of control packet
+    cp_hdr = msg.data[:10]  # 10 is the header size
+    cp_type, cp_len, cp_rank, cp_energy, cp_rt_chksum, cp_nachksum = struct.unpack(
+        '!BBhhhh', cp_hdr)
+    # Parse payload of control packet
+    cp_payload = msg.data[10:]  # 10 is the header size
+    # Type of control packet
+    print('control packet from')
+    print(addr)
+    print('control packet type')
+    print(cp_type)
+    print('control packet len')
+    print(cp_len)
+    print('control packet rank')
+    print(cp_rank)
+    print('control packet energy')
+    print(cp_energy)
+    print('control packet routing checksum')
+    print(cp_rt_chksum)
+    print('control packet routing nachksum')
+    print(cp_nachksum)
+
+    if cp_type == 3:
+        print('NA received')
+        process_neighbours(addr, cp_len, cp_payload)
+        process_nodes(addr, cp_energy, cp_rank, cp_payload)
+
+
+def process_nodes(addr, energy, rank, payload):
+    # read neighbours of database
+    # Calling DataFrame constructor on list
+    Database.print_documents("nodes")
+    coll = Database.find("nodes", {})
+    prev_ranks = 0
+    nxt_ranks = 0
+    num_nb = 0
+    for x in coll:
+        if x['_id'] == addr:
+            df = pd.DataFrame(x['nbr'])
+            print(df)
+            nbr_nodes = x['nbr']
+            for nbr in nbr_nodes:
+                print(nbr)
+                if rank > nbr['rank']:
+                    prev_ranks += 1
+                if rank < nbr['rank']:
+                    nxt_ranks += 1
+                num_nb += 1
+
+    print('prev ranks')
+    print(prev_ranks)
+
+    print('next ranks')
+    print(nxt_ranks)
+
+    total_ranks = prev_ranks + nxt_ranks
+
+    print('total ranks')
+    print(total_ranks)
+
+    print('total nbrs')
+    print(num_nb)
+
     # nodes = Node(addr=addr, energy=energy, rank=rank, prev_ranks=prev_ranks,
     #  next_ranks=next_ranks, total_ranks=total_ranks, total_nb=total_nb, alive=alive)
     # nodes.print_packet()
@@ -55,8 +107,8 @@ def process_nodes(msg):
         'prev_ranks': prev_ranks,
         'next_ranks': next_ranks,
         'total_ranks': total_ranks,
-        'total_nb': total_nb,
-        'alive': alive,
+        'total_nb': num_nb,
+        # 'alive': alive,
     }
     node = {
         '_id': addr,
@@ -94,18 +146,13 @@ def process_nodes(msg):
     Database.print_documents("energy")
 
 
-def process_neighbours(msg):
-    addr0 = str(msg.addr0)
-    addr1 = str(msg.addr1)
-    addr = addr0+'.'+addr1
-    payload_len = msg.payload_len
+def process_neighbours(addr, payload_len, payload):
     blocks = int(payload_len/6)
-    payload = bytes(msg.data)
     print('range')
     print(range(1, blocks+1))
     for x in range(1, blocks+1):
         sliced_data = payload[(-1+x)*6:x*6]
-        addr0, addr1, rssi, rank = struct.unpack('=bbhh', sliced_data)
+        addr0, addr1, rssi, rank = struct.unpack('!bbhh', sliced_data)
         dst = str(addr0)+'.'+str(addr1)
         data = {
             'time': current_time,
@@ -157,8 +204,8 @@ def handle_serial(msg):
     print('printing DB packet2')
     Database.print_documents("packets")
     if(msg.message_type == 2):
-        print("nodes' info")
-        process_nodes(msg)
+        print("control packet")
+        process_cp(msg)
     if(msg.message_type == 3):
         print("neighbours info")
         process_neighbours(msg)
@@ -213,7 +260,7 @@ class SerialBus:
             return 1
 
     def get_data(self):
-        """This function serves the purpose of collecting data from the serial object and storing 
+        """This function serves the purpose of collecting data from the serial object and storing
         the filtered data into a global variable.
         The function has been put into a thread since the serial event is a blocking function.
         """
