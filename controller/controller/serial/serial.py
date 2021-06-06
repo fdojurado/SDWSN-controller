@@ -73,6 +73,7 @@ def process_nodes(addr, energy, rank, payload):
     for x in coll:
         if x['_id'] == addr:
             df = pd.DataFrame(x['nbr'])
+            num_nb = df.dst.nunique()
             print(df)
             nbr_nodes = x['nbr']
             for nbr in nbr_nodes:
@@ -81,7 +82,6 @@ def process_nodes(addr, energy, rank, payload):
                     prev_ranks += 1
                 if rank < nbr['rank']:
                     nxt_ranks += 1
-                num_nb += 1
 
     print('prev ranks')
     print(prev_ranks)
@@ -105,7 +105,7 @@ def process_nodes(addr, energy, rank, payload):
         'energy': energy,
         'rank': rank,
         'prev_ranks': prev_ranks,
-        'next_ranks': next_ranks,
+        'next_ranks': nxt_ranks,
         'total_ranks': total_ranks,
         'total_nb': num_nb,
         # 'alive': alive,
