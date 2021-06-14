@@ -71,6 +71,22 @@ class SDNcontrollerapp(tk.Tk):
         filemenu.add_command(label="Exit", command=quit)
         menubar.add_cascade(label="File", menu=filemenu)
 
+        serialControllerMenu = tk.Menu(menubar, tearoff=1)
+        serialControllerMenu.add_command(
+            label="Serial setup", command=lambda: popupmsg('Not supported just yet!'))
+        serialControllerMenu.add_command(
+            label="Serial Packets", command=lambda: popupmsg('Not supported just yet!'))
+        menubar.add_cascade(label="Serial Controller", menu=serialControllerMenu)
+
+        networkInformation = tk.Menu(menubar, tearoff=1)
+        networkInformation.add_command(
+            label="Forwarding Table", command=lambda: popupmsg('Not supported just yet!'))
+        networkInformation.add_command(
+            label="Node Information", command=lambda: popupmsg('Not supported just yet!'))
+        networkInformation.add_command(
+            label="Live Graph", command=lambda: popupmsg('Not supported just yet!'))
+        menubar.add_cascade(label="Network Information", menu=networkInformation)
+
         tk.Tk.config(self, menu=menubar)
 
         self.frames = {}
@@ -256,7 +272,8 @@ class NodesInfo(tk.Frame):
                                 self.treev.column(x, width=200)
                             else:
                                 self.treev.column(x, width=100)
-                            self.treev.heading(x, text=df_data.columns.values[x])
+                            self.treev.heading(
+                                x, text=df_data.columns.values[x])
                         # Defining heading
                         self.treev['show'] = 'headings'
                         self.heading_set = 1
@@ -267,7 +284,7 @@ class NodesInfo(tk.Frame):
                 if self.in_treeview(str(id)) == 0:
                     # last = df_data.iloc[-1]
                     self.treev.insert('', 'end', text="L",
-                                        values=(last))
+                                      values=(last))
                 else:
                     """ update all columns except for addr """
                     self.update_tree(last)
