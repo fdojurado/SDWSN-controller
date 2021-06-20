@@ -35,172 +35,6 @@ ENERGY = '/serial/na/energy'
 current_time = 0
 
 
-def process_cp(msg):
-    # Source address
-    addr0 = str(msg.addr0)
-    addr1 = str(msg.addr1)
-    addr = addr0+'.'+addr1
-    # Parse header of control packet
-    cp_hdr = msg.data[:10]  # 10 is the header size
-    cp_type, cp_len, cp_rank, cp_energy, cp_rt_chksum, cp_nachksum = struct.unpack(
-        '!BBhhhh', cp_hdr)
-    # Parse payload of control packet
-    cp_payload = msg.data[10:]  # 10 is the header size
-    # Type of control packet
-    print('control packet from')
-    print(addr)
-    print('control packet type')
-    print(cp_type)
-    print('control packet len')
-    print(cp_len)
-    print('control packet rank')
-    print(cp_rank)
-    print('control packet energy')
-    print(cp_energy)
-    print('control packet routing checksum')
-    print(cp_rt_chksum)
-    print('control packet routing nachksum')
-    print(cp_nachksum)
-
-    if cp_type == 3:
-        print('NA received')
-        process_neighbours(addr, cp_len, cp_payload)
-        process_nodes(addr, cp_energy, cp_rank, cp_payload)
-
-
-def process_nodes(addr, energy, rank, payload):
-    # read neighbours of database
-    # Calling DataFrame constructor on list
-    Database.print_documents("nodes")
-    coll = Database.find("nodes", {})
-    # prev_ranks = 0
-    # nxt_ranks = 0
-    num_nb = 0
-    for x in coll:
-        if x['_id'] == addr:
-            df = pd.DataFrame(x['nbr'])
-            num_nb = df.dst.nunique()
-            print(df)
-            # nbr_nodes = x['nbr']
-            # for nbr in nbr_nodes:
-            #     print(nbr)
-            #     if rank > nbr['rank']:
-            #         prev_ranks += 1
-            #     if rank < nbr['rank']:
-            #         nxt_ranks += 1
-
-    # print('prev ranks')
-    # print(prev_ranks)
-
-    # print('next ranks')
-    # print(nxt_ranks)
-
-    # total_ranks = prev_ranks + nxt_ranks
-
-    # print('total ranks')
-    # print(total_ranks)
-
-    print('total nbrs')
-    print(num_nb)
-
-    # nodes = Node(addr=addr, energy=energy, rank=rank, prev_ranks=prev_ranks,
-    #  next_ranks=next_ranks, total_ranks=total_ranks, total_nb=total_nb, alive=alive)
-    # nodes.print_packet()
-    data = {
-        'time': current_time,
-        'energy': energy,
-        'rank': rank,
-        # 'prev_ranks': prev_ranks,
-        # 'next_ranks': nxt_ranks,
-        # 'total_ranks': total_ranks,
-        'total_nb': num_nb,
-        # 'alive': alive,
-    }
-    node = {
-        '_id': addr,
-        'info': [
-            data,
-        ]
-    }
-    if Database.exist("nodes", addr) == 0:
-        Database.insert("nodes", node)
-    else:
-        Database.push_doc("nodes", addr, 'info', data)
-    Database.print_documents("nodes")
-    df = pd.DataFrame()
-    # Calling DataFrame constructor on list
-    coll = Database.find("nodes", {})
-    for x in coll:
-        df = pd.DataFrame(x['info'])
-        print(df)
-    """ Create a current energy database """
-    print('printing energy DB')
-    Database.print_documents("energy")
-    print('creating energy DB')
-    print('address:'+str(addr))
-    data = {
-        '_id': addr,
-        'time': current_time,
-        'energy': energy,
-    }
-    if Database.exist("energy", addr) == 0:
-        Database.insert("energy", data)
-    else:
-        print('updating energy')
-        Database.update_energy("energy", addr, data)
-    print('printing energy DB1')
-    Database.print_documents("energy")
-    """ after we finish updating the energy field, we
-    want to create/update energy text so the canvas can
-    be updated """
-    coll = Database.find("energy", {})
-    df = pd.DataFrame(coll)
-    print(df)
-    summation = df.energy.sum()
-    print(summation)
-    data = {
-        'time': datetime.now(),
-        'energy': int(summation),
-    }
-    Database.insert("total_energy", data)
-    coll = Database.find("total_energy", {})
-    df = pd.DataFrame(coll)
-    print(df)
-
-
-def process_neighbours(addr, payload_len, payload):
-    blocks = int(payload_len/6)
-    print('range')
-    print(range(1, blocks+1))
-    for x in range(1, blocks+1):
-        sliced_data = payload[(-1+x)*6:x*6]
-        addr0, addr1, rssi, rank = struct.unpack('!bbhh', sliced_data)
-        dst = str(addr0)+'.'+str(addr1)
-        data = {
-            'time': current_time,
-            'scr': addr,
-            'dst': dst,
-            'rssi': rssi,
-            'rank': rank,
-        }
-        node = {
-            '_id': addr,
-            'nbr': [
-                data,
-            ]
-        }
-        if Database.exist("nodes", addr) == 0:
-            Database.insert("nodes", node)
-        else:
-            Database.push_doc("nodes", addr, 'nbr', data)
-    # Database.print_documents("nodes")
-    df = pd.DataFrame()
-    coll = Database.find("nodes", {})
-    for x in coll:
-        df = pd.DataFrame(x['nbr'])
-        print(df)
-
-
 class SerialBus(MQTTClient):
 
     def on_connect(self, client, userdata, flags, result_code):
@@ -221,9 +55,143 @@ class SerialBus(MQTTClient):
             t1.start()
             return 1
 
-    # def millis(self):
-    #     timestamp = dt.timestamp() # Python 3.3+
-    #     return timestamp
+    def process_cp(self, msg):
+        # Source address
+        addr0 = str(msg.addr0)
+        addr1 = str(msg.addr1)
+        addr = addr0+'.'+addr1
+        # Parse header of control packet
+        cp_hdr = msg.data[:10]  # 10 is the header size
+        cp_type, cp_len, cp_rank, cp_energy, cp_rt_chksum, cp_nachksum = struct.unpack(
+            '!BBhhhh', cp_hdr)
+        # Parse payload of control packet
+        cp_payload = msg.data[10:]  # 10 is the header size
+        # Type of control packet
+        print('control packet from')
+        print(addr)
+        print('control packet type')
+        print(cp_type)
+        print('control packet len')
+        print(cp_len)
+        print('control packet rank')
+        print(cp_rank)
+        print('control packet energy')
+        print(cp_energy)
+        print('control packet routing checksum')
+        print(cp_rt_chksum)
+        print('control packet routing nachksum')
+        print(cp_nachksum)
+
+        if cp_type == 3:
+            print('NA received')
+            self.process_neighbours(addr, cp_len, cp_payload)
+            self.process_nodes(addr, cp_energy, cp_rank, cp_payload)
+
+    def process_neighbours(self, addr, payload_len, payload):
+        blocks = int(payload_len/6)
+        print('range')
+        print(range(1, blocks+1))
+        for x in range(1, blocks+1):
+            sliced_data = payload[(-1+x)*6:x*6]
+            addr0, addr1, rssi, rank = struct.unpack('!bbhh', sliced_data)
+            dst = str(addr0)+'.'+str(addr1)
+            data = {
+                'time': current_time,
+                'scr': addr,
+                'dst': dst,
+                'rssi': rssi,
+                'rank': rank,
+            }
+            node = {
+                '_id': addr,
+                'nbr': [
+                    data,
+                ]
+            }
+            if Database.exist("nodes", addr) == 0:
+                Database.insert("nodes", node)
+            else:
+                Database.push_doc("nodes", addr, 'nbr', data)
+        # Database.print_documents("nodes")
+        df = pd.DataFrame()
+        coll = Database.find("nodes", {})
+        for x in coll:
+            df = pd.DataFrame(x['nbr'])
+            print(df)
+
+    def process_nodes(self, addr, energy, rank, payload):
+        # Calling DataFrame constructor on list
+        Database.print_documents("nodes")
+        coll = Database.find("nodes", {})
+        num_nb = 0
+        for x in coll:
+            if x['_id'] == addr:
+                df = pd.DataFrame(x['nbr'])
+                num_nb = df.dst.nunique()
+                print(df)
+        print('total nbrs')
+        print(num_nb)
+        data = {
+            'time': current_time,
+            'energy': energy,
+            'rank': rank,
+            'total_nb': num_nb
+        }
+        node = {
+            '_id': addr,
+            'info': [
+                data
+            ]
+        }
+        if Database.exist("nodes", addr) == 0:
+            Database.insert("nodes", node)
+        else:
+            Database.push_doc("nodes", addr, 'info', data)
+        Database.print_documents("nodes")
+        df = pd.DataFrame()
+        # Calling DataFrame constructor on list
+        coll = Database.find("nodes", {})
+        for x in coll:
+            df = pd.DataFrame(x['info'])
+            print(df)
+        """ Create a current energy database """
+        print('printing energy DB')
+        Database.print_documents("energy")
+        print('creating energy DB')
+        print('address:'+str(addr))
+        data = {
+            '_id': addr,
+            'time': current_time,
+            'energy': energy,
+        }
+        if Database.exist("energy", addr) == 0:
+            Database.insert("energy", data)
+        else:
+            print('updating energy')
+            Database.update_energy("energy", addr, data)
+        print('printing energy DB1')
+        Database.print_documents("energy")
+        """ after we finish updating the energy field, we
+        want to create/update energy text so the canvas can
+        be updated """
+        coll = Database.find("energy", {})
+        df = pd.DataFrame(coll)
+        print(df)
+        summation = df.energy.sum()
+        print(summation)
+        data = {
+            "ts": current_time,
+            "energy": int(summation),
+        }
+        """ Send to MQTT server/thingsboard """
+        packet_topic = ENERGY.format(self.config.site)
+        packet_message = json.dumps(data)
+        self.mqtt.publish(packet_topic, packet_message)
+        """ Save to DB """
+        Database.insert("total_energy", data)
+        coll = Database.find("total_energy", {})
+        df = pd.DataFrame(coll)
+        print(df)
 
     def handle_serial(self, msg):
         global current_time
@@ -270,10 +238,10 @@ class SerialBus(MQTTClient):
         Database.print_documents("packets")
         if(msg.message_type == 2):
             print("control packet")
-            process_cp(msg)
+            self.process_cp(msg)
         if(msg.message_type == 3):
             print("neighbours info")
-            process_neighbours(msg)
+            self.process_neighbours(msg)
 
     def get_data(self):
         """This function serves the purpose of collecting data from the serial object and storing
