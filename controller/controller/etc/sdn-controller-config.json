@@ -1,0 +1,25 @@
+{
+    "site": "default",
+    "mqtt": {
+        "host": "127.0.0.1",
+        "port": 1883,
+        "authentication": {
+            "username": "sS0J03qjGyn0K5z8ubzy",
+            "password": ""
+        },
+        "tls": {
+            "ca_certificates": "",
+            "client_certificate": "",
+            "client_key": ""
+        }
+    },
+    "serial": {
+        "host": "localhost",
+        "port": 60001
+    },
+    "vad": {
+        "mode": 0,
+        "silence": 2,
+        "status_messages": true
+    }
+}

@@ -6,7 +6,7 @@ import typing
 if typing.TYPE_CHECKING:
     import os
 
-import mypy_extensions
+# import mypy_extensions
 
 # TODO: Once buffer protocol support lands in typing, we should switch to that,
 # since can.message.Message attempts to call bytearray() on the given data, so

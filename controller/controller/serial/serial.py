@@ -4,12 +4,16 @@ import sys
 from controller import Message
 from typing import Optional, Union, Iterator, Tuple
 from time import time
+from datetime import datetime
+from time import mktime
 import struct
 import threading
 from datetime import datetime
 from controller.database.database import Database
+from controller.mqtt.mqtt import MQTTClient
 import pandas as pd
 import struct
+import json
 
 try:
     import serial
@@ -26,6 +30,8 @@ except ImportError:
     list_ports = None
 
 
+PACKET = '/serial/packet'
+ENERGY = '/serial/na/energy'
 current_time = 0
 
 
@@ -195,76 +201,16 @@ def process_neighbours(addr, payload_len, payload):
         print(df)
 
 
-def handle_serial(msg):
-    global current_time
-    current_time = datetime.now()
-    msg.print_packet()
-    # Save the packet in DB
-    print('printing DB packet1')
-    addr0 = str(msg.addr0)
-    addr1 = str(msg.addr1)
-    addr = addr0+'.'+addr1
-    hex_data = bytes(msg.data).hex()
-    print(hex_data)
-    data = {
-        # '_id': addr,
-        'time': current_time,
-        'addr': addr,
-        'type': msg.message_type,
-        'payload_len': msg.payload_len,
-        'reserved0': msg.reserved0,
-        'reserved1': msg.reserved1,
-        'payload': hex_data,
-    }
-    Database.insert("packets", data)
-    print('printing DB packet2')
-    Database.print_documents("packets")
-    if(msg.message_type == 2):
-        print("control packet")
-        process_cp(msg)
-    if(msg.message_type == 3):
-        print("neighbours info")
-        process_neighbours(msg)
+class SerialBus(MQTTClient):
 
-
-class SerialBus:
-
-    def __init__(
-        self, host, port
-    ):
-        """
-        :param str channel:
-            The serial device to open. For example "/dev/ttyS1" or
-            "/dev/ttyUSB0" on Linux or "COM1" on Windows systems.
-
-        :param int baudrate:
-            Baud rate of the serial device in bit/s (default 115200).
-
-            .. warning::
-                Some serial port implementations don't care about the baudrate.
-
-        :param float timeout:
-            Timeout for the serial device in seconds (default 0.1).
-
-        :param bool rtscts:
-            turn hardware handshake (RTS/CTS) on and off
-
-        """
-        self.host = host
-        self.port = port
-
-        if not host:
-            raise ValueError("Must specify a serial host.")
-        if not port:
-            raise ValueError("Must specify a serial port.")
-
-        self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def connect(self):
+    def on_connect(self, client, userdata, flags, result_code):
+        """Callback that is called when the serial interface connects to the MQTT
+        broker."""
+        super().on_connect(client, userdata, flags, result_code)
         # Create a TCP/IP socket
-
+        self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Connect the socket to the port where the server is listening
-        server_address = (self.host, self.port)
+        server_address = (self.config.serial.host, self.config.serial.port)
         print('connecting to %s port %s' % server_address)
         result = self.ser.connect_ex(server_address)
         if result:
@@ -274,6 +220,60 @@ class SerialBus:
             t1.daemon = True
             t1.start()
             return 1
+
+    # def millis(self):
+    #     timestamp = dt.timestamp() # Python 3.3+
+    #     return timestamp
+
+    def handle_serial(self, msg):
+        global current_time
+        # current_time = datetime.now()
+        # Get Unix timestamp from a datetime object
+        current_time = datetime.now().timestamp() * 1000.0
+
+        msg.print_packet()
+        # Save the packet in DB
+        print('printing DB packet1')
+        addr0 = str(msg.addr0)
+        addr1 = str(msg.addr1)
+        addr = addr0+'.'+addr1
+        hex_data = bytes(msg.data).hex()
+        print(hex_data)
+        data = {
+            "ts": current_time,
+            "values": {
+                "addr": addr,
+                "type": msg.message_type,
+                "payload_len": msg.payload_len,
+                "reserved0": msg.reserved0,
+                "reserved1": msg.reserved1,
+                "payload": hex_data
+            }
+        }
+        print('data')
+        print(data)
+        """ Send MQTT message """
+        print('hello3')
+        packet_topic = PACKET.format(self.config.site)
+        print('hello4')
+        print('data2')
+        print(data)
+        play_finished_message = json.dumps(data)
+        print('play_finished_message')
+        print(play_finished_message)
+        print('hello5')
+        self.mqtt.publish(packet_topic, play_finished_message)
+        print('hello6')
+        """ Save in DB """
+        Database.insert("packets", data)
+        print('printing DB packet2')
+        Database.print_documents("packets")
+        if(msg.message_type == 2):
+            print("control packet")
+            process_cp(msg)
+        if(msg.message_type == 3):
+            print("neighbours info")
+            process_neighbours(msg)
 
     def get_data(self):
         """This function serves the purpose of collecting data from the serial object and storing
@@ -288,7 +288,7 @@ class SerialBus:
                     print('msg')
                     print(msg.addr1)
                     print(msg)
-                    handle_serial(msg)
+                    self.handle_serial(msg)
             except TypeError:
                 pass
 

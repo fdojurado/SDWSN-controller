@@ -1,0 +1,13 @@
+"""This module specifies some information about the package."""
+PROJECT = 'SDN Serial Controller'
+DESCRIPTION = 'An open source implementation of a SDWSN controller'
+KEYWORDS = 'hermes snips python3 rhasspy audio-player audio-recorder audio-server snips-audio-server hermes-protocol voice voice-control'
+AUTHOR = 'Koen Vervloesem'
+EMAIL = 'koen@vervloesem.eu'
+LICENSE = 'MIT License'
+GITHUB_URL = 'https://github.com/koenvervloesem/hermes-audio-server'
+DOC_URL = 'https://github.com/koenvervloesem/hermes-audio-server'
+TRACKER_URL = 'https://github.com/koenvervloesem/hermes-audio-server/issues'
+APP = 'serial-controller'
+RECORDER = 'hermes-audio-recorder'
+VERSION = '0.3.0-dev'
