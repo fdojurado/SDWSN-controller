@@ -32,6 +32,7 @@ except ImportError:
 
 PACKET = '/serial/packet'
 ENERGY = '/serial/na/energy'
+PDR = '/serial/data/pdr'
 current_time = 0
 
 
@@ -87,6 +88,106 @@ class SerialBus(MQTTClient):
             self.process_neighbours(addr, cp_len, cp_payload)
             self.process_nodes(addr, cp_energy, cp_rank, cp_payload)
 
+    def process_data_packet(self, msg):
+        # Source address
+        addr0 = str(msg.addr0)
+        addr1 = str(msg.addr1)
+        addr = addr0+'.'+addr1
+        # Parse header of data packet
+        dp_hdr = msg.data[:1]  # 1 is the header size
+        data_payload_len = int.from_bytes(dp_hdr, "big")
+        # Parse payload of data packet
+        dp_payload = msg.data[1:]  # 10 is the header size
+        data = {}
+        node = {}
+        """ Process data packet payload """
+        blocks = int(data_payload_len/8)  # 8 is the size of a data packet
+        for x in range(1, blocks+1):
+            sliced_data = dp_payload[(-1+x)*8:x*8]
+            addr0, addr1, seq, temp, humidity = struct.unpack(
+                '!bbHHH', sliced_data)
+            src = str(addr0)+'.'+str(addr1)
+            data = {
+                'time': current_time,
+                'src': src,
+                'last_seq': seq,
+                'num_seq': 1,
+                'temp': temp,
+                'humidity': humidity,
+            }
+            node = {
+                '_id': src,
+                'data': [
+                    data,
+                ]
+            }
+            print('printing data packet')
+            print(node)
+            """ Does this node exist in DB """
+            if Database.exist("nodes", src) == 0:
+                Database.insert("nodes", node)
+            else:
+                # look for last seq number for that node
+                data_db = Database.find_one("nodes", {"data.src": src})
+                print('data_db')
+                print(data_db)
+                print('data_db[data]')
+                print(data_db['data'])
+                df = pd.DataFrame(data_db['data'])
+                print('df')
+                print(df)
+                df = df.tail(1)
+                print('df tail')
+                print(df)
+                print('df last_seq')
+                print(df['last_seq'])
+                if df['last_seq'].values[0] == seq:
+                    print("equal seq")
+                else:
+                    print("different seq")
+                    data['num_seq'] = int(df['num_seq'].values[0]+1)
+                    print('data')
+                    print(data)
+                    Database.push_doc("nodes", src, 'data', data)
+            """ Create a current pdr database """
+            print('data pdr')
+            print(data)
+            Database.print_documents("pdr")
+            # Calculate pdr rt->num_seqs * 100L / rt->last_seq;
+            pdr = data['num_seq'] * 100.0 / data['last_seq']
+            pdr_data = {
+                '_id': src,
+                'time': current_time,
+                'pdr': pdr,
+            }
+            print('pdr')
+            print(pdr)
+            if Database.exist("pdr", src) == 0:
+                Database.insert("pdr", pdr_data)
+            else:
+                print('updating pdr')
+                Database.update_pdr("pdr", src, pdr_data)
+            print('printing pdr DB1')
+            Database.print_documents("pdr")
+            """ after we finish updating the pdr field, we
+            want to create/update pdr text so the canvas can
+            be updated """
+            coll = Database.find("pdr", {})
+            df = pd.DataFrame(coll)
+            print(df)
+            mean = df.pdr.mean()
+            print(mean)
+            data = {
+                "ts": current_time,
+                "pdr": mean,
+            }
+            print('pdr data')
+            print(data)
+            """ Send to MQTT server/thingsboard """
+            packet_topic = PDR.format(self.config.site)
+            packet_message = json.dumps(data)
+            self.mqtt.publish(packet_topic, packet_message)
+
     def process_neighbours(self, addr, payload_len, payload):
         blocks = int(payload_len/6)
         print('range')
@@ -116,8 +217,11 @@ class SerialBus(MQTTClient):
         df = pd.DataFrame()
         coll = Database.find("nodes", {})
         for x in coll:
-            df = pd.DataFrame(x['nbr'])
-            print(df)
+            print('x')
+            print(x)
+            if 'nbr' in x:
+                df = pd.DataFrame(x['nbr'])
+                print(df)
 
     def process_nodes(self, addr, energy, rank, payload):
         # Calling DataFrame constructor on list
@@ -152,8 +256,9 @@ class SerialBus(MQTTClient):
         # Calling DataFrame constructor on list
         coll = Database.find("nodes", {})
         for x in coll:
-            df = pd.DataFrame(x['info'])
-            print(df)
+            if 'info' in x:
+                df = pd.DataFrame(x['info'])
+                print(df)
         """ Create a current energy database """
         print('printing energy DB')
         Database.print_documents("energy")
@@ -240,8 +345,8 @@ class SerialBus(MQTTClient):
             print("control packet")
             self.process_cp(msg)
         if(msg.message_type == 3):
-            print("neighbours info")
-            self.process_neighbours(msg)
+            print("data packet received")
+            self.process_data_packet(msg)
 
     def get_data(self):
         """This function serves the purpose of collecting data from the serial object and storing

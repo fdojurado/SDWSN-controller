@@ -37,6 +37,14 @@ class Database(object):
         )
 
     @staticmethod
+    def update_pdr(collection, addr, data):
+        Database.DATABASE[collection].update(
+            {"_id": addr},
+            {"$set": {"time": data['time'],
+                      "pdr": data['pdr']}}
+        )
+
+    @staticmethod
     def find(collection, query):
         return Database.DATABASE[collection].find(query)
 
