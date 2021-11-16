@@ -19,15 +19,21 @@ about = import_module(SRC_ROOT + '.about')
 binaries = [BIN_ROOT + about.APP]
 
 setup(
-    name='controller',
-    version='1.0',
-    description='An SDN controller for contiki',
-    author='Fernando Jurado',
-    author_email='fjurado@student.unimelb.edu.au',
-   #  packages=['controller'],  # same as name
-    install_requires=['bar'],  # external packages as dependencies
-    packages=find_packages(SRC_ROOT),
+    name=about.PROJECT,
+    version=about.VERSION,
+    description=about.DESCRIPTION,
+    author=about.AUTHOR,
+    author_email=about.EMAIL,
+    project_urls={
+        'Documentation': about.DOC_URL,
+        'Source': about.GITHUB_URL,
+        'Tracker': about.TRACKER_URL,
+    },
+    # packages=['controller'],  # same as name
+    install_requires=['bar','plac'],  # external packages as dependencies
+    packages=find_packages('controller'),
     package_dir={'': SRC_ROOT},
     python_requires='>=3',
+    keywords=about.KEYWORDS,
     scripts=binaries
 )
