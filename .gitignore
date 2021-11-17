@@ -33,6 +33,11 @@ var/
 .installed.cfg
 *.egg
 
+# virtualenv
+.venv/
+venv/
+ENV/
+
 # Log files
 *.log
 
@@ -67,4 +72,5 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
+
 

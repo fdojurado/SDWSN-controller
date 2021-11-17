@@ -1,0 +1,5 @@
+pymongo
+plac
+paho-mqtt
+pandas
+python-daemon
