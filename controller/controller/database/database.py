@@ -15,11 +15,11 @@ class Database(object):
 
     @staticmethod
     def insert(collection, data):
-        return Database.DATABASE[collection].insert(data)
+        return Database.DATABASE[collection].insert_one(data)
 
     @staticmethod
     def exist(collection, addr):
-        return Database.DATABASE[collection].find({"_id": addr}).count() > 0
+        return Database.DATABASE[collection].count_documents({"_id": addr}, limit = 1) > 0
 
     @staticmethod
     def push_doc(collection, addr, field, data):
