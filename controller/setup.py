@@ -8,8 +8,8 @@ BIN_ROOT = 'bin/'
 about = import_module(SRC_ROOT + '.about')
 
 
-with Path('README.md').open('r') as fh:
-    long_description = fh.read()
+# with Path('README.md').open('r') as fh:
+#     long_description = fh.read()
 
 with Path('requirements.txt').open('r') as fh:
     requirements = fh.read().splitlines()
