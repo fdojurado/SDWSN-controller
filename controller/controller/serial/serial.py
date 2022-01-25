@@ -87,6 +87,16 @@ class SerialBus(MQTTClient):
             print('NA received')
             self.process_neighbours(addr, cp_len, cp_payload)
             self.process_nodes(addr, cp_energy, cp_rank, cp_payload)
+            msg2 = Message(
+                addr0=2,
+                addr1=0,
+                message_type=2,
+                payload_len=msg.payload_len,
+                reserved0=0,
+                reserved1=0,
+                data=msg.data,
+            )
+            self.send(msg2)
 
     def process_data_packet(self, msg):
         # Source address
@@ -369,6 +379,7 @@ class SerialBus(MQTTClient):
         """
         Send a message over the serial device.
         """
+        print('Sending message over the serial interface')
         byte_msg = bytearray()
         byte_msg.append(0x7E)
         self.check_byte(byte_msg, msg.addr0)
