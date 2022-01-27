@@ -17,6 +17,10 @@
         "host": "localhost",
         "port": 60001
     },
+    "routing":{
+        "time": "10",
+        "algorithm": "dijkstra"
+    },
     "vad": {
         "mode": 0,
         "silence": 2,

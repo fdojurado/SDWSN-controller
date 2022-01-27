@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 
+from controller.config.routing import RoutingConfig
 from controller.config.mqtt import MQTTConfig
 from controller.config.serial import SerialConfig
 # from hermes_audio_server.exceptions import ConfigurationFileNotFoundError
@@ -15,6 +16,7 @@ DEFAULT_CONFIG = 'controller/etc/sdn-controller-config.json'
 # SITE = 'site'
 MQTT = 'mqtt'
 SERIAL = 'serial'
+ROUTING = 'routing'
 
 
 # TODO: Define __str__() with explicit settings for debugging.
@@ -27,7 +29,7 @@ class ServerConfig:
         vad (:class:`.VADConfig`): The VAD options of the configuration.
     """
 
-    def __init__(self, site='default', mqtt=None, serial=None):
+    def __init__(self, site='default', mqtt=None, serial=None, routing=None):
         """Initialize a :class:`.ServerConfig` object.
 
         Args:
@@ -48,6 +50,11 @@ class ServerConfig:
             self.serial = SerialConfig()
         else:
             self.serial = serial
+        
+        if routing is None:
+            self.routing = RoutingConfig()
+        else:
+            self.routing = routing
 
         self.site = site
 
@@ -125,4 +132,5 @@ class ServerConfig:
             raise ConfigurationFileNotFoundError(error.filename)
 
         return cls(mqtt=MQTTConfig.from_json(configuration.get(MQTT)),
+                   routing=RoutingConfig.from_json(configuration.get(ROUTING)),
                    serial=SerialConfig.from_json(configuration.get(SERIAL)))

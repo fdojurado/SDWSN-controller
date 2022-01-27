@@ -1,6 +1,7 @@
 # import config
 # from controller.serial import SerialBus
 # from controller.mqtt_client.mqtt_client import sdwsn_mqtt_client
+from controller.routing.routing import Routing
 from controller.serial.serial import SerialBus
 from controller.database.database import Database
 from controller.config import ServerConfig, DEFAULT_CONFIG
@@ -50,6 +51,8 @@ def main(command, verbose, version, config, daemon):
     # root = Tk()
     """ Initialise database """
     Database.initialise()
+    """ Initialise routing """
+    Routing(ServerConfig.from_json_file(config))
 
     try:
 
