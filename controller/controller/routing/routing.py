@@ -16,5 +16,8 @@ class Routing():
 
     def compute_routing(self):
         print("Computing routing algorithm")
+        """ We need to read the forwarding table for every node in the database """
+        
+        """ We first need to check whether the given graph is connected or not """
         # print(time.ctime())
         threading.Timer(int(self.config.routing.time), self.compute_routing).start()

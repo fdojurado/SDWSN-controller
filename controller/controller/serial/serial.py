@@ -116,7 +116,7 @@ class SerialBus(MQTTClient):
             sliced_data = dp_payload[(-1+x)*8:x*8]
             addr0, addr1, seq, temp, humidity = struct.unpack(
                 '!bbHHH', sliced_data)
-            src = str(addr0)+'.'+str(addr1)
+            src = str(addr1)+'.'+str(addr0)
             data = {
                 'time': current_time,
                 'src': src,
