@@ -162,7 +162,7 @@ class SerialBus(MQTTClient):
             """ Create a current pdr database """
             print('data pdr')
             print(data)
-            Database.print_documents("pdr")
+            # Database.print_documents("pdr")
             # Calculate pdr rt->num_seqs * 100L / rt->last_seq;
             pdr = data['num_seq'] * 100.0 / data['last_seq']
             pdr_data = {
@@ -177,8 +177,8 @@ class SerialBus(MQTTClient):
             else:
                 print('updating pdr')
                 Database.update_pdr("pdr", src, pdr_data)
-            print('printing pdr DB1')
-            Database.print_documents("pdr")
+            # print('printing pdr DB1')
+            # Database.print_documents("pdr")
             """ after we finish updating the pdr field, we
             want to create/update pdr text so the canvas can
             be updated """
@@ -197,15 +197,22 @@ class SerialBus(MQTTClient):
             packet_topic = PDR.format(self.config.site)
             packet_message = json.dumps(data)
             self.mqtt.publish(packet_topic, packet_message)
+            """ Save to DB """
+            Database.insert("total_pdr", data)
+            coll = Database.find("total_pdr", {})
+            df = pd.DataFrame(coll)
+            print(df)
 
     def process_neighbours(self, addr, payload_len, payload):
+        print('processing neighbours from %s', addr)
         blocks = int(payload_len/6)
         print('range')
         print(range(1, blocks+1))
         for x in range(1, blocks+1):
             sliced_data = payload[(-1+x)*6:x*6]
             addr0, addr1, rssi, rank = struct.unpack('!bbhh', sliced_data)
-            dst = str(addr0)+'.'+str(addr1)
+            dst = str(addr1)+'.'+str(addr0)
+            print('dest address %s', dst)
             data = {
                 'time': current_time,
                 'scr': addr,
@@ -213,15 +220,21 @@ class SerialBus(MQTTClient):
                 'rssi': rssi,
                 'rank': rank,
             }
+            print('data')
+            print(data)
             node = {
                 '_id': addr,
                 'nbr': [
                     data,
                 ]
             }
+            print('node')
+            print(node)
             if Database.exist("nodes", addr) == 0:
+                print('node does not exist, inserting...')
                 Database.insert("nodes", node)
             else:
+                print('node does exist, pushing...')
                 Database.push_doc("nodes", addr, 'nbr', data)
         # Database.print_documents("nodes")
         df = pd.DataFrame()
@@ -235,7 +248,7 @@ class SerialBus(MQTTClient):
 
     def process_nodes(self, addr, energy, rank, payload):
         # Calling DataFrame constructor on list
-        Database.print_documents("nodes")
+        # Database.print_documents("nodes")
         coll = Database.find("nodes", {})
         num_nb = 0
         for x in coll:
@@ -261,7 +274,7 @@ class SerialBus(MQTTClient):
             Database.insert("nodes", node)
         else:
             Database.push_doc("nodes", addr, 'info', data)
-        Database.print_documents("nodes")
+        # Database.print_documents("nodes")
         df = pd.DataFrame()
         # Calling DataFrame constructor on list
         coll = Database.find("nodes", {})
@@ -270,8 +283,8 @@ class SerialBus(MQTTClient):
                 df = pd.DataFrame(x['info'])
                 print(df)
         """ Create a current energy database """
-        print('printing energy DB')
-        Database.print_documents("energy")
+        # print('printing energy DB')
+        # Database.print_documents("energy")
         print('creating energy DB')
         print('address:'+str(addr))
         data = {
@@ -284,8 +297,8 @@ class SerialBus(MQTTClient):
         else:
             print('updating energy')
             Database.update_energy("energy", addr, data)
-        print('printing energy DB1')
-        Database.print_documents("energy")
+        # print('printing energy DB1')
+        # Database.print_documents("energy")
         """ after we finish updating the energy field, we
         want to create/update energy text so the canvas can
         be updated """
@@ -349,8 +362,8 @@ class SerialBus(MQTTClient):
         print('hello6')
         """ Save in DB """
         Database.insert("packets", data)
-        print('printing DB packet2')
-        Database.print_documents("packets")
+        # print('printing DB packet2')
+        # Database.print_documents("packets")
         if(msg.message_type == 2):
             print("control packet")
             self.process_cp(msg)

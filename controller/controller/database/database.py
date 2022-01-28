@@ -23,14 +23,14 @@ class Database(object):
 
     @staticmethod
     def push_doc(collection, addr, field, data):
-        Database.DATABASE[collection].update(
+        Database.DATABASE[collection].update_one(
             {"_id": addr},
             {"$push": {field: data}}
         )
 
     @staticmethod
     def update_energy(collection, addr, data):
-        Database.DATABASE[collection].update(
+        Database.DATABASE[collection].update_one(
             {"_id": addr},
             {"$set": {"time": data['time'],
                       "energy": data['energy']}}
@@ -38,7 +38,7 @@ class Database(object):
 
     @staticmethod
     def update_pdr(collection, addr, data):
-        Database.DATABASE[collection].update(
+        Database.DATABASE[collection].update_one(
             {"_id": addr},
             {"$set": {"time": data['time'],
                       "pdr": data['pdr']}}
@@ -50,7 +50,7 @@ class Database(object):
 
     @staticmethod
     def print_documents(collection):
-        for document in Database.DATABASE[collection].find({}):
+        for document in Database.DATABASE[collection].find_one({}):
             print(document)
 
     @staticmethod
