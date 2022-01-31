@@ -8,6 +8,7 @@ import time
 import threading
 import pandas as pd
 from controller.database.database import Database
+from controller.routing.check_connected_graph import add_edge, is_connected
 
 
 class Routing():
@@ -24,8 +25,19 @@ class Routing():
         N = self.num_nodes()
         print("number of sensor nodes")
         print(N)
-
-        """ We first need to check whether the given graph is connected or not """
+        if(N > 0):
+            """ We first need to check whether the given graph is connected or not """
+            # add every edge in the links db
+            df = pd.DataFrame(list(Database.find("links", {})))
+            for index, row in df.iterrows():
+                print("adding edge ", row["scr"], "-", row["dst"])
+                add_edge(int(float(row["scr"])), int(float(row["dst"])))
+            # Function call
+            print("is a connected graph?")
+            if (is_connected(N)):
+                print("Yes")
+            else:
+                print("No")
         # print(time.ctime())
         threading.Timer(int(self.config.routing.time),
                         self.compute_routing).start()
@@ -44,5 +56,4 @@ class Routing():
             print(df)
             # Now we want to count the number of element
             values = pd.unique(df[['scr', 'dst']].values.ravel('K'))
-            num = len(values)
-            return num
+            return len(values)
