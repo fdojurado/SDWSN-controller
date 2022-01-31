@@ -19,13 +19,30 @@ class Database(object):
 
     @staticmethod
     def exist(collection, addr):
-        return Database.DATABASE[collection].count_documents({"_id": addr}, limit = 1) > 0
+        return Database.DATABASE[collection].count_documents({"_id": addr}, limit=1) > 0
 
     @staticmethod
     def push_doc(collection, addr, field, data):
         Database.DATABASE[collection].update_one(
             {"_id": addr},
             {"$push": {field: data}}
+        )
+
+    @staticmethod
+    def push_links(collection, data):
+        Database.DATABASE[collection].update_one(
+            {
+                "$or": [
+                    {"$and": [{"scr": data['scr']},
+                              {"dst": data['dst']}]},
+                    {"$and": [{"scr": data['dst']}, {"dst": data['scr']}]}
+                ]
+            },
+            {"$set": {"time": data['time'],
+                      "scr": data['scr'],
+                      "dst": data['dst'],
+                      "rssi": data['rssi']}},
+            upsert=True
         )
 
     @staticmethod

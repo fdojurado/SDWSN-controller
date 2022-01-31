@@ -250,12 +250,13 @@ class SerialBus(MQTTClient):
 
     def insert_links(self, data):
         links = {
+            'time': data['time'],
             'scr': data['scr'],
             'dst': data['dst'],
             'rssi': data['rssi'],
         }
-        print('inserting link %s - %s cost %d',
-              data['scr'], data['dst'], data['rssi'])
+        print('inserting link')
+        print(links)
         # load the collection to pandas frame
         db = Database.find_one("links", {})
         print('db links found?')
@@ -264,27 +265,9 @@ class SerialBus(MQTTClient):
             print('no entries yet, inserting link')
             Database.insert("links", links)
         else:
-            df = pd.DataFrame(list(Database.find("links", {})))
-            print('df')
-            print(df)
-            # Check if the link already exists
-            existing_link = pd.DataFrame()
-            existing_link = self.link_exist(df, links)
-            Database.push_doc("links", existing_link['_id'], links)
-
-
-    def link_exist(self, df, links):
-        src = links['scr']
-        dst = links['dst']
-        print('executing link exists src %s and dst %s', src, dst)
-        match1 = df[df['scr'].str.contains(src) & df['dst'].str.contains(dst)]
-        match2 = df[df['dst'].str.contains(src) & df['scr'].str.contains(dst)]
-        if not match2.empty:
-            print('link already exist in match 2')
-            return match2
-        if not match1.empty:
-            print('link already exist in match 1')
-            return match1
+            # It first checks if the links already exists in the collection.
+            # If it does, it update with the current values, otherwise it creates it.
+            Database.push_links("links", links)
 
     def process_nodes(self, addr, energy, rank, payload):
         # Calling DataFrame constructor on list
