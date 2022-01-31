@@ -1,64 +1,65 @@
-# Python3 implementation of the approach
-N = 100000
 
-# To keep correct and reverse direction
-gr1 = {}; gr2 = {}
 
-vis1 = [0] * N; vis2 = [0] * N
+class Connected_graph:
+	def __init__(self):
+		self.N = 100000
+		# To keep correct and reverse direction
+		self.gr1 = {}
+		self.gr2 = {}
 
-# Function to add edges
-def add_edge(u, v) :
+		self.vis1 = [0] * self.N
+		self.vis2 = [0] * self.N
 
-	if u not in gr1 :
-		gr1[u] = []
-		
-	if v not in gr2 :
-		gr2[v] = []
-		
-	gr1[u].append(v)
-	gr2[v].append(u)
+	# Function to add edges
+	def add_edge(self, u, v) :
 
-# DFS function
-def dfs1(x) :
-	vis1[x] = True
-	if x not in gr1 :
-		gr1[x] = {}
-		
-	for i in gr1[x] :
-		if (not vis1[i]) :
-			dfs1(i)
-
-# DFS function
-def dfs2(x) :
-
-	vis2[x] = True
-
-	if x not in gr2 :
-		gr2[x] = {}
-		
-	for i in gr2[x] :
-		if (not vis2[i]) :
-			dfs2(i)
-
-def is_connected(n) :
-
-	global vis1
-	global vis2
-	
-	# Call for correct direction
-	vis1 = [False] * len(vis1)
-	dfs1(1)
-	
-	# Call for reverse direction
-	vis2 = [False] * len(vis2)
-	dfs2(1)
-	
-	for i in range(1, n + 1) :
-		
-		# If any vertex it not visited in any direction
-		# Then graph is not connected
-		if (not vis1[i] and not vis2[i]) :
-			return False
+		if u not in self.gr1 :
+			self.gr1[u] = []
 			
-	# If graph is connected
-	return True
+		if v not in self.gr2 :
+			self.gr2[v] = []
+			
+		self.gr1[u].append(v)
+		self.gr2[v].append(u)
+
+	# DFS function
+	def dfs1(self,x) :
+		self.vis1[x] = True
+		if x not in self.gr1 :
+			self.gr1[x] = {}
+			
+		for i in self.gr1[x] :
+			if (not self.vis1[i]) :
+				self.dfs1(i)
+
+	# DFS function
+	def dfs2(self,x) :
+
+		self.vis2[x] = True
+
+		if x not in self.gr2 :
+			self.gr2[x] = {}
+			
+		for i in self.gr2[x] :
+			if (not self.vis2[i]) :
+				self.dfs2(i)
+
+	def is_connected(self,n) :
+		
+		# Call for correct direction
+		self.vis1 = [False] * len(self.vis1)
+		self.dfs1(1)
+		
+		# Call for reverse direction
+		self.vis2 = [False] * len(self.vis2)
+		self.dfs2(1)
+		
+		for i in range(1, n + 1) :
+			
+			# If any vertex it not visited in any direction
+			# Then graph is not connected
+			if (not self.vis1[i] and not self.vis2[i]) :
+				return False
+				
+		# If graph is connected
+		return True
