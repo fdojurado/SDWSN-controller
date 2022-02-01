@@ -8,10 +8,11 @@ import time
 import threading
 import pandas as pd
 from controller.routing.check_connected_graph import Connected_graph
-from controller.routing.dijkstra.dijkstra import Vertex
+# from controller.routing.dijkstra.dijkstra import Vertex
 from controller.database.database import Database
 # from controller.routing.check_connected_graph import add_edge, is_connected, initialize
-from controller.routing.dijkstra.dijkstra import Graph, dijkstra, shortest
+from controller.routing.dijkstra.dijkstra import Vertex,Dijkstra
+from controller.routing.dijkstra.graph import Graph
 
 
 class Routing():
@@ -50,22 +51,17 @@ class Routing():
                     for vertex in v:
                         print('vertex')
                         print(str(int(float(vertex))))
-                        g.add_vertex(str(int(float(vertex))))
+                        g.add_node(Vertex(str(int(float(vertex)))))
                     # Add edges
                     for index, row in df.iterrows():
-                        g.add_edge(int(float(row["scr"])), int(
-                            float(row["dst"])), int(-1*row['rssi']))
-                    print('Graph data:')
-                    for v in g:
-                        for w in v.get_connections():
-                            vid = v.get_id()
-                            wid = w.get_id()
-                            print('( %s , %s, %3d)'  % ( vid, wid, v.get_weight(w)))
-                    dijkstra(g, g.get_vertex('1')) 
-                    target = g.get_vertex('3')
-                    path = [target.get_id()]
-                    shortest(target, path)
-                    print('The shortest path : %s' %(path[::-1]))
+                        g.add_edge(str(int(float(row["scr"]))), str(int(
+                            float(row["dst"]))), int(-1*row['rssi']))
+                    # Execute the algorithm from source to all nodes
+                    for vertex in v:
+                        alg = Dijkstra(g, "1", str(int(float(vertex))))
+                        path, path_lenght = alg.execution()
+                        print(" -> ".join(path))
+                        print(f"Length of the path: {path_lenght}")
 
             else:
                 print("No")

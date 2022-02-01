@@ -1,83 +1,77 @@
-""" This routing class initializes and, at this time, in a fix period
-it runs the given routing algorithm. It uses the network config class
-to reconfigure sensor nodes path. """
-# Python program for Dijkstra's single source shortest path algorithm. 
-# The program is for adjacency matrix representation of the graph.
+import math
+from controller.routing.dijkstra.graph import Graph, Node
 
-class Graph():
+''' Vertex extends the class Node and represents each vertex in the graph'''
+class Vertex(Node):
+    def __init__(self, value, neighbors=None):
+        super().__init__(value, neighbors)
+        self.length_from_start = math.inf
+        self.previous_node = None
+        self.visited = False
+    
 
-	def __init__(self, vertices):
-		self.V = vertices
-		self.graph = [[0 for column in range(vertices)]
-					for row in range(vertices)]
+    ''' Return the distance from a given neighbor'''
+    def distance_from_neighbor(self, node):
+        for neighbor in self.neighbors:
+            if neighbor[0].value == node.value:
+                return neighbor[1]
+        return None
 
-	def printSolution(self, dist):
-		print("Vertex tDistance from Source")
-		for node in range(self.V):
-			print(node, "t", dist[node])
-
-	# A utility function to find the vertex with
-	# minimum distance value, from the set of vertices
-	# not yet included in shortest path tree
-	def minDistance(self, dist, sptSet):
-
-		# Initialize minimum distance for next node
-		min = 1e7
-
-		# Search not nearest vertex not in the
-		# shortest path tree
-		for v in range(self.V):
-			if dist[v] < min and sptSet[v] == False:
-				min = dist[v]
-				min_index = v
-
-		return min_index
-
-	# Function that implements Dijkstra's single source
-	# shortest path algorithm for a graph represented
-	# using adjacency matrix representation
-	def dijkstra(self, src):
-
-		dist = [1e7] * self.V
-		dist[src] = 0
-		sptSet = [False] * self.V
-
-		for cout in range(self.V):
-
-			# Pick the minimum distance vertex from
-			# the set of vertices not yet processed.
-			# u is always equal to src in first iteration
-			u = self.minDistance(dist, sptSet)
-
-			# Put the minimum distance vertex in the
-			# shortest path tree
-			sptSet[u] = True
-
-			# Update dist value of the adjacent vertices
-			# of the picked vertex only if the current
-			# distance is greater than new distance and
-			# the vertex in not in the shortest path tree
-			for v in range(self.V):
-				if (self.graph[u][v] > 0 and
-				sptSet[v] == False and
-				dist[v] > dist[u] + self.graph[u][v]):
-					dist[v] = dist[u] + self.graph[u][v]
-
-		self.printSolution(dist)
+    def __str__(self):
+       return f"{self.value} {self.length_from_start} {self.previous_node} {self.visited}"
 
 
-# Driver program
-# g = Graph(9)
-# g.graph = [[0, 4, 0, 0, 0, 0, 0, 8, 0],
-# 		[4, 0, 8, 0, 0, 0, 0, 11, 0],
-# 		[0, 8, 0, 7, 0, 4, 0, 0, 2],
-# 		[0, 0, 7, 0, 9, 14, 0, 0, 0],
-# 		[0, 0, 0, 9, 0, 10, 0, 0, 0],
-# 		[0, 0, 4, 14, 10, 0, 2, 0, 0],
-# 		[0, 0, 0, 0, 0, 2, 0, 1, 6],
-# 		[8, 11, 0, 0, 0, 0, 1, 0, 7],
-# 		[0, 0, 2, 0, 0, 0, 6, 7, 0]
-# 		]
 
-# g.dijkstra(0)
+''' Represent the Dijkstra Algorithm '''
+class Dijkstra:
+    def __init__(self, graph, start, target):
+        self.graph = graph
+        self.start = start
+        self.target = target
+        self.intialization()
 
+    ''' Initialize the labels of each vertex '''
+    def intialization(self):
+        for node in self.graph.nodes:
+            if node == self.start:
+                node.length_from_start = 0
+    
+
+    ''' Calculate the return the node with the minimum distance from the source node '''
+    def minimum_distance(self):
+        next_node = None
+        min_value = math.inf
+        for node in self.graph.nodes:
+            if node.length_from_start < min_value and node.visited == False:
+                min_value = node.length_from_start
+                next_node = node
+
+        return next_node                
+
+
+    ''' The core of the algorithm. Execute the repetitive steps of Dijkstra'''
+    def execution(self):
+        target_node = self.graph.find_node(self.target)
+        while not target_node.visited:
+            # # Select the node with the minimun distrance from start
+            selected_node = self.minimum_distance()
+            # Update the status of the node (visited = True)
+            selected_node.visited = True
+            # Update the labels of the neighbors
+            for node in selected_node.neighbors:
+                connected_node = self.graph.find_node(node[0])
+                
+                if (selected_node.length_from_start + node[1]) < connected_node.length_from_start:
+                    connected_node.length_from_start = selected_node.length_from_start + node[1]
+                    connected_node.previous_node = selected_node.value
+
+        # Calculate the path from the source node to target node
+        path = [target_node.value]
+        while True:
+            node = self.graph.find_node(path[-1])
+            if node.previous_node is None:
+                break
+            path.append(node.previous_node)
+        
+        path.reverse()    
+        return path, target_node.length_from_start
