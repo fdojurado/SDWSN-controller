@@ -1,65 +1,41 @@
+from controller.routing.dijkstra.graph import Graph, Node
+
+''' Vertex extends the class Node and represents each vertex in the graph'''
 
 
-class Connected_graph:
-	def __init__(self):
-		self.N = 100000
-		# To keep correct and reverse direction
-		self.gr1 = {}
-		self.gr2 = {}
+class Connected_graph(Graph):
+    def __init__(self, graph, start):
+        self.graph = graph
+        self.start = start
+        self.intialization()
 
-		self.vis1 = [0] * self.N
-		self.vis2 = [0] * self.N
+    def intialization(self):
+        for node in self.graph.nodes:
+            if node == self.start:
+                node.visited = 0
 
-	# Function to add edges
-	def add_edge(self, u, v) :
+    # DFS function
+    def dfs(self, v):
+        vertix = v
+        # print("running dfs with source node ", vertix)
+        if(vertix.visited == True):
+            # print("vertix ", vertix, " already visted")
+            return
+        vertix.visited = True
+        # print("vertix ", vertix, " marked as visited")
+        for neighbour in vertix.neighbors:
+            # print("processing neighbour ", neighbour, " of vertix ", vertix)
+            nb = self.graph.find_node(neighbour[0].value)
+            if(nb.visited == False):
+                self.dfs(nb)
 
-		if u not in self.gr1 :
-			self.gr1[u] = []
-			
-		if v not in self.gr2 :
-			self.gr2[v] = []
-			
-		self.gr1[u].append(v)
-		self.gr2[v].append(u)
+    def run(self):
+        source = self.graph.find_node(self.start)
+        self.dfs(source)
+        return self.is_connected()
 
-	# DFS function
-	def dfs1(self,x) :
-		self.vis1[x] = True
-		if x not in self.gr1 :
-			self.gr1[x] = {}
-			
-		for i in self.gr1[x] :
-			if (not self.vis1[i]) :
-				self.dfs1(i)
-
-	# DFS function
-	def dfs2(self,x) :
-
-		self.vis2[x] = True
-
-		if x not in self.gr2 :
-			self.gr2[x] = {}
-			
-		for i in self.gr2[x] :
-			if (not self.vis2[i]) :
-				self.dfs2(i)
-
-	def is_connected(self,n) :
-		
-		# Call for correct direction
-		self.vis1 = [False] * len(self.vis1)
-		self.dfs1(1)
-		
-		# Call for reverse direction
-		self.vis2 = [False] * len(self.vis2)
-		self.dfs2(1)
-		
-		for i in range(1, n + 1) :
-			
-			# If any vertex it not visited in any direction
-			# Then graph is not connected
-			if (not self.vis1[i] and not self.vis2[i]) :
-				return False
-				
-		# If graph is connected
-		return True
+    def is_connected(self):
+        for v in self.graph.nodes:
+            if(v.visited == False):
+                return False
+        return True
