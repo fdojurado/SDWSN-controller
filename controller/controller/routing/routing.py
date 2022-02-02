@@ -11,13 +11,15 @@ from controller.routing.check_connected_graph import Connected_graph
 # from controller.routing.dijkstra.dijkstra import Vertex
 from controller.database.database import Database
 # from controller.routing.check_connected_graph import add_edge, is_connected, initialize
-from controller.routing.dijkstra.dijkstra import Vertex,Dijkstra
+from controller.routing.dijkstra.dijkstra import Vertex, Dijkstra
 from controller.routing.dijkstra.graph import Graph
+from controller.routing.routes import Routes
 
 
-class Routing():
+class Routing(Routes):
     def __init__(self, config):
         print("Initializing routing with Graph")
+        super().__init__()
         self.config = config
         print(self.config.routing.time)
         self.compute_routing()
@@ -62,6 +64,11 @@ class Routing():
                         path, path_lenght = alg.execution()
                         print(" -> ".join(path))
                         print(f"Length of the path: {path_lenght}")
+                        # Iterate over the path and added to the Routes object
+                        for i in range(len(path)-1):
+                            print("adding path ",
+                                  path[i], "-", path[i+1], "via", 0)
+                            self.add_route(path[i], path[i+1], 0)
 
             else:
                 print("No")
