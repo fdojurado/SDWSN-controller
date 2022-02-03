@@ -1,4 +1,4 @@
-from controller.routing.dijkstra.graph import Graph, Node
+from controller.routing.graph import Graph
 
 ''' Vertex extends the class Node and represents each vertex in the graph'''
 

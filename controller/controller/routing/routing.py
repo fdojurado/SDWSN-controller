@@ -11,8 +11,8 @@ from controller.routing.check_connected_graph import Connected_graph
 # from controller.routing.dijkstra.dijkstra import Vertex
 from controller.database.database import Database
 # from controller.routing.check_connected_graph import add_edge, is_connected, initialize
-from controller.routing.dijkstra.dijkstra import Vertex, Dijkstra
-from controller.routing.dijkstra.graph import Graph
+from controller.routing.dijkstra.dijkstra import Dijkstra
+from controller.routing.graph import Graph, Vertex
 from controller.routing.routes import Routes
 
 
