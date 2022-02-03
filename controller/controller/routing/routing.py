@@ -4,6 +4,7 @@ to reconfigure sensor nodes path. """
 
 # from controller.routing.dijkstra.dijkstra import Graph
 
+import re
 import time
 import threading
 import pandas as pd
@@ -62,10 +63,7 @@ class Routing(Routes):
                         print(" -> ".join(path))
                         print(f"Length of the path: {path_lenght}")
                         # Iterate over the path and added to the Routes object
-                        for i in range(len(path)-1):
-                            print("adding path ",
-                                  path[i], "-", path[i+1], "via", 0)
-                            self.add_route(path[i], path[i+1], 0)
+                        self.set_routes(path)
 
             else:
                 print("No")
@@ -102,3 +100,22 @@ class Routing(Routes):
             # Now we want to count the number of element
             values = pd.unique(df[['scr', 'dst']].values.ravel('K'))
             return values
+
+    def set_routes(self, path):
+        if(len(path) <= 2):
+            return
+        # We set the route from the controller to nodes
+        for i in range(len(path)-1):
+            node = path[i]
+            neigbour = path[i+1]
+            # Check if we can form a subset
+            if((len(path)-2-i) < 1):
+                return
+            subset = path[-(len(path)-2-i):]
+            for j in range(len(subset)):
+                # Set the route for the selected node
+                # print("adding path ",
+                #       path[i], "-", subset[j], "via", neigbour)
+                # we set a new route
+                self.add_route(node, subset[j], neigbour)
+        self.print_routes()
