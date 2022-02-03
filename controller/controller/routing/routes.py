@@ -18,8 +18,6 @@ class Routes:
             print("route already in dataframe")
             return
         else:
-            print("printing self.routes")
-            print(self.routes)
             df = pd.DataFrame([[src, dst, via]], columns=self.column_names)
             self.routes = pd.concat(
                 [self.routes, df], ignore_index=True)  # adding a row
@@ -27,7 +25,6 @@ class Routes:
 
     def print_routes(self):
         print("printing routes")
-        print(self.routes)
         print(self.routes.to_string())
 
     def remove_route(self, src, dst, via):
