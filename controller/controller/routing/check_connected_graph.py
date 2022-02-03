@@ -1,8 +1,6 @@
 from controller.routing.graph import Graph
 
 ''' Vertex extends the class Node and represents each vertex in the graph'''
-
-
 class Connected_graph(Graph):
     def __init__(self, graph, start):
         self.graph = graph
