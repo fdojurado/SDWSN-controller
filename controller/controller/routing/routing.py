@@ -11,8 +11,8 @@ from controller.routing.check_connected_graph import Connected_graph
 # from controller.routing.dijkstra.dijkstra import Vertex
 from controller.database.database import Database
 # from controller.routing.check_connected_graph import add_edge, is_connected, initialize
-from controller.routing.dijkstra.dijkstra import Vertex, Dijkstra
-from controller.routing.dijkstra.graph import Graph
+from controller.routing.dijkstra.dijkstra import Dijkstra
+from controller.routing.graph import Graph, Vertex
 from controller.routing.routes import Routes
 
 
@@ -32,32 +32,29 @@ class Routing(Routes):
         print("number of sensor nodes")
         print(N)
         if(N > 0):
-            """ We first need to check whether the given graph is connected or not """
-            connected_graph = Connected_graph()
-            # add every edge in the links db
             df = pd.DataFrame(list(Database.find("links", {})))
+            """ We first need to check whether the given graph is connected or not """
+            g = Graph()
+            # Add vertices
+            v = self.vertex()
+            for vertex in v:
+                print('vertex')
+                print(str(int(float(vertex))))
+                g.add_node(Vertex(str(int(float(vertex)))))
+            # Add edges
             for index, row in df.iterrows():
-                print("adding edge ", row["scr"], "-", row["dst"])
-                connected_graph.add_edge(
-                    int(float(row["scr"])), int(float(row["dst"])))
+                print("adding edge ", str(int(float(row["scr"]))), "-", str(int(
+                    float(row["dst"]))), " RSSI ", int(-1*row['rssi']))
+                g.add_edge(str(int(float(row["scr"]))), str(int(
+                    float(row["dst"]))), int(-1*row['rssi']))
             # Function call
+            connected_graph = Connected_graph(g, "1")
             print("is a connected graph?")
-            if (connected_graph.is_connected(N)):
+            if (connected_graph.run()):
                 print("Yes")
                 # Now that we are sure the graph is connected, let's run the algorithm
                 if(self.config.routing.protocol == "dijkstra"):
                     print("start dijkstra algorithm")
-                    g = Graph()
-                    # Add vertices
-                    v = self.vertex()
-                    for vertex in v:
-                        print('vertex')
-                        print(str(int(float(vertex))))
-                        g.add_node(Vertex(str(int(float(vertex)))))
-                    # Add edges
-                    for index, row in df.iterrows():
-                        g.add_edge(str(int(float(row["scr"]))), str(int(
-                            float(row["dst"]))), int(-1*row['rssi']))
                     # Execute the algorithm from source to all nodes
                     for vertex in v:
                         alg = Dijkstra(g, "1", str(int(float(vertex))))
