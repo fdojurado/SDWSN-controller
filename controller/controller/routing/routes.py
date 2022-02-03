@@ -2,6 +2,8 @@
 # deployed at the WSN.
 
 import pandas as pd
+from controller.database.database import Database
+from datetime import datetime
 
 
 class Routes:
@@ -9,6 +11,7 @@ class Routes:
         print("initialzing the routes")
         self.column_names = ['src', 'dst', 'via']
         self.routes = pd.DataFrame(columns=self.column_names)
+        self.time = datetime.now().timestamp() * 1000.0
 
     def add_route(self, src, dst, via):
         print("adding route ", src, "-", dst, " via ", via)
@@ -47,3 +50,13 @@ class Routes:
     def clear_routes(self):
         print("clearing all routes")
         self.routes.drop(self.routes.index, inplace=True)
+
+    def save_routes_db(self):
+        if(not self.routes.empty):
+            print("inserting routes to db")
+            self.time = datetime.now().timestamp() * 1000.0
+            data = {
+                'time': self.time,
+                'routes': self.routes.to_dict('records')
+            }
+            Database.insert("routes", data)

@@ -56,6 +56,9 @@ class Routing(Routes):
                 # Now that we are sure the graph is connected, let's run the algorithm
                 if(self.config.routing.protocol == "dijkstra"):
                     print("start dijkstra algorithm")
+                    # Should we clear all routes before saving any route?
+                    # This may be done because some routes may no longer exist
+                    self.clear_routes()
                     # Execute the algorithm from source to all nodes
                     for vertex in v:
                         alg = Dijkstra(g, "1", str(int(float(vertex))))
@@ -64,7 +67,10 @@ class Routing(Routes):
                         print(f"Length of the path: {path_lenght}")
                         # Iterate over the path and added to the Routes object
                         self.set_routes(path)
-
+                    print("set routes done")
+                    self.print_routes()
+                    print("routes save to db")
+                    self.save_routes_db()
             else:
                 print("No")
         # print(time.ctime())
@@ -118,4 +124,3 @@ class Routing(Routes):
                 #       path[i], "-", subset[j], "via", neigbour)
                 # we set a new route
                 self.add_route(node, subset[j], neigbour)
-        self.print_routes()
