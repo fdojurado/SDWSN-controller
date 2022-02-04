@@ -23,8 +23,18 @@ class Routing(Routes):
         super().__init__()
         self.config = config
         print(self.config.routing.time)
-        self.compute_routing()
+        self.run()
 #        super(Graph, self).__init__(name, *args, **kwargs)
+
+    def run(self):
+        self.compute_routing()
+        # Check whether routes has changed since last run
+        routes_no_found = self.check_routes_changed()
+        if(not routes_no_found.empty):
+            print("routes not found")
+            print(routes_no_found)
+        threading.Timer(int(self.config.routing.time),
+                        self.run).start()
 
     def compute_routing(self):
         print("Computing routing algorithm")
@@ -74,8 +84,34 @@ class Routing(Routes):
             else:
                 print("No")
         # print(time.ctime())
-        threading.Timer(int(self.config.routing.time),
-                        self.compute_routing).start()
+
+    def check_routes_changed(self):
+        # Dataframe to store routes not found
+        no_found_routes = pd.DataFrame(columns=['src', 'dst', 'via'])
+        # Get the data of the last routes
+        # Load the routes db in df
+        db = Database.find_one("routes", {})
+        if(db is None):
+            return no_found_routes
+        df = pd.DataFrame(list(Database.find("routes", {})))
+        # Sort ascending the dataframe based on the time entry
+        df = df.sort_values(by=['time'], ascending=False)
+        if(len(df) <= 1):
+            return no_found_routes
+        df_prev = df.iloc[1]
+        df_prev_routes = pd.DataFrame(df_prev['routes'])
+        print("printing prev routes")
+        print(df_prev_routes.to_string())
+        print("printing current routes")
+        print(self.routes.to_string())
+        # Now, we need to compare the current routes with df_prev_routes
+        for index, current_route in self.routes.iterrows():
+            if not (((current_route['src'] == df_prev_routes['src']) & (current_route['dst'] == df_prev_routes['dst']) & (current_route['via'] == df_prev_routes['via'])).any() |
+                    ((current_route['src'] == df_prev_routes['dst']) & (current_route['dst'] == df_prev_routes['src']) & (current_route['via'] == df_prev_routes['via'])).any()):
+                current_route = pd.DataFrame([current_route])
+                no_found_routes = pd.concat(
+                    [no_found_routes, current_route], ignore_index=True)  # adding a row
+        return no_found_routes
 
     """ This function returns the number of sensor nodes in the network """
 
