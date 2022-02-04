@@ -4,6 +4,7 @@ to reconfigure sensor nodes path. """
 
 # from controller.routing.dijkstra.dijkstra import Graph
 
+from enum import unique
 import re
 import time
 import threading
@@ -33,6 +34,8 @@ class Routing(Routes):
         if(not routes_no_found.empty):
             print("routes not found")
             print(routes_no_found)
+            # Here, we assume that other routes have been previously deployed/reconfigured.
+            self.compute_new_routes(routes_no_found)
         threading.Timer(int(self.config.routing.time),
                         self.run).start()
 
@@ -86,6 +89,7 @@ class Routing(Routes):
         # print(time.ctime())
 
     def check_routes_changed(self):
+        """ Here, we check whether current routes have been already deployed or not """
         # Dataframe to store routes not found
         no_found_routes = pd.DataFrame(columns=['src', 'dst', 'via'])
         # Get the data of the last routes
@@ -112,6 +116,17 @@ class Routing(Routes):
                 no_found_routes = pd.concat(
                     [no_found_routes, current_route], ignore_index=True)  # adding a row
         return no_found_routes
+
+    def compute_new_routes(self, routes):
+        """ Here, we compute new routes per node and trigger send_nc """
+        print("computing new routes")
+        # We first want to filter routes per node at both source and destination
+        unique = pd.unique(routes[['src', 'dst']].values.ravel('K'))
+        # Let's get the routes for each unique node
+        for node in unique:
+            df = routes[routes['src'] == node]
+            print("routes for node ", node)
+            print(df)
 
     """ This function returns the number of sensor nodes in the network """
 
