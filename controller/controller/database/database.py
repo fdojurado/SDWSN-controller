@@ -75,6 +75,10 @@ class Database(object):
         return Database.DATABASE[collection].find_one(query)
 
     @staticmethod
+    def delete_collection(collection):
+        return Database.DATABASE[collection].drop()
+
+    @staticmethod
     def list_collections():
         for collection in Database.DATABASE.list_collections():
             print(collection)

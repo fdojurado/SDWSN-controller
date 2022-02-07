@@ -83,6 +83,8 @@ class Routing(Routes):
                     print("set routes done")
                     self.print_routes()
                     print("routes save to db")
+                    self.save_historical_routes_db()
+                    # Here, we want to save the routes into a single object entry.
                     self.save_routes_db()
             else:
                 print("No")
@@ -94,10 +96,10 @@ class Routing(Routes):
         no_found_routes = pd.DataFrame(columns=['src', 'dst', 'via'])
         # Get the data of the last routes
         # Load the routes db in df
-        db = Database.find_one("routes", {})
+        db = Database.find_one("historical-routes", {})
         if(db is None):
             return no_found_routes
-        df = pd.DataFrame(list(Database.find("routes", {})))
+        df = pd.DataFrame(list(Database.find("historical-routes", {})))
         # Sort ascending the dataframe based on the time entry
         df = df.sort_values(by=['time'], ascending=False)
         if(len(df) <= 1):
@@ -166,12 +168,21 @@ class Routing(Routes):
             node = path[i]
             neigbour = path[i+1]
             # Check if we can form a subset
-            if((len(path)-2-i) < 1):
-                return
-            subset = path[-(len(path)-2-i):]
-            for j in range(len(subset)):
-                # Set the route for the selected node
-                # print("adding path ",
-                #       path[i], "-", subset[j], "via", neigbour)
-                # we set a new route
-                self.add_route(node, subset[j], neigbour)
+            if(not (len(path)-2-i) < 1):
+                subset = path[-(len(path)-2-i):]
+                for j in range(len(subset)):
+                    # Set the route for the selected node
+                    # print("adding path ",
+                    #       path[i], "-", subset[j], "via", neigbour)
+                    # we set a new route
+                    self.add_route(node, subset[j], neigbour)
+        # Now we add the routes from node to controller
+        # Keep in mind that we only need the neighbour to controller.
+        # We dont need to know the routes to every node in the path to the controller.
+        reverse = path[::-1]
+        print("reverse path")
+        print(reverse)
+        node = reverse[0]
+        neigbour = reverse[1]
+        self.add_route(node, "1", neigbour)
+        print("exiting set_routes")
