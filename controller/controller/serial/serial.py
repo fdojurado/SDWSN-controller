@@ -37,6 +37,10 @@ current_time = 0
 
 
 class SerialBus(MQTTClient):
+    def __init__(self, config, verbose):
+        super().__init__(config, verbose)
+        """ Initialise database """
+        Database.initialise()
 
     def on_connect(self, client, userdata, flags, result_code):
         """Callback that is called when the serial interface connects to the MQTT

@@ -1,6 +1,7 @@
 # import config
 # from controller.serial import SerialBus
 # from controller.mqtt_client.mqtt_client import sdwsn_mqtt_client
+from controller.network.network import Network
 from controller.routing.routing import Routing
 from controller.serial.serial import SerialBus
 from controller.database.database import Database
@@ -13,14 +14,65 @@ import socket
 from json import JSONDecodeError
 import signal
 import sys
+import multiprocessing as mp
+import time
 
 from daemon import DaemonContext
-# import matplotlib.animation as animation
+from matplotlib import animation
+from matplotlib import pyplot as plt
+import numpy as np
+import networkx as nx
+import random
+# from networkx.drawing.nx_agraph import graphviz_layout
 
 # device topics
 serial_topic = "controller/serial"  # publishing topic
 
 SERVER = {'serial-controller': SerialBus}
+
+
+# ------------------------------------------------------------
+net = Network()
+#  Setup network object
+# set up figure and animation
+fig = plt.figure()
+G = nx.Graph()
+G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
+G.add_edges_from([(1, 2), (3, 4), (2, 5), (4, 5), (6, 7), (8, 9),
+                  (4, 7), (1, 7), (3, 5), (2, 7), (5, 8), (2, 9), (5, 7)])
+pos = nx.spring_layout(G)  # positions for all nodes
+# nodes = nx.draw_networkx_nodes(G, pos)
+# edges = nx.draw_networkx_edges(G, pos)
+# nx.draw(G, pos, with_labels=True)
+
+
+def animate(i):
+    global G, pos, net
+    # See if G has changed
+    nodes = nx.draw_networkx_nodes(G, pos)
+    edges = nx.draw_networkx_edges(G, pos)
+    if(net.load_data() == True):
+        fig.clear()
+        # update G
+        G = net.get_graph()
+        pos = nx.spring_layout(G)  # positions for all nodes
+        nodes = nx.draw_networkx_nodes(G, pos)
+        labels = nx.draw_networkx_labels(G, pos)
+        edges = nx.draw_networkx_edges(G, pos)
+    return edges, nodes
+
+
+# nx.draw_circular(G)
+# fig = plt.gcf()
+
+
+def serial_interface(command, config, verbose):
+    server_class = SERVER[command]
+    print('Creating %s object...', server_class.__name__)
+    server = server_class(ServerConfig.from_json_file(config), verbose)
+    print("server")
+    print(server)
+    server.start()
 
 
 def main(command, verbose, version, config, daemon):
@@ -71,12 +123,13 @@ def main(command, verbose, version, config, daemon):
             print('Using default configuration file.')
             config = DEFAULT_CONFIG
 
-        server_class = SERVER[command]
-        print('Creating %s object...', server_class.__name__)
-        server = server_class(ServerConfig.from_json_file(config), verbose)
-        print("server")
-        print(server)
-        server.start()
+        p = mp.Process(target=serial_interface, args=[
+            command, config, verbose])
+        p.start()
+        # call the animator.  blit=True means only re-draw the parts that have changed.
+        anim = animation.FuncAnimation(
+            fig, animate,  interval=1000, blit=True)
+        plt.show()
 
     # except ConfigurationFileNotFoundError as error:
     #     print(
