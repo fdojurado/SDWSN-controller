@@ -43,23 +43,23 @@ G.add_edges_from([(1, 2), (3, 4), (2, 5), (4, 5), (6, 7), (8, 9),
 pos = nx.spring_layout(G)  # positions for all nodes
 # nodes = nx.draw_networkx_nodes(G, pos)
 # edges = nx.draw_networkx_edges(G, pos)
-# nx.draw(G, pos, with_labels=True)
+nx.draw(G, pos, with_labels=True)
 
 
 def animate(i):
-    global G, pos, net
+    """ Here, we re draw the entire figure. If desired we can just
+    re draw certain part of the graph that has been modified by
+    setting Blit=True in the animation and we need to return the
+    changes (artists) in this method. """
+    global G, pos, nodes, edges, net
     # See if G has changed
-    nodes = nx.draw_networkx_nodes(G, pos)
-    edges = nx.draw_networkx_edges(G, pos)
     if(net.load_data() == True):
         fig.clear()
         # update G
         G = net.get_graph()
         pos = nx.spring_layout(G)  # positions for all nodes
-        nodes = nx.draw_networkx_nodes(G, pos)
-        labels = nx.draw_networkx_labels(G, pos)
-        edges = nx.draw_networkx_edges(G, pos)
-    return edges, nodes
+        # We only want to redraw the network if this has changed from the previous setup
+        nx.draw(G, pos, with_labels=True)
 
 
 # nx.draw_circular(G)
@@ -128,7 +128,7 @@ def main(command, verbose, version, config, daemon):
         p.start()
         # call the animator.  blit=True means only re-draw the parts that have changed.
         anim = animation.FuncAnimation(
-            fig, animate,  interval=1000, blit=True)
+            fig, animate, interval=1000)
         plt.show()
 
     # except ConfigurationFileNotFoundError as error:
