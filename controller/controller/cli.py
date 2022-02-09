@@ -22,6 +22,7 @@ from matplotlib import animation
 from matplotlib import pyplot as plt
 import numpy as np
 import networkx as nx
+import networkx.algorithms.isomorphism as iso
 import random
 # from networkx.drawing.nx_agraph import graphviz_layout
 
@@ -52,14 +53,19 @@ def animate(i):
     setting Blit=True in the animation and we need to return the
     changes (artists) in this method. """
     global G, pos, nodes, edges, net
+    net.G.clear()
     # See if G has changed
     if(net.load_data() == True):
-        fig.clear()
-        # update G
-        G = net.get_graph()
-        pos = nx.spring_layout(G)  # positions for all nodes
+        equal_graphs = nx.is_isomorphic(
+            G, net.get_graph(), edge_match=lambda x, y: x['rssi'] == y['rssi'])  # match weights
         # We only want to redraw the network if this has changed from the previous setup
-        nx.draw(G, pos, with_labels=True)
+        if(equal_graphs == False):
+            fig.clear()
+            # update G
+            G.clear()
+            G = net.get_graph().copy()
+            pos = nx.spring_layout(G)  # positions for all nodes
+            nx.draw(G, pos, with_labels=True)
 
 
 # nx.draw_circular(G)
@@ -128,7 +134,7 @@ def main(command, verbose, version, config, daemon):
         p.start()
         # call the animator.  blit=True means only re-draw the parts that have changed.
         anim = animation.FuncAnimation(
-            fig, animate, interval=1000)
+            fig, animate, interval=2000)
         plt.show()
 
     # except ConfigurationFileNotFoundError as error:

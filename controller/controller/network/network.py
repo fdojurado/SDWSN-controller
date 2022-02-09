@@ -40,7 +40,7 @@ class Network():
         print("new db in links")
         self.df = pd.DataFrame(list(Database.find("links", {})))
         self.G = nx.from_pandas_edgelist(
-            self.df, source='scr', target='dst', edge_attr=True)
+            self.df, source='scr', target='dst', edge_attr='rssi')
         return True
 
     # def terminate(self):
