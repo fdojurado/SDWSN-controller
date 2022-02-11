@@ -2,7 +2,7 @@
 # from controller.serial import SerialBus
 # from controller.mqtt_client.mqtt_client import sdwsn_mqtt_client
 from hashlib import new
-from controller.network.network import Network
+from controller.plotting.plotting import SubplotAnimation
 from controller.routing.routing import Routing
 from controller.serial.serial import SerialBus
 from controller.database.database import Database
@@ -32,59 +32,6 @@ import pandas as pd
 serial_topic = "controller/serial"  # publishing topic
 
 SERVER = {'serial-controller': SerialBus}
-
-
-# ------------------------------------------------------------
-new_G = nx.Graph()
-#  Setup network object
-# set up figure and animation
-fig = plt.figure()
-G = nx.Graph()
-G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
-G.add_edges_from([(1, 2), (3, 4), (2, 5), (4, 5), (6, 7), (8, 9),
-                  (4, 7), (1, 7), (3, 5), (2, 7), (5, 8), (2, 9), (5, 7)])
-pos = nx.spring_layout(G)  # positions for all nodes
-# nodes = nx.draw_networkx_nodes(G, pos)
-# edges = nx.draw_networkx_edges(G, pos)
-nx.draw(G, pos, with_labels=True)
-
-
-def load_data(Database):
-    db = Database.find_one("links", {})
-    Graph = nx.Graph()
-    if(db is None):
-        # print("no db in links")
-        return Graph
-    df = pd.DataFrame(list(Database.find("links", {})))
-    Graph = nx.from_pandas_edgelist(
-        df, source='scr', target='dst', edge_attr='rssi')
-    return Graph
-
-
-def animate(i, Database, Routing):
-    """ Here, we re draw the entire figure. If desired we can just
-    re draw certain part of the graph that has been modified by
-    setting Blit=True in the animation and we need to return the
-    changes (artists) in this method. """
-    global G, pos, nodes, edges, new_G
-    new_G.clear()
-    # See if G has changed
-    new_G = load_data(Database)
-    if(nx.is_empty(new_G) == False):
-        equal_graphs = nx.is_isomorphic(
-            G, new_G, edge_match=lambda x, y: x['rssi'] == y['rssi'])  # match weights
-        # We only want to redraw the network if this has changed from the previous setup
-        if(equal_graphs == False):
-            fig.clear()
-            # update G
-            G.clear()
-            G = new_G.copy()
-            pos = nx.spring_layout(G)  # positions for all nodes
-            nx.draw(G, pos, with_labels=True)
-
-
-# nx.draw_circular(G)
-# fig = plt.gcf()
 
 
 def serial_interface(command, config, verbose):
@@ -148,9 +95,12 @@ def main(command, verbose, version, config, daemon):
             command, config, verbose])
         p.start()
         # call the animator.  blit=True means only re-draw the parts that have changed.
-        anim = animation.FuncAnimation(
-            fig, animate, fargs=(Database, Routing,), interval=2000)
+        ani = SubplotAnimation(Database)
+        # ani.save('test_sub.mp4')
         plt.show()
+        # anim = animation.FuncAnimation(
+        #     fig, animate, fargs=(Database, Routing,), interval=2000)
+        # plt.show()
 
     # except ConfigurationFileNotFoundError as error:
     #     print(

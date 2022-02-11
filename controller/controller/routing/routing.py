@@ -93,7 +93,7 @@ class Routing(Routes):
     def check_routes_changed(self):
         """ Here, we check whether current routes have been already deployed or not """
         # Dataframe to store routes not found
-        no_found_routes = pd.DataFrame(columns=['src', 'dst', 'via'])
+        no_found_routes = pd.DataFrame(columns=['scr', 'dst', 'via'])
         # Get the data of the last routes
         # Load the routes db in df
         db = Database.find_one("historical-routes", {})
@@ -112,8 +112,8 @@ class Routing(Routes):
         print(self.routes.to_string())
         # Now, we need to compare the current routes with df_prev_routes
         for index, current_route in self.routes.iterrows():
-            if not (((current_route['src'] == df_prev_routes['src']) & (current_route['dst'] == df_prev_routes['dst']) & (current_route['via'] == df_prev_routes['via'])).any() |
-                    ((current_route['src'] == df_prev_routes['dst']) & (current_route['dst'] == df_prev_routes['src']) & (current_route['via'] == df_prev_routes['via'])).any()):
+            if not (((current_route['scr'] == df_prev_routes['scr']) & (current_route['dst'] == df_prev_routes['dst']) & (current_route['via'] == df_prev_routes['via'])).any() |
+                    ((current_route['scr'] == df_prev_routes['dst']) & (current_route['dst'] == df_prev_routes['scr']) & (current_route['via'] == df_prev_routes['via'])).any()):
                 current_route = pd.DataFrame([current_route])
                 no_found_routes = pd.concat(
                     [no_found_routes, current_route], ignore_index=True)  # adding a row
@@ -123,10 +123,10 @@ class Routing(Routes):
         """ Here, we compute new routes per node and trigger send_nc """
         print("computing new routes")
         # We first want to filter routes per node at both source and destination
-        unique = pd.unique(routes[['src', 'dst']].values.ravel('K'))
+        unique = pd.unique(routes[['scr', 'dst']].values.ravel('K'))
         # Let's get the routes for each unique node
         for node in unique:
-            df = routes[routes['src'] == node]
+            df = routes[routes['scr'] == node]
             print("routes for node ", node)
             print(df)
 

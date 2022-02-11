@@ -9,18 +9,18 @@ from datetime import datetime
 class Routes:
     def __init__(self):
         print("initialzing the routes")
-        self.column_names = ['src', 'dst', 'via']
+        self.column_names = ['scr', 'dst', 'via']
         self.routes = pd.DataFrame(columns=self.column_names)
         self.time = datetime.now().timestamp() * 1000.0
 
-    def add_route(self, src, dst, via):
-        print("adding route ", src, "-", dst, " via ", via)
+    def add_route(self, scr, dst, via):
+        print("adding route ", scr, "-", dst, " via ", via)
         # Let's firts check if the route is already in the dataframe
-        if ((self.routes['src'] == src) & (self.routes['dst'] == dst) & (self.routes['via'] == via)).any():
+        if ((self.routes['scr'] == scr) & (self.routes['dst'] == dst) & (self.routes['via'] == via)).any():
             print("route already in dataframe")
             return
         else:
-            df = pd.DataFrame([[src, dst, via]], columns=self.column_names)
+            df = pd.DataFrame([[scr, dst, via]], columns=self.column_names)
             self.routes = pd.concat(
                 [self.routes, df], ignore_index=True)  # adding a row
         self.print_routes()
@@ -29,10 +29,10 @@ class Routes:
         print("printing routes")
         print(self.routes.to_string())
 
-    def remove_route(self, src, dst, via):
-        print("removing route ", src, "-", dst, " via", via)
+    def remove_route(self, scr, dst, via):
+        print("removing route ", scr, "-", dst, " via", via)
         df = self.routes
-        idx = df.index[df['src'] == src & df['dst']
+        idx = df.index[df['scr'] == scr & df['dst']
                        == dst & df['via'] == via]
         # Check that the index is not empty. Which means we find the target row.
         if(idx.empty):
@@ -67,7 +67,7 @@ class Routes:
         for index, row in self.routes.iterrows():
             data = {
                 'time': self.time,
-                'src': row['src'],
+                'scr': row['scr'],
                 'dst': row['dst'],
                 'via': row['via'],
             }

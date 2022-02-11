@@ -1,0 +1,67 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import matplotlib.animation as animation
+import networkx as nx
+from controller.database.database import Database
+import pandas as pd
+
+
+class SubplotAnimation(animation.TimedAnimation):
+    def __init__(self, Database):
+        fig = plt.figure()
+        self.ax1 = fig.add_subplot(2, 1, 1)
+        self.ax1.set_title('Neighbour Advertisements')
+        self.ax2 = fig.add_subplot(2, 1, 2)
+        self.ax2.set_title('Current routing')
+        fig.tight_layout(pad=3.0)  # Or equivalently,  "plt.tight_layout()"
+
+        self.prev_G = nx.Graph()
+        self.prev_routes_G = nx.Graph()
+        self.G = nx.Graph()
+        self.Database = Database
+
+        self.ani = animation.FuncAnimation(
+            fig, self.animate, interval=50)
+
+    def load_data(self, collection, source, target, attribute):
+        db = self.Database.find_one(collection, {})
+        Graph = nx.Graph()
+        if(db is None):
+            # print("no db in links")
+            return Graph
+        df = pd.DataFrame(list(Database.find(collection, {})))
+        Graph = nx.from_pandas_edgelist(
+            df, source=source, target=target, edge_attr=attribute)
+        return Graph
+
+    def animate(self, framedata):
+        self.G.clear()
+        # See if G has changed
+        self.G = self.load_data("links", 'scr', 'dst', 'rssi')
+        if(nx.is_empty(self.G) == False):
+            equal_graphs = nx.is_isomorphic(
+                self.prev_G, self.G, edge_match=lambda x, y: x['rssi'] == y['rssi'])  # match weights
+            # We only want to redraw the network if this has changed from the previous setup
+            if(equal_graphs == False):
+                self.ax1.clear()
+                self.ax1.set_title('Neighbour Advertisements')
+                self.prev_G.clear()
+                self.prev_G = self.G.copy()
+                pos = nx.spring_layout(self.prev_G)  # positions for all nodes
+                nx.draw(self.prev_G, pos, with_labels=True, ax=self.ax1)
+        # Now let's redraw the network for the current deployed routes
+        # See if G has changed
+        self.G = self.load_data("routes", 'scr', 'via', None)
+        if(nx.is_empty(self.G) == False):
+            equal_graphs = nx.is_isomorphic(
+                self.prev_routes_G, self.G, edge_match=lambda x, y: x == y)  # match weights
+            # We only want to redraw the network if this has changed from the previous setup
+            if(equal_graphs == False):
+                self.ax2.clear()
+                self.ax2.set_title('Current routing')
+                self.prev_routes_G.clear()
+                self.prev_routes_G = self.G.copy()
+                # positions for all nodes
+                pos = nx.spring_layout(self.prev_routes_G)
+                nx.draw(self.prev_routes_G, pos, with_labels=True, ax=self.ax2)
