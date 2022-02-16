@@ -29,7 +29,7 @@ class Routing(Routes):
 
     def run(self):
         self.compute_routing()
-        # Check whether routes has changed since last run
+        # Check whether routes have changed since last run
         routes_no_found = self.check_routes_changed()
         if(not routes_no_found.empty):
             print("routes not found")
