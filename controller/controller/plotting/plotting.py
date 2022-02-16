@@ -50,6 +50,9 @@ class SubplotAnimation(animation.TimedAnimation):
                 self.prev_G = self.G.copy()
                 pos = nx.spring_layout(self.prev_G)  # positions for all nodes
                 nx.draw(self.prev_G, pos, with_labels=True, ax=self.ax1)
+                labels = nx.get_edge_attributes(self.prev_G, 'rssi')
+                nx.draw_networkx_edge_labels(
+                    self.prev_G, pos, edge_labels=labels, ax=self.ax1)
         # Now let's redraw the network for the current deployed routes
         # See if G has changed
         self.G = self.load_data("routes", 'scr', 'via', None)
