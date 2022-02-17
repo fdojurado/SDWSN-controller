@@ -65,10 +65,23 @@ class Routes:
         # Insert all routes in the collection
         self.time = datetime.now().timestamp() * 1000.0
         for index, row in self.routes.iterrows():
+            # Here, we first check if the route already exist in sensor node.
+            db = Database.find_one(
+                "nodes", {"$and": [
+                    {"_id": row['scr']},
+                    {"dst": row['dst']},
+                    {"via": row['via']}
+                ]
+                }
+            )
+            deployed = 0
+            if(db is not None):
+                deployed = 1
             data = {
                 'time': self.time,
                 'scr': row['scr'],
                 'dst': row['dst'],
                 'via': row['via'],
+                'deployed': deployed
             }
             Database.insert("routes", data)
