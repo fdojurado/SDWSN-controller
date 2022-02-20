@@ -9,6 +9,7 @@ import re
 import time
 import threading
 import pandas as pd
+from controller.network_config.network_config import NetworkConfig
 from controller.routing.check_connected_graph import Connected_graph
 # from controller.routing.dijkstra.dijkstra import Vertex
 from controller.database.database import Database
@@ -23,6 +24,7 @@ class Routing(Routes):
         print("Initializing routing with Graph")
         super().__init__()
         self.config = config
+        self.nc = NetworkConfig()
         print(self.config.routing.time)
         self.run()
 #        super(Graph, self).__init__(name, *args, **kwargs)
@@ -30,12 +32,14 @@ class Routing(Routes):
     def run(self):
         self.compute_routing()
         # Check whether routes have changed since last run
-        routes_no_found = self.check_routes_changed()
-        if(not routes_no_found.empty):
-            print("routes not found")
-            print(routes_no_found)
-            # Here, we assume that other routes have been previously deployed/reconfigured.
-            self.compute_new_routes(routes_no_found)
+        self.check_routes_changed()
+        # if(not routes_no_found.empty):
+        #     print("routes not found")
+        #     print(routes_no_found)
+        #     # Here, we assume that other routes have been previously deployed/reconfigured.
+        #     # Rv: This assumption is not londer valid, we need to check whether routes are
+        #     # already deployed in the sensor or not.
+        #     self.compute_new_routes(routes_no_found)
         threading.Timer(int(self.config.routing.time),
                         self.run).start()
 
@@ -72,6 +76,7 @@ class Routing(Routes):
                     # Should we clear all routes before saving any route?
                     # This may be done because some routes may no longer exist
                     self.clear_routes()
+                    self.nc.clear_graph()
                     # Execute the algorithm from source to all nodes
                     for vertex in v:
                         alg = Dijkstra(g, "1", str(int(float(vertex))))
@@ -92,43 +97,70 @@ class Routing(Routes):
 
     def check_routes_changed(self):
         """ Here, we check whether current routes have been already deployed or not """
-        # Dataframe to store routes not found
-        no_found_routes = pd.DataFrame(columns=['scr', 'dst', 'via'])
-        # Get the data of the last routes
-        # Load the routes db in df
-        db = Database.find_one("historical-routes", {})
-        if(db is None):
-            return no_found_routes
-        df = pd.DataFrame(list(Database.find("historical-routes", {})))
-        # Sort ascending the dataframe based on the time entry
-        df = df.sort_values(by=['time'], ascending=False)
-        if(len(df) <= 1):
-            return no_found_routes
-        df_prev = df.iloc[1]
-        df_prev_routes = pd.DataFrame(df_prev['routes'])
-        print("printing prev routes")
-        print(df_prev_routes.to_string())
-        print("printing current routes")
-        print(self.routes.to_string())
-        # Now, we need to compare the current routes with df_prev_routes
-        for index, current_route in self.routes.iterrows():
-            if not (((current_route['scr'] == df_prev_routes['scr']) & (current_route['dst'] == df_prev_routes['dst']) & (current_route['via'] == df_prev_routes['via'])).any() |
-                    ((current_route['scr'] == df_prev_routes['dst']) & (current_route['dst'] == df_prev_routes['scr']) & (current_route['via'] == df_prev_routes['via'])).any()):
-                current_route = pd.DataFrame([current_route])
-                no_found_routes = pd.concat(
-                    [no_found_routes, current_route], ignore_index=True)  # adding a row
-        return no_found_routes
+        # Make sure it is not an empty graph
+        if(self.nc.empty_graph() == False):
+            self.nc.print_edges_nc()
+            tree = self.nc.dfs_tree_nc()
+            print("tree")
+            print(tree)
+            print("list of tree")
+            print(list(tree))
+            # We now loop through the tree
+            for node in tree:
+                # We get the second element
+                target = node[1]
+                # we now look for all routes of this node
+                # and send the NC packet
+                self.compute_routes(target)
+        # Loop through the routes
+        # for index, route in self.routes.iterrows():
+        #     # Here, we first check if the route already exist in sensor node.
+        #     db = Database.find_one(
+        #         "nodes", {"$and": [
+        #             {"_id": route['scr']},
+        #             {"dst": route['dst']},
+        #             {"via": route['via']}
+        #         ]
+        #         }
+        #     )
+        #     if (db is None):
+        #         print("none")
 
-    def compute_new_routes(self, routes):
+    def compute_routes(self, node):
         """ Here, we compute new routes per node and trigger send_nc """
-        print("computing new routes")
-        # We first want to filter routes per node at both source and destination
-        unique = pd.unique(routes[['scr', 'dst']].values.ravel('K'))
-        # Let's get the routes for each unique node
-        for node in unique:
-            df = routes[routes['scr'] == node]
-            print("routes for node ", node)
-            print(df)
+        column_names = ['node', 'dst', 'via']
+        routes = pd.DataFrame(columns=column_names)
+        print("computing new routes for node ", node)
+        # We select routes for target node
+        df = self.routes[self.routes['scr'] == node]
+        print("routes for node ", node)
+        print(df.to_string())
+        # Now, we want to make sure these routes dont exist
+        # in the routing table of the target nodes
+        for index, route in df.iterrows():
+            db = Database.find_one(
+                "nodes", {"$and": [
+                    {"_id": route['scr']},
+                    {"dst": route['dst']},
+                    {"via": route['via']}
+                ]
+                }
+            )
+            if (db is None):
+                print("route ", route['scr'], "-", route['dst'], " via ", route['via'],
+                      "does not exist in the routes field of the nodes collection")
+                # Add route to dataframe to send
+                if ((route['scr'] == node) & (route['dst'] == routes['dst']) & (route['via'] == routes['via'])).any():
+                    print("route already in NC dataframe")
+                    return
+                else:
+                    route_df = pd.DataFrame([[node, route['dst'], route['via']]],
+                                      columns=column_names)
+                    routes = pd.concat(
+                        [routes, route_df], ignore_index=True)  # adding a row
+        # We send this NC packet
+        print("routes to send to node ", node)
+        print(routes.to_string())
 
     """ This function returns the number of sensor nodes in the network """
 
@@ -167,6 +199,7 @@ class Routing(Routes):
         for i in range(len(path)-1):
             node = path[i]
             neigbour = path[i+1]
+            self.nc.add_edge_nc(node, neigbour)
             # Check if we can form a subset
             if(not (len(path)-2-i) < 1):
                 subset = path[-(len(path)-2-i):]
