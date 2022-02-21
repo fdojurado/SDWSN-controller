@@ -105,6 +105,8 @@ class Routing(Routes):
             print(tree)
             print("list of tree")
             print(list(tree))
+            # Lets set the routes for the controller
+            self.compute_routes('1')
             # We now loop through the tree
             for node in tree:
                 # We get the second element
@@ -155,7 +157,7 @@ class Routing(Routes):
                     return
                 else:
                     route_df = pd.DataFrame([[node, route['dst'], route['via']]],
-                                      columns=column_names)
+                                            columns=column_names)
                     routes = pd.concat(
                         [routes, route_df], ignore_index=True)  # adding a row
         # We send this NC packet
