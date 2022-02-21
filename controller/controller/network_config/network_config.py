@@ -1,5 +1,6 @@
 import re
 from controller.serial.serial import SerialBus
+from controller.network_config.queue import Queue
 import networkx as nx
 import pandas as pd
 
@@ -9,6 +10,8 @@ class NetworkConfig(object):
     def __init__(self):
         print('init netconfig')
         self.G = nx.Graph()
+        self.NC_rt_table_queue = Queue(None)  # Queue for NC packets
+        self.NC_ACK = Queue(None)  # Queue for ACKs
 
     def add_edge_nc(self, u, v):
         print("NC: adding path ", u, "-", v)

@@ -163,6 +163,9 @@ class Routing(Routes):
         # We send this NC packet
         print("routes to send to node ", node)
         print(routes.to_string())
+        # Add to NC packets queue
+        self.nc.NC_rt_table_queue.enqueue(node)
+        self.nc.NC_rt_table_queue.print_queue()
 
     """ This function returns the number of sensor nodes in the network """
 
