@@ -130,8 +130,8 @@ class Routing(Routes):
 
     def compute_routes(self, node):
         """ Here, we compute new routes per node and trigger send_nc """
-        column_names = ['node', 'dst', 'via']
-        routes = pd.DataFrame(columns=column_names)
+        # column_names = ['node', 'dst', 'via']
+        # routes = pd.DataFrame(columns=column_names)
         print("computing new routes for node ", node)
         # We select routes for target node
         df = self.routes[self.routes['scr'] == node]
@@ -140,32 +140,33 @@ class Routing(Routes):
         # Now, we want to make sure these routes dont exist
         # in the routing table of the target nodes
         for index, route in df.iterrows():
+            addr = route['scr']+'.0'
+            dst = route['dst']+'.0'
+            via = route['via']+'.0'
+            # print("testing route ", addr, "-", dst, " via ", via)
             db = Database.find_one(
-                "nodes", {"$and": [
-                    {"_id": route['scr']},
-                    {"dst": route['dst']},
-                    {"via": route['via']}
-                ]
-                }
+                "nodes", {"routes": {"$elemMatch": {"dst": dst, 'via': via}}}
             )
             if (db is None):
-                print("route ", route['scr'], "-", route['dst'], " via ", route['via'],
-                      "does not exist in the routes field of the nodes collection")
-                # Add route to dataframe to send
-                if ((route['scr'] == node) & (route['dst'] == routes['dst']) & (route['via'] == routes['via'])).any():
-                    print("route already in NC dataframe")
-                    return
+                print("route does not exist in routes field of the nodes collection")
+                # Add route to sensors routing table db
+                data = {
+                    'dst': dst,
+                    'via': via,
+                    'deployed': 0
+                }
+                node = {
+                    '_id': addr,
+                    'routes': [
+                        data,
+                    ]
+                }
+                if Database.exist("nodes", addr) == 0:
+                    print('node does not exist, inserting...')
+                    Database.insert("nodes", node)
                 else:
-                    route_df = pd.DataFrame([[node, route['dst'], route['via']]],
-                                            columns=column_names)
-                    routes = pd.concat(
-                        [routes, route_df], ignore_index=True)  # adding a row
-        # We send this NC packet
-        print("routes to send to node ", node)
-        print(routes.to_string())
-        # Add to NC packets queue
-        self.nc.NC_rt_table_queue.enqueue(node)
-        self.nc.NC_rt_table_queue.print_queue()
+                    print('node does exist, pushing...')
+                    Database.push_doc("nodes", addr, 'routes', data)
 
     """ This function returns the number of sensor nodes in the network """
 
