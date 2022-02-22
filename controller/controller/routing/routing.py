@@ -105,8 +105,11 @@ class Routing(Routes):
             print(tree)
             print("list of tree")
             print(list(tree))
-            # Lets set the routes for the controller
+            # Lets set the routes for the controller, clear Queue first
+            self.nc.NC_rt_table_queue.clear()
             self.compute_routes('1')
+            # add the controller to the NC rt table queue
+            self.nc.NC_rt_table_queue.enqueue('1')
             # We now loop through the tree
             for node in tree:
                 # We get the second element
@@ -114,6 +117,9 @@ class Routing(Routes):
                 # we now look for all routes of this node
                 # and send the NC packet
                 self.compute_routes(target)
+                self.nc.NC_rt_table_queue.enqueue(target)
+            print("Printing NC queue of sensor node packets to send")
+            print(self.nc.NC_rt_table_queue.print_queue())
         # Loop through the routes
         # for index, route in self.routes.iterrows():
         #     # Here, we first check if the route already exist in sensor node.

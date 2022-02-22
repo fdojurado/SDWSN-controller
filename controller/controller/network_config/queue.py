@@ -43,6 +43,9 @@ class Queue:
 
         return self._queue.pop()
 
+    def clear(self):
+        return self._queue.clear()
+
     def print_queue(self):
         print("print queue")
         print(self._queue)
