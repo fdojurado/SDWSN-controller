@@ -4,12 +4,13 @@ to reconfigure sensor nodes path. """
 
 # from controller.routing.dijkstra.dijkstra import Graph
 
+from ast import arg
 from enum import unique
 import re
 import time
 import threading
 import pandas as pd
-from controller.network_config.network_config import NetworkConfig
+from controller.network_config.network_config import NetworkConfig, SendNC
 from controller.routing.check_connected_graph import Connected_graph
 # from controller.routing.dijkstra.dijkstra import Vertex
 from controller.database.database import Database
@@ -26,20 +27,28 @@ class Routing(Routes):
         self.config = config
         self.nc = NetworkConfig()
         print(self.config.routing.time)
+        # Configure the send NC class
+        self.sendNC = SendNC(self.nc, False)
+        t1 = threading.Thread(target=self.sendNC.run)
         self.run()
+        t1.start()
+
 #        super(Graph, self).__init__(name, *args, **kwargs)
 
     def run(self):
-        self.compute_routing()
-        # Check whether routes have changed since last run
-        self.check_routes_changed()
-        # if(not routes_no_found.empty):
-        #     print("routes not found")
-        #     print(routes_no_found)
-        #     # Here, we assume that other routes have been previously deployed/reconfigured.
-        #     # Rv: This assumption is not londer valid, we need to check whether routes are
-        #     # already deployed in the sensor or not.
-        #     self.compute_new_routes(routes_no_found)
+        # We run the algorithm if the NC is not running. Otherwise, it
+        # messes with the Queue
+        if(not self.sendNC.thread_run.is_set()):
+            self.compute_routing()
+            # Check whether routes have changed since last run
+            self.check_routes_changed()
+            # if(not routes_no_found.empty):
+            #     print("routes not found")
+            #     print(routes_no_found)
+            #     # Here, we assume that other routes have been previously deployed/reconfigured.
+            #     # Rv: This assumption is not londer valid, we need to check whether routes are
+            #     # already deployed in the sensor or not.
+            #     self.compute_new_routes(routes_no_found)
         threading.Timer(int(self.config.routing.time),
                         self.run).start()
 
@@ -107,19 +116,24 @@ class Routing(Routes):
             print(list(tree))
             # Lets set the routes for the controller, clear Queue first
             self.nc.NC_rt_table_queue.clear()
-            self.compute_routes('1')
+            # self.compute_routes('1')
             # add the controller to the NC rt table queue
-            self.nc.NC_rt_table_queue.enqueue('1')
-            # We now loop through the tree
-            for node in tree:
+            # self.nc.NC_rt_table_queue.enqueue('1')
+            # We now loop through the reverse tree
+            reversed_tree = list(tree)[::-1]
+            for node in reversed_tree:
                 # We get the second element
                 target = node[1]
                 # we now look for all routes of this node
                 # and send the NC packet
                 self.compute_routes(target)
                 self.nc.NC_rt_table_queue.enqueue(target)
+            self.compute_routes('1')
+            self.nc.NC_rt_table_queue.enqueue('1')
             print("Printing NC queue of sensor node packets to send")
             print(self.nc.NC_rt_table_queue.print_queue())
+            if(not self.sendNC.thread_run.is_set()):
+                self.sendNC.thread_run.set()
         # Loop through the routes
         # for index, route in self.routes.iterrows():
         #     # Here, we first check if the route already exist in sensor node.
