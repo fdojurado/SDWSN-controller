@@ -1,30 +1,26 @@
 import socket
-
+# import logging
 from controller import Message
 from typing import Optional
 from time import time
 from datetime import datetime
 import multiprocessing as mp
 
-try:
-    import serial
-except ImportError:
-    logger.warning(
-        "You won't be able to use the serial can backend without "
-        "the serial module installed!"
-    )
-    serial = None
+# logger = logging.getLogger('can.serial')
+
+# try:
+#     import serial
+# except ImportError:
+#     logger.warning(
+#         "You won't be able to use the serial can backend without "
+#         "the serial module installed!"
+#     )
+#     serial = None
 
 try:
     from serial.tools import list_ports
 except ImportError:
     list_ports = None
-
-
-PACKET = '/serial/packet'
-ENERGY = '/serial/na/energy'
-PDR = '/serial/data/pdr'
-current_time = 0
 
 
 class SerialBus(mp.Process):

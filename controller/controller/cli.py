@@ -2,6 +2,7 @@
 # from controller.serial import SerialBus
 # from controller.mqtt_client.mqtt_client import sdwsn_mqtt_client
 from hashlib import new
+from controller.serial.serial_packet_dissector import *
 from controller.plotting.plotting import SubplotAnimation
 from controller.routing.routing import Routing
 from controller.serial.serial import SerialBus
@@ -18,7 +19,7 @@ import sys
 import multiprocessing as mp
 import time
 
-from daemon import DaemonContext
+# from daemon import DaemonContext
 from matplotlib import animation
 from matplotlib import pyplot as plt
 import numpy as np
@@ -68,13 +69,11 @@ def main(command, verbose, version, config, daemon):
                    verbose, input_queue, output_queue)
     sp.daemon = True
     sp.start()
-    time.sleep(1)
     while True:
         # look for incoming  request
         if not output_queue.empty():
             data = output_queue.get()
-            print("something in output_queue")
-            print(data)
+            handle_serial_packet(data)
     try:
         ani = SubplotAnimation(Database)
         # ani.save('test_sub.mp4')
