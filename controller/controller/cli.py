@@ -2,9 +2,10 @@
 # from controller.serial import SerialBus
 # from controller.mqtt_client.mqtt_client import sdwsn_mqtt_client
 from hashlib import new
+from controller.routing.routing import *
 from controller.serial.serial_packet_dissector import *
 from controller.plotting.plotting import SubplotAnimation
-from controller.routing.routing import Routing
+# from controller.routing.routing import Routing
 from controller.serial.serial import SerialBus
 from controller.database.database import Database
 from controller.config import ServerConfig, DEFAULT_CONFIG
@@ -59,20 +60,37 @@ def main(command, verbose, version, config, daemon):
     signal.signal(signal.SIGTERM, exit_process)
     """ Initialise database """
     Database.initialise()
-    """ Initialise routing """
-    Routing(ServerConfig.from_json_file(config))
     """ Define Queues """
-    input_queue = mp.Queue()
-    output_queue = mp.Queue()
+    # Serial Queues
+    serial_input_queue = mp.Queue()
+    serial_output_queue = mp.Queue()
+    # Routing Queues
+    # routing_input_queue = mp.Queue()
+    # routing_output_queue = mp.Queue()
+    """ Start the routing interface in background (as a daemon) """
+    # rp stands for routing process
+    # We need to consider that the computation of the new routing alg.
+    # can be change at run time
+    # rp = Routing(ServerConfig.from_json_file(config), verbose,
+    #              routing_input_queue, routing_output_queue)
     """ Start the serial interface in background (as a daemon) """
     sp = SerialBus(ServerConfig.from_json_file(config),
-                   verbose, input_queue, output_queue)
+                   verbose, serial_input_queue, serial_output_queue)
+    """ Let's start all processes """
     sp.daemon = True
     sp.start()
+    # rp.daemon = True
+    # rp.start()
+    interval = ServerConfig.from_json_file(config).routing.time
+    timeout = time.time()+int(interval)
     while True:
+        # Run the routing protocol?
+        if(time.time() > timeout):
+            run_routing("dijkstra")
+            timeout = time.time() + int(interval)
         # look for incoming  request
-        if not output_queue.empty():
-            data = output_queue.get()
+        if not serial_output_queue.empty():
+            data = serial_output_queue.get()
             handle_serial_packet(data)
     try:
         ani = SubplotAnimation(Database)
