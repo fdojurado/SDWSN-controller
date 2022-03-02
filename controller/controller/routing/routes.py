@@ -8,7 +8,6 @@ from datetime import datetime
 
 class Routes:
     def __init__(self):
-        print("initializing the routes")
         self.column_names = ['scr', 'dst', 'via']
         self.routes = pd.DataFrame(columns=self.column_names)
         self.time = datetime.now().timestamp() * 1000.0
