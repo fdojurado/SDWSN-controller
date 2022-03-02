@@ -13,11 +13,15 @@ import networkx as nx
 import pandas as pd
 
 
+def handle_routing(routes):
+    routes.save_historical_routes_db()
+    routes.save_routes_db()
+
+
 def load_data(collection, source, target, attribute):
     db = Database.find_one(collection, {})
     Graph = nx.Graph()
     if(db is None):
-        # print("no db in links")
         return Graph
     df = pd.DataFrame(list(Database.find(collection, {})))
     Graph = nx.from_pandas_edgelist(
@@ -25,75 +29,71 @@ def load_data(collection, source, target, attribute):
     return Graph
 
 
-def run_routing(alg):
-    # Load data from DB
-    G = load_data("links", 'scr', 'dst', 'rssi')
-    routes = Routes()
-    # We first make sure the G is not empty
-    if(nx.is_empty(G) == False):
-        print("compute routing started")
-        print(G)
-        for node1, node2, data in G.edges(data=True):
-            nx.set_edge_attributes(
-                G, {(node1, node2): {'rssi': data['rssi']*-1}})
-        print("printing edges")
-        for node1, node2, data in G.edges(data=True):
-            print("data")
-            print(data)
-            print(node1, "-", node2, " :", data['rssi'])
+class Routing(mp.Process):
+    def __init__(self, config, verbose, alg, input_queue, output_queue):
+        mp.Process.__init__(self)
+        self.input_queue = input_queue
+        self.alg = alg
+        self.output_queue = output_queue
+        self.interval = int(config.routing.time)
+        self.verbose = verbose
+        self.routes = Routes()
 
-        if(nx.is_connected(G)):
-            print("it is a connected graph")
-            # Now that we are sure it is a connected graph,
-            # we now run the selected routing algorithm
-            match alg:
-                case "dijkstra":
-                    print("running dijkstra")
-                    dijkstra(G, routes)
-                    return routes
-                case "mst":
-                    print("running MST")
-                    return
-                case _:
-                    print("running default alg.")
-                    return
+    def set_algorithm(self, alg):
+        self.alg = alg
 
+    def run(self):
+        # If there is somenthing in the Queue process it
+        while(1):
+            # look for incoming jobs
+            if not self.input_queue.empty():
+                G = self.input_queue.get()
+                # We first make sure the G is not empty
+                if(nx.is_empty(G) == False):
+                    for node1, node2, data in G.edges(data=True):
+                        nx.set_edge_attributes(
+                            G, {(node1, node2): {'rssi': data['rssi']*-1}})
+                    if(nx.is_connected(G)):
+                        # Now that we are sure it is a connected graph,
+                        # we now run the selected routing algorithm
+                        match self.alg:
+                            case "dijkstra":
+                                print("running dijkstra")
+                                self.dijkstra(G)
+                            case "mst":
+                                print("running MST")
+                            case _:
+                                print("running default alg.")
 
-def dijkstra(G, routes):
-    # We want to compute the SP from controller to all nodes
-    length, path = nx.single_source_dijkstra(G, "1.0", None, None, "rssi")
-    print("path")
-    print(path)
-    print("length")
-    print(length)
-    # Now, we want to det this routes
-    set_routes(path, routes)
-    print("resulting routes")
-    routes.print_routes()
-    # Let's now save the routes
-    routes.save_historical_routes_db()
-    routes.save_routes_db()
+    def dijkstra(self, G):
+        # We want to compute the SP from controller to all nodes
+        length, path = nx.single_source_dijkstra(G, "1.0", None, None, "rssi")
+        # Now, we want to det this routes
+        self.set_routes(path)
+        self.routes.print_routes()
+        # Let's put the routes in the queue
+        self.output_queue.put(self.routes)
 
-
-def set_routes(path, routes):
-    """ Save routes in the 'src'-'dst' 'via' format.
-    Return: the connected graph of the given routing algo. """
-    for u, p in path.items():
-        if(u != '1.0'):
-            if(len(p) > 2):
-                # We set the route from the controller to nodes
-                for i in range(len(p)-1):
-                    node = p[i]
-                    neigbour = p[i+1]
-                    # Check if we can form a subset
-                    if(not (len(p)-2-i) < 1):
-                        subset = p[-(len(p)-2-i):]
-                        for j in range(len(subset)):
-                            routes.add_route(node, subset[j], neigbour)
-                # Now we add the routes from node to controller
-                # Keep in mind that we only need the neighbour to controller.
-                # We dont need to know the routes to every node in the path to the controller.
-                reverse = p[::-1]
-                node = reverse[0]
-                neigbour = reverse[1]
-                routes.add_route(node, "1.0", neigbour)
+    def set_routes(self, path):
+        """ Save routes in the 'src'-'dst' 'via' format.
+        Return: the connected graph of the given routing algo. """
+        for u, p in path.items():
+            if(u != '1.0'):
+                if(len(p) > 2):
+                    # We set the route from the controller to nodes
+                    for i in range(len(p)-1):
+                        node = p[i]
+                        neigbour = p[i+1]
+                        # Check if we can form a subset
+                        if(not (len(p)-2-i) < 1):
+                            subset = p[-(len(p)-2-i):]
+                            for j in range(len(subset)):
+                                self.routes.add_route(
+                                    node, subset[j], neigbour)
+                    # Now we add the routes from node to controller
+                    # Keep in mind that we only need the neighbour to controller.
+                    # We dont need to know the routes to every node in the path to the controller.
+                    reverse = p[::-1]
+                    node = reverse[0]
+                    neigbour = reverse[1]
+                    self.routes.add_route(node, "1.0", neigbour)

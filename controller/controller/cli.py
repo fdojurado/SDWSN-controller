@@ -65,30 +65,34 @@ def main(command, verbose, version, config, daemon):
     serial_input_queue = mp.Queue()
     serial_output_queue = mp.Queue()
     # Routing Queues
-    # routing_input_queue = mp.Queue()
-    # routing_output_queue = mp.Queue()
+    routing_input_queue = mp.Queue()
+    routing_output_queue = mp.Queue()
     """ Start the routing interface in background (as a daemon) """
     # rp stands for routing process
     # We need to consider that the computation of the new routing alg.
     # can be change at run time
-    # rp = Routing(ServerConfig.from_json_file(config), verbose,
-    #              routing_input_queue, routing_output_queue)
+    rp = Routing(ServerConfig.from_json_file(config), verbose, "dijkstra",
+                 routing_input_queue, routing_output_queue)
     """ Start the serial interface in background (as a daemon) """
     sp = SerialBus(ServerConfig.from_json_file(config),
                    verbose, serial_input_queue, serial_output_queue)
     """ Let's start all processes """
     sp.daemon = True
     sp.start()
-    # rp.daemon = True
-    # rp.start()
+    rp.daemon = True
+    rp.start()
     interval = ServerConfig.from_json_file(config).routing.time
     timeout = time.time()+int(interval)
     while True:
         # Run the routing protocol?
         if(time.time() > timeout):
-            run_routing("dijkstra")
+            # put a job
+            routing_input_queue.put(load_data("links", 'scr', 'dst', 'rssi'))
             timeout = time.time() + int(interval)
-        # look for incoming  request
+        # look for incoming request from routing
+        if not routing_output_queue.empty():
+            handle_routing(routing_output_queue.get())
+        # look for incoming request
         if not serial_output_queue.empty():
             data = serial_output_queue.get()
             handle_serial_packet(data)
