@@ -28,7 +28,6 @@ def load_data(collection, source, target, attribute):
 def run_routing(alg):
     # Load data from DB
     G = load_data("links", 'scr', 'dst', 'rssi')
-    routing_G = nx.Graph()
     routes = Routes()
     # We first make sure the G is not empty
     if(nx.is_empty(G) == False):
@@ -50,8 +49,8 @@ def run_routing(alg):
             match alg:
                 case "dijkstra":
                     print("running dijkstra")
-                    dijkstra(G, routing_G, routes)
-                    return
+                    dijkstra(G, routes)
+                    return routes
                 case "mst":
                     print("running MST")
                     return
@@ -60,50 +59,41 @@ def run_routing(alg):
                     return
 
 
-def dijkstra(G, routing_G, routes):
+def dijkstra(G, routes):
     # We want to compute the SP from controller to all nodes
-    for target in list(G.nodes):
-        if(target != "1.0"):
-            print("shortest path from 1.0 to ", target)
-            result = nx.dijkstra_path(G, "1.0", target, "rssi")
-            print("result")
-            print(result)
-            set_routes(G, result, routing_G, routes)
-    print("resulting G")
-    print(routing_G)
-    print("edges of G")
-    print(list(routing_G.edges))
-    print("attributes of G")
-    for node1, node2, data in routing_G.edges(data=True):
-        print(node1, "-", node2, " rssi: ", data)
+    length, path = nx.single_source_dijkstra(G, "1.0", None, None, "rssi")
+    print("path")
+    print(path)
+    print("length")
+    print(length)
+    # Now, we want to det this routes
+    set_routes(path, routes)
     print("resulting routes")
     routes.print_routes()
+    # Let's now save the routes
+    routes.save_historical_routes_db()
+    routes.save_routes_db()
 
 
-def set_routes(G, path, routing_G, routes):
+def set_routes(path, routes):
     """ Save routes in the 'src'-'dst' 'via' format.
     Return: the connected graph of the given routing algo. """
-    if(len(path) <= 2):
-        return
-    # We set the route from the controller to nodes
-    for i in range(len(path)-1):
-        node = path[i]
-        neigbour = path[i+1]
-        # Save edge source-dest 'weight'
-        e = (node, neigbour)
-        edge_attribute = G.get_edge_data(*e)
-        print("edge_attribute")
-        print(edge_attribute)
-        routing_G.add_edge(node, neigbour, edge_attribute)
-        # Check if we can form a subset
-        if(not (len(path)-2-i) < 1):
-            subset = path[-(len(path)-2-i):]
-            for j in range(len(subset)):
-                routes.add_route(node, subset[j], neigbour)
-    # Now we add the routes from node to controller
-    # Keep in mind that we only need the neighbour to controller.
-    # We dont need to know the routes to every node in the path to the controller.
-    reverse = path[::-1]
-    node = reverse[0]
-    neigbour = reverse[1]
-    routes.add_route(node, "1.0", neigbour)
+    for u, p in path.items():
+        if(u != '1.0'):
+            if(len(p) > 2):
+                # We set the route from the controller to nodes
+                for i in range(len(p)-1):
+                    node = p[i]
+                    neigbour = p[i+1]
+                    # Check if we can form a subset
+                    if(not (len(p)-2-i) < 1):
+                        subset = p[-(len(p)-2-i):]
+                        for j in range(len(subset)):
+                            routes.add_route(node, subset[j], neigbour)
+                # Now we add the routes from node to controller
+                # Keep in mind that we only need the neighbour to controller.
+                # We dont need to know the routes to every node in the path to the controller.
+                reverse = p[::-1]
+                node = reverse[0]
+                neigbour = reverse[1]
+                routes.add_route(node, "1.0", neigbour)
