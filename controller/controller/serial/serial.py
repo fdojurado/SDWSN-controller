@@ -129,6 +129,31 @@ class SerialBus(mp.Process):
                 else:
                     return None
 
+    def send(self, data):
+        """
+        Send a message over the serial device.
+        """
+        print('Sending message over the serial interface')
+        byte_msg = bytearray()
+        byte_msg.append(0x7E)
+
+        for i in range(0, len(data)):
+            # print('msg.data')
+            # print(msg.data[i])
+            self.check_byte(byte_msg, data[i])
+        byte_msg.append(0x7E)
+        print('packet to send')
+        print(byte_msg.hex())
+        self.ser.send(byte_msg)
+
+    def check_byte(self, byte_data, data):
+        if (data == 0x7E or data == 0x7D):
+            byte_data.append(0x7D)
+            invert = data ^ (0x20)
+            byte_data.append(invert)
+        else:
+            byte_data.append(data)
+
     def run(self):
         msg = Message()
         while(1):
@@ -137,6 +162,8 @@ class SerialBus(mp.Process):
                 print("incoming queue request")
                 data = self.input_queue.get()
                 print(data)
+                # send serial packet
+                self.send(data)
             try:
                 msg = self.recv(0.1)
                 if msg is not None:

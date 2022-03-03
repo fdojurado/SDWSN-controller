@@ -80,7 +80,7 @@ def main(command, verbose, version, config, daemon):
                  routing_input_queue, routing_output_queue)
     """ Start the NC interface in background (as a daemon) """
     # nc stands for network configuration
-    nc = NetworkConfig(verbose, nc_input_queue, nc_output_queue)
+    nc = NetworkConfig(verbose, nc_input_queue, nc_output_queue, serial_input_queue)
     """ Start the serial interface in background (as a daemon) """
     sp = SerialBus(ServerConfig.from_json_file(config),
                    verbose, serial_input_queue, serial_output_queue)

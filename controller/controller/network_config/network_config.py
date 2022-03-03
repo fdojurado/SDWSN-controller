@@ -2,6 +2,7 @@ from controller.routing.routing import *
 from controller.database.database import Database
 from controller.network_config.queue import Queue
 from controller.serial.serial_packet_dissector import *
+from controller.packet.packet import SerialControlPacket
 from controller import Message
 import multiprocessing as mp
 import networkx as nx
@@ -56,13 +57,14 @@ def compute_routes_nc():
 
 
 class NetworkConfig(mp.Process):
-    def __init__(self, verbose, input_queue, output_queue):
+    def __init__(self, verbose, input_queue, output_queue, serial_input_queue):
         mp.Process.__init__(self)
         self.G = nx.Graph()
         self.running = False
         self.verbose = verbose
         self.input_queue = input_queue
         self.output_queue = output_queue
+        self.serial_input_queue = serial_input_queue
         self.NC_routes = Queue(None)  # Queue for NC packets
         self.NC_ACK = Queue(None)  # Queue for ACKs
 
@@ -85,6 +87,23 @@ class NetworkConfig(mp.Process):
 
     def ack_nc(self):
         print('Processing NC ack')
+
+    def build_packet(self, node, df):
+        payload_len = CP_PKT_HEADER_SIZE+df.shape[0]*4
+        # Loop in routes
+        payload = []
+        for index, route in df.iterrows():
+            dst = route['dst']
+            via = route['via']
+            payload.append(int(float(dst)))
+            payload.append(int(float(via)))
+        print("payload")
+        print(payload)
+        pkt = SerialControlPacket(payload, addr0=0, addr1=0,
+                                  message_type=2, payload_len=payload_len, reserved0=0, reserved1=0)
+        packedData = pkt.pack()
+        print(repr(pkt))
+        return packedData
 
     def read_routes(self, node):
         query = {"$and": [
@@ -113,29 +132,26 @@ class NetworkConfig(mp.Process):
                     print("routes for node ", node)
                     print(df)
                     # build the packet
-                    self.build_packet(node, df)
-                    # We loop until the Queue is empty
-                    while self.NC.NC_rt_table_queue._queue:
-                        x = self.NC.NC_rt_table_queue.dequeue()
-                        print("Sending NC packet to node ", x)
-                        # set retransmission
-                        rtx = 0
-                        # Send NC packet
-                        self.NC.send_nc(x, rtx)
-                        # We first set the timeout
-                        timeout = time.time() + 7   # 7 seconds from now
-                        while True:
-                            # We resend the packet if timeout and retransmission < 7
-                            if((time.time() > timeout) and (rtx < 7)):
-                                # Send NC packet
-                                rtx = rtx + 1
-                                self.NC.send_nc(x, rtx)
-                                timeout = time.time() + 7   # 7 seconds from now
-                            # We stop sending the current NC packet if
-                            # we reached the max RTX or we received ACK
-                            if(rtx >= 7):
-                                break
-                            time.sleep(1)
-                            # If we received the correct ACK
-                            # if(True):
-                            #     break
+                    packetData = self.build_packet(node, df)
+                    print("Sending NC packet to node ", node)
+                    # set retransmission
+                    rtx = 0
+                    # Send NC packet
+                    self.serial_input_queue.put(packetData)
+                    # We first set the timeout
+                    timeout = time.time() + 7   # 7 seconds from now
+                    while True:
+                        # We resend the packet if timeout and retransmission < 7
+                        if((time.time() > timeout) and (rtx < 7)):
+                            # Send NC packet
+                            rtx = rtx + 1
+                            self.serial_input_queue.put(packetData)
+                            timeout = time.time() + 7   # 7 seconds from now
+                        # We stop sending the current NC packet if
+                        # we reached the max RTX or we received ACK
+                        if(rtx >= 7):
+                            break
+                        time.sleep(1)
+                        # If we received the correct ACK
+                        # if(True):
+                        #     break
