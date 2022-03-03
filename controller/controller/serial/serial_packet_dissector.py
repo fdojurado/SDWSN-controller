@@ -8,6 +8,8 @@ current_time = 0
 
 # Header size of the control packet
 CP_PKT_HEADER_SIZE = 10
+# NC_PKT_SIZE
+NC_PKT_SIZE = 4
 DATA_PKT_HEADER_SIZE = 1
 DATA_PKT_PAYLOAD = 8
 

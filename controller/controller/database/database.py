@@ -25,7 +25,8 @@ class Database(object):
     def push_doc(collection, addr, field, data):
         Database.DATABASE[collection].update_one(
             {"_id": addr},
-            {"$push": {field: data}}
+            {"$push": {field: data}},
+            upsert=True
         )
 
     @staticmethod

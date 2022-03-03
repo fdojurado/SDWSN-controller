@@ -106,9 +106,12 @@ def main(command, verbose, version, config, daemon):
             rts = compute_routes_from_path(path)
             save_routes(rts)
             # We now trigger NC
-            compute_routes_nc()
+            nodes = compute_routes_nc()
+            # Now, we put them in the Queue
+            for node in nodes:
+             nc_input_queue.put(node)
             # nc_input_queue.put(path)
-        # look for incoming request
+        # look for incoming request from the serial interface
         if not serial_output_queue.empty():
             data = serial_output_queue.get()
             handle_serial_packet(data)
