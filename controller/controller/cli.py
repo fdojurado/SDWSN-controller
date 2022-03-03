@@ -2,6 +2,7 @@
 # from controller.serial import SerialBus
 # from controller.mqtt_client.mqtt_client import sdwsn_mqtt_client
 from hashlib import new
+from controller.network_config.network_config import *
 from controller.routing.routing import *
 from controller.serial.serial_packet_dissector import *
 from controller.plotting.plotting import SubplotAnimation
@@ -35,6 +36,9 @@ serial_topic = "controller/serial"  # publishing topic
 
 SERVER = {'serial-controller': SerialBus}
 
+""" Initialise database """
+Database.initialise()
+
 
 def main(command, verbose, version, config, daemon):
     """The main function run by the CLI command.
@@ -58,8 +62,6 @@ def main(command, verbose, version, config, daemon):
     # Register signals.
     signal.signal(signal.SIGQUIT, exit_process)
     signal.signal(signal.SIGTERM, exit_process)
-    """ Initialise database """
-    Database.initialise()
     """ Define Queues """
     # Serial Queues
     serial_input_queue = mp.Queue()
@@ -67,12 +69,18 @@ def main(command, verbose, version, config, daemon):
     # Routing Queues
     routing_input_queue = mp.Queue()
     routing_output_queue = mp.Queue()
+    # NC Queues
+    nc_input_queue = mp.Queue()
+    nc_output_queue = mp.Queue()
     """ Start the routing interface in background (as a daemon) """
     # rp stands for routing process
     # We need to consider that the computation of the new routing alg.
     # can be change at run time
     rp = Routing(ServerConfig.from_json_file(config), verbose, "dijkstra",
                  routing_input_queue, routing_output_queue)
+    """ Start the NC interface in background (as a daemon) """
+    # nc stands for network configuration
+    nc = NetworkConfig(verbose, nc_input_queue, nc_output_queue)
     """ Start the serial interface in background (as a daemon) """
     sp = SerialBus(ServerConfig.from_json_file(config),
                    verbose, serial_input_queue, serial_output_queue)
@@ -81,17 +89,25 @@ def main(command, verbose, version, config, daemon):
     sp.start()
     rp.daemon = True
     rp.start()
+    nc.daemon = True
+    nc.start()
     interval = ServerConfig.from_json_file(config).routing.time
     timeout = time.time()+int(interval)
     while True:
         # Run the routing protocol?
         if(time.time() > timeout):
             # put a job
-            routing_input_queue.put(load_data("links", 'scr', 'dst', 'rssi'))
+            df, G = load_data("links", 'scr', 'dst', 'rssi')
+            routing_input_queue.put(G)
             timeout = time.time() + int(interval)
         # look for incoming request from routing
         if not routing_output_queue.empty():
-            handle_routing(routing_output_queue.get())
+            path = routing_output_queue.get()
+            rts = compute_routes_from_path(path)
+            save_routes(rts)
+            # We now trigger NC
+            compute_routes_nc()
+            # nc_input_queue.put(path)
         # look for incoming request
         if not serial_output_queue.empty():
             data = serial_output_queue.get()
