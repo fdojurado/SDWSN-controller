@@ -92,6 +92,8 @@ class NetworkConfig(mp.Process):
         payload_len = CP_PKT_HEADER_SIZE+df.shape[0]*4
         # Loop in routes
         payload = []
+        # The payload of the serial packet should also include the CP header
+        
         for index, route in df.iterrows():
             dst = route['dst']
             via = route['via']

@@ -5,30 +5,17 @@ import matplotlib.animation as animation
 import networkx as nx
 from controller.database.database import Database
 import pandas as pd
+import multiprocessing as mp
 
 
-class SubplotAnimation(animation.TimedAnimation):
-    def __init__(self, Database):
-        fig = plt.figure()
-        self.ax1 = fig.add_subplot(2, 1, 1)
-        self.ax1.set_title('Neighbour Advertisements')
-        self.ax2 = fig.add_subplot(2, 1, 2)
-        self.ax2.set_title('Current routing')
-        fig.tight_layout(pad=3.0)  # Or equivalently,  "plt.tight_layout()"
-
-        self.prev_G = nx.Graph()
-        self.prev_routes_G = nx.Graph()
-        self.G = nx.Graph()
-        self.Database = Database
-
-        self.ani = animation.FuncAnimation(
-            fig, self.animate, interval=50)
+class SubplotAnimation(mp.Process):
+    def __init__(self):
+        mp.Process.__init__(self)
 
     def load_data(self, collection, source, target, attribute):
-        db = self.Database.find_one(collection, {})
+        db = Database.find_one(collection, {})
         Graph = nx.Graph()
         if(db is None):
-            # print("no db in links")
             return Graph
         df = pd.DataFrame(list(Database.find(collection, {})))
         Graph = nx.from_pandas_edgelist(
@@ -68,3 +55,20 @@ class SubplotAnimation(animation.TimedAnimation):
                 # positions for all nodes
                 pos = nx.spring_layout(self.prev_routes_G)
                 nx.draw(self.prev_routes_G, pos, with_labels=True, ax=self.ax2)
+
+    def run(self):
+        fig = plt.figure()
+        self.ax1 = fig.add_subplot(2, 1, 1)
+        self.ax1.set_title('Neighbour Advertisements')
+        self.ax2 = fig.add_subplot(2, 1, 2)
+        self.ax2.set_title('Current routing')
+        # Or equivalently,  "plt.tight_layout()"
+        fig.tight_layout(pad=3.0)
+
+        self.prev_G = nx.Graph()
+        self.prev_routes_G = nx.Graph()
+        self.G = nx.Graph()
+
+        self.ani = animation.FuncAnimation(
+            fig, self.animate, interval=50)
+        plt.show()

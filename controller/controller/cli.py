@@ -80,10 +80,13 @@ def main(command, verbose, version, config, daemon):
                  routing_input_queue, routing_output_queue)
     """ Start the NC interface in background (as a daemon) """
     # nc stands for network configuration
-    nc = NetworkConfig(verbose, nc_input_queue, nc_output_queue, serial_input_queue)
+    nc = NetworkConfig(verbose, nc_input_queue,
+                       nc_output_queue, serial_input_queue)
     """ Start the serial interface in background (as a daemon) """
     sp = SerialBus(ServerConfig.from_json_file(config),
                    verbose, serial_input_queue, serial_output_queue)
+    """ Let's start the plotting (animation) in background (as a daemon) """
+    ntwk_plot = SubplotAnimation()
     """ Let's start all processes """
     sp.daemon = True
     sp.start()
@@ -91,6 +94,8 @@ def main(command, verbose, version, config, daemon):
     rp.start()
     nc.daemon = True
     nc.start()
+    ntwk_plot.daemon = True
+    ntwk_plot.start()
     interval = ServerConfig.from_json_file(config).routing.time
     timeout = time.time()+int(interval)
     while True:
@@ -109,7 +114,7 @@ def main(command, verbose, version, config, daemon):
             nodes = compute_routes_nc()
             # Now, we put them in the Queue
             for node in nodes:
-             nc_input_queue.put(node)
+                nc_input_queue.put(node)
             # nc_input_queue.put(path)
         # look for incoming request from the serial interface
         if not serial_output_queue.empty():
