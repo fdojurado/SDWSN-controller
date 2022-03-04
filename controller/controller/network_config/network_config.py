@@ -2,7 +2,7 @@ from controller.routing.routing import *
 from controller.database.database import Database
 from controller.network_config.queue import Queue
 from controller.serial.serial_packet_dissector import *
-from controller.packet.packet import SerialControlPacket
+from controller.packet.packet import SerialPacket, ControlPacket, NC_RoutingPacket
 from controller import Message
 import multiprocessing as mp
 import networkx as nx
@@ -89,20 +89,21 @@ class NetworkConfig(mp.Process):
         print('Processing NC ack')
 
     def build_packet(self, node, df):
-        payload_len = CP_PKT_HEADER_SIZE+df.shape[0]*4
-        # Loop in routes
-        payload = []
-        # The payload of the serial packet should also include the CP header
-        
-        for index, route in df.iterrows():
-            dst = route['dst']
-            via = route['via']
-            payload.append(int(float(dst)))
-            payload.append(int(float(via)))
-        print("payload")
-        print(payload)
-        pkt = SerialControlPacket(payload, addr0=0, addr1=0,
-                                  message_type=2, payload_len=payload_len, reserved0=0, reserved1=0)
+        payload_len = df.shape[0]*4
+        # Build packet data
+        data_packet = NC_RoutingPacket(df)
+        dataPacked = data_packet.pack()
+        print(repr(data_packet))
+        print(dataPacked)
+        # Build control packet
+        cp_pkt = ControlPacket(dataPacked, type=6, len=payload_len)
+        cpPackedData = cp_pkt.pack()
+        print(repr(cp_pkt))
+        print(cpPackedData)
+        # Control packet as payload of the serial packet
+        pkt = SerialPacket(cpPackedData, addr0=0, addr1=0,
+                           message_type=2, payload_len=(payload_len+CP_PKT_HEADER_SIZE),
+                           reserved0=0, reserved1=0)
         packedData = pkt.pack()
         print(repr(pkt))
         return packedData
