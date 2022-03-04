@@ -142,8 +142,8 @@ class SerialBus(mp.Process):
             # print(msg.data[i])
             self.check_byte(byte_msg, data[i])
         byte_msg.append(0x7E)
-        print('packet to send')
-        print(byte_msg.hex())
+        # print('packet to send')
+        # print(byte_msg.hex())
         self.ser.send(byte_msg)
 
     def check_byte(self, byte_data, data):
