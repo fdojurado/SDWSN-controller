@@ -32,7 +32,7 @@ class SubplotAnimation(mp.Process):
             # We only want to redraw the network if this has changed from the previous setup
             if(equal_graphs == False):
                 self.ax1.clear()
-                self.ax1.set_title('Neighbour Advertisements')
+                self.ax1.set_title('Network links')
                 self.prev_G.clear()
                 self.prev_G = self.G.copy()
                 pos = nx.spring_layout(self.prev_G)  # positions for all nodes
@@ -59,7 +59,7 @@ class SubplotAnimation(mp.Process):
     def run(self):
         fig = plt.figure()
         self.ax1 = fig.add_subplot(2, 1, 1)
-        self.ax1.set_title('Neighbour Advertisements')
+        self.ax1.set_title('Network links')
         self.ax2 = fig.add_subplot(2, 1, 2)
         self.ax2.set_title('Current routing')
         # Or equivalently,  "plt.tight_layout()"
