@@ -12,10 +12,11 @@ def main(verbose: ('use verbose output', 'flag', 'v'),
          version: ('print version information and exit', 'flag', 'V'),
          config: ('configuration file [default: {}]'.format(DEFAULT_CONFIG),
                   'option', 'c'),
+         plot: ('show plots', 'flag', 'p'),
          daemon: ('run as daemon', 'flag', 'd')):
     """serial-controller is an audio server implementing the playback part of
     the Hermes protocol."""
-    cli.main(APP, verbose, version, config, daemon)
+    cli.main(APP, verbose, version, config, plot, daemon)
 
 
 if __name__ == '__main__':

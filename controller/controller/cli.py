@@ -40,12 +40,13 @@ SERVER = {'serial-controller': SerialBus}
 Database.initialise()
 
 
-def main(command, verbose, version, config, daemon):
+def main(command, verbose, version, config, plot, daemon):
     """The main function run by the CLI command.
 
     Args:
         command (str): The command to run.
         verbose (bool): Use verbose output if True.
+        plot    (bool): Show the plots.
         version (bool): Print version information and exit if True.
         config (str): Configuration file.
         daemon (bool): Run as a daemon if True.
@@ -86,7 +87,8 @@ def main(command, verbose, version, config, daemon):
     sp = SerialBus(ServerConfig.from_json_file(config),
                    verbose, serial_input_queue, serial_output_queue)
     """ Let's start the plotting (animation) in background (as a daemon) """
-    ntwk_plot = SubplotAnimation()
+    if plot:
+        ntwk_plot = SubplotAnimation()
     """ Let's start all processes """
     sp.daemon = True
     sp.start()
@@ -94,8 +96,9 @@ def main(command, verbose, version, config, daemon):
     rp.start()
     nc.daemon = True
     nc.start()
-    ntwk_plot.daemon = True
-    ntwk_plot.start()
+    if plot:
+        ntwk_plot.daemon = True
+        ntwk_plot.start()
     interval = ServerConfig.from_json_file(config).routing.time
     timeout = time.time()+int(interval)
     while True:
@@ -120,19 +123,3 @@ def main(command, verbose, version, config, daemon):
         if not serial_output_queue.empty():
             data = serial_output_queue.get()
             handle_serial_packet(data)
-    try:
-        ani = SubplotAnimation(Database)
-        # ani.save('test_sub.mp4')
-        plt.show()
-    except JSONDecodeError as error:
-        print('%s is not a valid JSON file. Parsing failed at line %s and column %s. Exiting...',
-              config, error.lineno, error.colno)
-        sys.exit(1)
-    except KeyboardInterrupt:
-        print('Received SIGINT signal. Shutting down %s...', command)
-        server.stop()
-        sys.exit(0)
-    except PermissionError as error:
-        print(
-            'Can\'t read file %s. Make sure you have read permissions. Exiting...', error.filename)
-        sys.exit(1)
