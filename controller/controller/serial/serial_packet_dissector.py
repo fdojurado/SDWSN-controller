@@ -2,27 +2,28 @@
 from datetime import datetime
 import struct
 from controller.database.database import Database
+from controller.packet.packet import *
 import pandas as pd
 
 current_time = 0
 
-# Header size of the control packet
-CP_PKT_HEADER_SIZE = 10
-# NC_PKT_SIZE
-NC_PKT_SIZE = 4
-DATA_PKT_HEADER_SIZE = 1
-DATA_PKT_PAYLOAD = 8
-
 
 def handle_serial_packet(msg):
+    print("serial packet received")
+    msg.print_packet()
     # Let's firt validate the packet
     save_serial_packet(msg)
-    match msg.message_type:
-        case 2:
+    # Let's first process the sdn IP packet
+    pkt = process_sdn_ip_packet(msg)
+    # We exit processing if empty result returned
+    if(not pkt):
+        return
+    match pkt.proto:
+        case sdn_protocols.SDN_PROTO_NA:
             print("Processing control packet")
-            process_control_packet(msg)
+            process_control_packet(pkt.payload)
             return
-        case 3:
+        case sdn_protocols.SDN_PROTO_DATA:
             print("Processing data packet")
             process_data_packet(msg)
             return
@@ -64,7 +65,7 @@ def process_data_packet(msg):
     payload_len = int.from_bytes(hdr, "big")
     # Parse payload of data packet
     payload = msg.data[DATA_PKT_HEADER_SIZE:]
-    blocks = payload_len // DATA_PKT_PAYLOAD
+    blocks = payload_len // DATA_PKT_PAYLOAD_SIZE
     for x in range(1, blocks+1):
         sliced_data = payload[(-1+x)*8:x*8]
         addr0, addr1, seq, temp, humidity = struct.unpack(
@@ -126,29 +127,22 @@ def process_data_packet(msg):
         Database.insert("total_pdr", data)
 
 
-def process_control_packet(msg):
-    # Source address
-    addr0 = str(msg.addr0)
-    addr1 = str(msg.addr1)
-    addr = addr0+'.'+addr1
-    # Parse header of control packet
-    hdr = msg.data[:CP_PKT_HEADER_SIZE]  # 10 is the header size
-    type, payload_len, rank, energy, rt_chksum, nachksum = struct.unpack(
-        '!BBhhhh', hdr)
-    # Parse payload of control packet
-    payload = msg.data[CP_PKT_HEADER_SIZE:]  # 10 is the header size
+def process_control_packet(data):
+    # Parse control packet
+    print("processing control packet")
+    pkt = ControlPacket.unpack(data)
     # We first check the entegrity of the control packet
-    if(cp_checksum(msg, payload_len) != 0xffff):
+    if(sdn_cp_checksum(data, pkt.length+CP_PKT_HEADER_SIZE) != 0xffff):
         print("bad checksum")
         return
     # If the reported length in the cp header doesnot match the packet size,
     # then we drop the packet.
-    if(len(payload) < payload_len):
+    if(len(data) < (pkt.length+CP_PKT_HEADER_SIZE)):
         print("packet shorter than reported in CP header")
         return
     # Type of control packet
-    match type:
-        case 3:
+    match pkt.type:
+        case sdn_protocols.SDN_PROTO_NA :
             # NA packet
             print("NA processing")
             process_na_packet(addr, rank, energy, payload, payload_len)
@@ -156,6 +150,25 @@ def process_control_packet(msg):
         case _:
             # Default
             print("control packet type not found")
+
+
+def process_sdn_ip_packet(msg):
+    # We first check the entegrity of the HEADER of the sdn IP packet
+    if(sdn_ip_checksum(msg.data, IP_PKT_HEADER_SIZE) != 0xffff):
+        print("bad checksum")
+        return
+    # Parse sdn IP packet
+    print("processing IP packet")
+    pkt = SDN_IP_Packet.unpack(msg.data)
+    print(repr(pkt))
+    # If the reported length in the sdn IP header doesnot match the packet size,
+    # then we drop the packet.
+    if(len(msg.data) < pkt.length):
+        print("packet shorter than reported in IP header")
+        return
+    # sdn IP packet succeed
+    print("succeed unpacking sdn IP packet")
+    return pkt
 
 
 def chksum(sum, data, len):
@@ -173,8 +186,20 @@ def chksum(sum, data, len):
     return ~total + 0x10000 & 0xffff
 
 
-def cp_checksum(msg, len):
-    sum = chksum(0, msg.data, CP_PKT_HEADER_SIZE + len)
+def sdn_ip_checksum(msg, len):
+    sum = chksum(0, msg, len)
+    result = 0
+    if(sum == 0):
+        result = 0xffff
+        print("return chksum ", result)
+    else:
+        result = struct.pack(">i", sum)
+        print("return chksum ", ord(result))
+    return result
+
+
+def sdn_cp_checksum(msg, len):
+    sum = chksum(0, msg, len)
     result = 0
     if(sum == 0):
         result = 0xffff

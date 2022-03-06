@@ -1,10 +1,24 @@
 import struct
+import types
 
 # Packet sizes
 NC_ROUTING_PKT_SIZE = 4
+DATA_PKT_PAYLOAD_SIZE = 8
 # Header sizes
 SERIAL_PKT_HEADER_SIZE = 6
 CP_PKT_HEADER_SIZE = 10
+IP_PKT_HEADER_SIZE = 10
+DATA_PKT_HEADER_SIZE = 1
+# Protocols encapsulated in sdn IP packet
+sdn_protocols = types.SimpleNamespace()
+sdn_protocols.SDN_PROTO_ND = 1
+sdn_protocols.SDN_PROTO_CP = 2
+sdn_protocols.SDN_PROTO_NA = 3        # Neighbor advertisement
+sdn_protocols.SDN_PROTO_PI = 4        # Packet-in
+sdn_protocols.SDN_PROTO_PO = 5        # Packet-out
+sdn_protocols.SDN_PROTO_NC = 6        # Network configuration
+sdn_protocols.SDN_PROTO_NC_ACK = 7    # Neighbor advertisement
+sdn_protocols.SDN_PROTO_DATA = 8      # Data packet
 
 
 class SerialPacket:
@@ -35,12 +49,44 @@ class SerialPacket:
                    reserved0=reserved0, reserved1=reserved1)
 
 
+class SDN_IP_Packet:
+
+    def __init__(self, payload, **kwargs):
+        # One-byte long fields
+        self.vahl = kwargs.get("vahl", 0)
+        self.length = kwargs.get("len", 0)
+        self.ttl = kwargs.get("ttl", 0)
+        self.proto = kwargs.get("proto", 0)
+        # These are two bytes long
+        self.ipchksum = kwargs.get("ipchksum", 0)
+        self.scr = kwargs.get("scr", 0)
+        self.dest = kwargs.get("dest", 0)
+        self.payload = payload
+
+    def pack(self):
+        return struct.pack('!BBBBHHH' + str(len(self.payload)) + 's', self.vahl, self.length,
+                           self.ttl, self.proto, self.ipchksum, self.scr, self.dest, bytes(self.payload))
+
+    # optional: nice string representation of packet for printing purposes
+    def __repr__(self):
+        return "SDN_IP_Packet(vahl={}, len={}, ttl={}, proto={}, ipchksum={}, scr={}, dest={}, payload={})".format(
+            hex(self.vahl), hex(self.length), hex(
+                self.ttl), hex(self.proto), hex(self.ipchksum),
+            hex(self.scr), hex(self.dest), self.payload)
+
+    @classmethod
+    def unpack(cls, packed_data):
+        vahl, length, ttl, proto, ipchksum, scr, dest, payload = struct.unpack(
+            'BBBBHHH' + str(len(packed_data)-IP_PKT_HEADER_SIZE) + 's', packed_data)
+        return cls(payload, vahl=vahl, len=length, ttl=ttl, proto=proto, ipchksum=ipchksum, scr=scr, dest=dest)
+
+
 class ControlPacket:
 
     def __init__(self, payload, **kwargs):
         # One-byte long field
         self.type = kwargs.get("type", 0)
-        self.len = kwargs.get("len", 0)
+        self.length = kwargs.get("len", 0)
         # These are two bytes long
         self.rank = kwargs.get("rank", 0)
         self.energy = kwargs.get("energy", 0)
@@ -49,19 +95,19 @@ class ControlPacket:
         self.payload = payload
 
     def pack(self):
-        return struct.pack('!BBHHHH' + str(len(self.payload)) + 's', self.type, self.len,
+        return struct.pack('!BBHHHH' + str(len(self.payload)) + 's', self.type, self.length,
                            self.rank, self.energy, self.rt_chksum, self.cpchksum, bytes(self.payload))
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
         return "ControlPacket(type={}, len={}, rank={}, energy={}, rt_chksum={}, cpchksum={}, payload={})".format(
-            self.type, self.len, self.rank, self.energy, self.rt_chksum, self.cpchksum, self.payload)
+            self.type, self.length, self.rank, self.energy, self.rt_chksum, self.cpchksum, self.payload)
 
     @classmethod
     def unpack(cls, packed_data):
-        type, len, rank, energy, rt_chksum, cpchksum, payload = struct.unpack(
+        type, length, rank, energy, rt_chksum, cpchksum, payload = struct.unpack(
             'BBHHHH' + str(len(packed_data)-CP_PKT_HEADER_SIZE) + 's', packed_data)
-        return cls(payload, type=type, len=len, rank=rank, energy=energy, rt_chksum=rt_chksum, cpchksum=cpchksum)
+        return cls(payload, type=type, len=length, rank=rank, energy=energy, rt_chksum=rt_chksum, cpchksum=cpchksum)
 
 
 class NC_RoutingPacket:

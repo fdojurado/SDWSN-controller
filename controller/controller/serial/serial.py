@@ -80,7 +80,7 @@ class SerialBus(mp.Process):
             addr0 = ord(self.decodeByte(1))
             addr1 = ord(self.decodeByte(1))
             message_type = ord(self.decodeByte(1))
-            payload_len = ord(self.decodeByte(1))
+            payload_len = ord(self.decodeByte(1))-6
             reserved0 = ord(self.decodeByte(1))
             reserved1 = ord(self.decodeByte(1))
             data = self.decodeByte(payload_len)
