@@ -19,16 +19,16 @@ def handle_serial_packet(msg):
     if(not pkt):
         return
     match pkt.proto:
-        case sdn_protocols.SDN_PROTO_NA:
+        case sdn_protocols.SDN_PROTO_CP:
             print("Processing control packet")
-            process_control_packet(pkt.payload)
+            process_control_packet(pkt.scr, pkt.payload)
             return
         case sdn_protocols.SDN_PROTO_DATA:
             print("Processing data packet")
-            process_data_packet(msg)
+            process_data_packet(pkt.payload)
             return
         case _:
-            print("message type not found")
+            print("sdn IP packet type not found")
             return
 
 
@@ -55,29 +55,27 @@ def save_serial_packet(msg):
     Database.insert("packets", data)
 
 
-def process_data_packet(msg):
-    # Source address
-    addr0 = str(msg.addr0)
-    addr1 = str(msg.addr1)
-    addr = addr0+'.'+addr1
-    # Parse header of data packet
-    hdr = msg.data[:DATA_PKT_HEADER_SIZE]
-    payload_len = int.from_bytes(hdr, "big")
-    # Parse payload of data packet
-    payload = msg.data[DATA_PKT_HEADER_SIZE:]
-    blocks = payload_len // DATA_PKT_PAYLOAD_SIZE
+def process_data_packet(data):
+    # Process data packet header
+    pkt_hdr = DataPacketHeader.unpack(data)
+    print(repr(pkt_hdr))
+    blocks = pkt_hdr.length // DATA_PKT_PAYLOAD_SIZE
+    payload = pkt_hdr.payload
+    payload_size = pkt_hdr.length
     for x in range(1, blocks+1):
-        sliced_data = payload[(-1+x)*8:x*8]
-        addr0, addr1, seq, temp, humidity = struct.unpack(
-            '!bbHHH', sliced_data)
-        src = str(addr1)+'.'+str(addr0)
+        payload_size = payload_size - DATA_PKT_PAYLOAD_SIZE
+        print("remaining payload size: ", payload_size)
+        data_pkt = DataPacketPayload.unpack(payload, payload_size)
+        print(repr(data_pkt))
+        payload = data_pkt.payload
+        src = str(data_pkt.addr)+'.0'
         data = {
             'time': current_time,
             'src': src,
-            'last_seq': seq,
+            'last_seq': data_pkt.seq,
             'num_seq': 1,
-            'temp': temp,
-            'humidity': humidity,
+            'temp': data_pkt.temp,
+            'humidity': data_pkt.humidity,
         }
         node = {
             '_id': src,
@@ -94,7 +92,7 @@ def process_data_packet(msg):
             if(db is not None):
                 df = pd.DataFrame(db['data'])
                 df = df.tail(1)
-                if df['last_seq'].values[0] == seq:
+                if df['last_seq'].values[0] == data_pkt.seq:
                     print("duplicated data packet")
                     # update num_seq field with the one in DB
                     data['num_seq'] = int(df['num_seq'].values[0])
@@ -127,7 +125,7 @@ def process_data_packet(msg):
         Database.insert("total_pdr", data)
 
 
-def process_control_packet(data):
+def process_control_packet(addr, data):
     # Parse control packet
     print("processing control packet")
     pkt = ControlPacket.unpack(data)
@@ -142,10 +140,10 @@ def process_control_packet(data):
         return
     # Type of control packet
     match pkt.type:
-        case sdn_protocols.SDN_PROTO_NA :
+        case sdn_protocols.SDN_PROTO_NA:
             # NA packet
             print("NA processing")
-            process_na_packet(addr, rank, energy, payload, payload_len)
+            process_na_packet(addr, pkt)
             return
         case _:
             # Default
@@ -210,20 +208,30 @@ def sdn_cp_checksum(msg, len):
     return result
 
 
-def process_na_packet(addr, node_rank, energy, payload, len):
+def process_na_packet(addr, pkt):
+    addr = str(addr)+'.0'
     """ Let's process neighbour advertisement packets """
     # Process neighbours
-    blocks = len // 6
+    blocks = len(pkt.payload) // NA_PKT_SIZE
+    payload = pkt.payload
+    print("payload")
+    print(payload)
+    payload_size = len(pkt.payload)
+    print("payload_size")
+    print(payload_size)
     for x in range(1, blocks+1):
-        sliced_data = payload[(-1+x)*6:x*6]
-        addr0, addr1, rssi, rank = struct.unpack('!bbhh', sliced_data)
-        dst = str(addr1)+'.'+str(addr0)
+        payload_size = payload_size - NA_PKT_SIZE
+        print("remaining payload size: ", payload_size)
+        na_pkt = NA_Packet.unpack(payload, payload_size)
+        print(repr(na_pkt))
+        payload = na_pkt.payload
+        dst = str(na_pkt.addr)+'.0'
         data = {
             'time': current_time,
             'scr': addr,
             'dst': dst,
-            'rssi': rssi,
-            'rank': rank,
+            'rssi': na_pkt.rssi,
+            'rank': na_pkt.rank,
         }
         node = {
             '_id': addr,
@@ -247,8 +255,8 @@ def process_na_packet(addr, node_rank, energy, payload, len):
             num_nb = df.dst.nunique()
     data = {
         'time': current_time,
-        'energy': energy,
-        'rank': node_rank,
+        'energy': pkt.energy,
+        'rank': pkt.rank,
         'total_nb': num_nb
     }
     node = {
@@ -265,7 +273,7 @@ def process_na_packet(addr, node_rank, energy, payload, len):
     data = {
         '_id': addr,
         'time': current_time,
-        'energy': energy,
+        'energy': pkt.energy,
     }
     if Database.exist("energy", addr) == 0:
         Database.insert("energy", data)
