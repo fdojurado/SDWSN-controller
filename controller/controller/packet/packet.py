@@ -4,6 +4,7 @@ import types
 # Packet sizes
 NC_ROUTING_PKT_SIZE = 4
 DATA_PKT_PAYLOAD_SIZE = 8
+NA_PKT_SIZE = 6
 # Header sizes
 SERIAL_PKT_HEADER_SIZE = 6
 CP_PKT_HEADER_SIZE = 10
@@ -77,7 +78,7 @@ class SDN_IP_Packet:
     @classmethod
     def unpack(cls, packed_data):
         vahl, length, ttl, proto, ipchksum, scr, dest, payload = struct.unpack(
-            'BBBBHHH' + str(len(packed_data)-IP_PKT_HEADER_SIZE) + 's', packed_data)
+            '!BBBBHHH' + str(len(packed_data)-IP_PKT_HEADER_SIZE) + 's', packed_data)
         return cls(payload, vahl=vahl, len=length, ttl=ttl, proto=proto, ipchksum=ipchksum, scr=scr, dest=dest)
 
 
@@ -106,7 +107,7 @@ class ControlPacket:
     @classmethod
     def unpack(cls, packed_data):
         type, length, rank, energy, rt_chksum, cpchksum, payload = struct.unpack(
-            'BBHHHH' + str(len(packed_data)-CP_PKT_HEADER_SIZE) + 's', packed_data)
+            '!BBHHHH' + str(len(packed_data)-CP_PKT_HEADER_SIZE) + 's', packed_data)
         return cls(payload, type=type, len=length, rank=rank, energy=energy, rt_chksum=rt_chksum, cpchksum=cpchksum)
 
 
@@ -140,3 +141,65 @@ class NC_RoutingPacket:
             output = output + "NC_RoutingPacket(via={}, dest={})".format(
                 via, dst)+"\n"
         return output
+
+
+class DataPacketHeader:
+
+    def __init__(self, payload, **kwargs):
+        # One-byte long field
+        self.length = kwargs.get("len", 0)
+        self.payload = payload
+
+    # optional: nice string representation of packet for printing purposes
+    def __repr__(self):
+        return "DataPacketHeader(len={}, payload={})".format(
+            self.length, self.payload)
+
+    @classmethod
+    def unpack(cls, packed_data):
+        length, payload = struct.unpack(
+            '!B' + str(len(packed_data)-DATA_PKT_HEADER_SIZE) + 's', packed_data)
+        return cls(payload, len=length)
+
+
+class DataPacketPayload:
+
+    def __init__(self, payload, **kwargs):
+        # These are two bytes long
+        self.addr = kwargs.get("addr", 0)
+        self.seq = kwargs.get("seq", 0)
+        self.temp = kwargs.get("temp", 0)
+        self.humidity = kwargs.get("humidity", 0)
+        self.payload = payload
+
+    # optional: nice string representation of packet for printing purposes
+    def __repr__(self):
+        return "DataPacketPayload(addr={}, seq={}, temp={}, humidity={}, payload={})".format(
+            self.addr, self.seq, self.temp, self.humidity, self.payload)
+
+    @classmethod
+    def unpack(cls, packed_data, payload_size):
+        addr, seq, temp, humidity, payload = struct.unpack(
+            '!HHHH' + str(payload_size) + 's', packed_data)
+        return cls(payload, addr=addr, seq=seq, temp=temp, humidity=humidity)
+
+
+class NA_Packet:
+
+    def __init__(self, payload, **kwargs):
+        # These are two bytes long
+        self.addr = kwargs.get("addr", 0)
+        self.rssi = kwargs.get("rssi", 0)
+        self.rank = kwargs.get("rank", 0)
+        self.payload = payload
+
+    # optional: nice string representation of packet for printing purposes
+    def __repr__(self):
+        return "NA_Packet(addr={}, rssi={}, rank={}, payload={})".format(
+            self.addr, self.rssi, self.rank, self.payload)
+
+    @classmethod
+    def unpack(cls, packed_data, payload_size):
+        addr, rssi, rank, payload = struct.unpack(
+            '!HhH' + str(payload_size) + 's', packed_data)
+        return cls(payload, addr=addr, rssi=rssi, rank=rank)
