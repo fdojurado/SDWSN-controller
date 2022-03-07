@@ -105,7 +105,7 @@ class NetworkConfig(mp.Process):
         # length of the entire packet
         length = payload_len+CP_PKT_HEADER_SIZE+IP_PKT_HEADER_SIZE
         ttl = 0x40  # 0x40: Time to live
-        proto = sdn_protocols.SDN_PROTO_NC  # NC packet
+        proto = sdn_protocols.SDN_PROTO_CP  # NC packet
         scr = 0x0101  # Controller is sending
         dest = int(float(node))
         sdn_ip_pkt = SDN_IP_Packet(cpPackedData,
