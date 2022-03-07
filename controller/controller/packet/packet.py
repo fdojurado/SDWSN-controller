@@ -22,6 +22,31 @@ sdn_protocols.SDN_PROTO_NC_ACK = 7    # Neighbor advertisement
 sdn_protocols.SDN_PROTO_DATA = 8      # Data packet
 
 
+def chksum(sum, data, len):
+    total = sum
+    # Add up 16-bit words
+    num_words = len // 2
+    for chunk in struct.unpack("!%sH" % num_words, data[0:num_words * 2]):
+        total += chunk
+    # Add any left over byte
+    if len % 2:
+        total += data[-1] << 8
+    # Fold 32-bits into 16-bits
+    total = (total >> 16) + (total & 0xffff)
+    total += total >> 16
+    return ~total + 0x10000 & 0xffff
+
+
+def sdn_ip_checksum(msg, len):
+    sum = chksum(0, msg, len)
+    result = 0
+    if(sum == 0):
+        result = 0xffff
+    else:
+        result = sum
+    return result
+
+
 class SerialPacket:
 
     def __init__(self, payload, **kwargs):
@@ -65,6 +90,12 @@ class SDN_IP_Packet:
         self.payload = payload
 
     def pack(self):
+        #  Let's first compute the checksum
+        data = struct.pack('!BBBBHHH', self.vahl, self.length,
+                           self.ttl, self.proto, self.ipchksum, self.scr, self.dest)
+        self.ipchksum = sdn_ip_checksum(data, IP_PKT_HEADER_SIZE)
+        print("computed checksum")
+        print(self.ipchksum)
         return struct.pack('!BBBBHHH' + str(len(self.payload)) + 's', self.vahl, self.length,
                            self.ttl, self.proto, self.ipchksum, self.scr, self.dest, bytes(self.payload))
 
@@ -96,6 +127,12 @@ class ControlPacket:
         self.payload = payload
 
     def pack(self):
+        #  Let's first compute the checksum
+        data = struct.pack('!BBHHHH' + str(len(self.payload)) + 's', self.type, self.length,
+                           self.rank, self.energy, self.rt_chksum, self.cpchksum, bytes(self.payload))
+        self.cpchksum = sdn_ip_checksum(data, CP_PKT_HEADER_SIZE+self.length)
+        print("computed checksum")
+        print(self.cpchksum)
         return struct.pack('!BBHHHH' + str(len(self.payload)) + 's', self.type, self.length,
                            self.rank, self.energy, self.rt_chksum, self.cpchksum, bytes(self.payload))
 

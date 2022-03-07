@@ -96,13 +96,25 @@ class NetworkConfig(mp.Process):
         print(repr(data_packet))
         print(dataPacked)
         # Build control packet
-        cp_pkt = ControlPacket(dataPacked, type=6, len=payload_len)
+        cp_pkt = ControlPacket(dataPacked, type=sdn_protocols.SDN_PROTO_NC, len=payload_len)
         cpPackedData = cp_pkt.pack()
         print(repr(cp_pkt))
         print(cpPackedData)
+        # Build sdn IP packet
+        vahl = 0x2a  # 0x2a: version 2, header length 10
+        # length of the entire packet
+        length = payload_len+CP_PKT_HEADER_SIZE+IP_PKT_HEADER_SIZE
+        ttl = 0x40  # 0x40: Time to live
+        proto = sdn_protocols.SDN_PROTO_NC  # NC packet
+        scr = 0x0101  # Controller is sending
+        dest = int(float(node))
+        sdn_ip_pkt = SDN_IP_Packet(cpPackedData,
+                                   vahl=vahl, len=length, ttl=ttl, proto=proto, scr=scr, dest=dest)
+        sdn_ip_packed = sdn_ip_pkt.pack()
+        print(repr(sdn_ip_pkt))
         # Control packet as payload of the serial packet
-        pkt = SerialPacket(cpPackedData, addr0=0, addr1=0,
-                           message_type=2, payload_len=(payload_len+CP_PKT_HEADER_SIZE),
+        pkt = SerialPacket(sdn_ip_packed, addr0=0, addr1=0,
+                           message_type=2, payload_len=length,
                            reserved0=0, reserved1=0)
         packedData = pkt.pack()
         print(repr(pkt))
@@ -136,7 +148,7 @@ class NetworkConfig(mp.Process):
                     print(df)
                     # build the packet
                     packetData = self.build_packet(node, df)
-                    print("Sending NC packet to node ", node)
+                    # print("Sending NC packet to node ", node)
                     # set retransmission
                     rtx = 0
                     # Send NC packet
