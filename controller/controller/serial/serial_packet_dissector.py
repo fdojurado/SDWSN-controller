@@ -127,12 +127,12 @@ def process_data_packet(data):
 
 def process_control_packet(addr, data):
     # Parse control packet
-    print("processing control packet")
     pkt = ControlPacket.unpack(data)
     # We first check the entegrity of the control packet
     if(sdn_cp_checksum(data, pkt.length+CP_PKT_HEADER_SIZE) != 0xffff):
         print("bad checksum")
         return
+    print(repr(pkt))
     # If the reported length in the cp header doesnot match the packet size,
     # then we drop the packet.
     if(len(data) < (pkt.length+CP_PKT_HEADER_SIZE)):
@@ -145,6 +145,9 @@ def process_control_packet(addr, data):
             print("NA processing")
             process_na_packet(addr, pkt)
             return
+        case sdn_protocols.SDN_PROTO_NC_ACK:
+            print("NC ACK processing")
+            process_nc_ack(addr, pkt)
         case _:
             # Default
             print("control packet type not found")
@@ -290,6 +293,11 @@ def process_na_packet(addr, pkt):
         "energy": int(summation),
     }
     Database.insert("total_energy", data)
+
+
+def process_nc_ack(addr, pkt):
+    pkt = NC_ACK_Packet.unpack(pkt.payload)
+    print("ack received: ", pkt.ack, " from ", addr)
 
 
 def insert_links(data):

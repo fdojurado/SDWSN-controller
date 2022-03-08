@@ -5,6 +5,7 @@ import types
 NC_ROUTING_PKT_SIZE = 4
 DATA_PKT_PAYLOAD_SIZE = 8
 NA_PKT_SIZE = 6
+NC_ACK_PKT_SIZE = 2
 # Header sizes
 SERIAL_PKT_HEADER_SIZE = 6
 CP_PKT_HEADER_SIZE = 10
@@ -240,3 +241,21 @@ class NA_Packet:
         addr, rssi, rank, payload = struct.unpack(
             '!HhH' + str(payload_size) + 's', packed_data)
         return cls(payload, addr=addr, rssi=rssi, rank=rank)
+
+class NC_ACK_Packet:
+
+    def __init__(self, payload, **kwargs):
+        # One-byte long field
+        self.ack = kwargs.get("ack", 0)
+        self.payload = payload
+
+    # optional: nice string representation of packet for printing purposes
+    def __repr__(self):
+        return "NC_ACK_Packet(ack={}, payload={})".format(
+            self.ack, self.payload)
+
+    @classmethod
+    def unpack(cls, packed_data):
+        ack, payload = struct.unpack(
+            '!H' + str(len(packed_data)-NC_ACK_PKT_SIZE) + 's', packed_data)
+        return cls(payload, ack=ack)

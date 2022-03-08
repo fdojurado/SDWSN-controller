@@ -3,12 +3,12 @@ from controller.database.database import Database
 from controller.network_config.queue import Queue
 from controller.serial.serial_packet_dissector import *
 from controller.packet.packet import SerialPacket, ControlPacket, NC_RoutingPacket
-from controller import Message
 import multiprocessing as mp
 import networkx as nx
 import pandas as pd
-import threading
 import time
+# Generate random number for ack
+from random import randrange
 
 
 def routes_to_deploy(node, routes):
@@ -96,7 +96,8 @@ class NetworkConfig(mp.Process):
         print(repr(data_packet))
         print(dataPacked)
         # Build control packet
-        cp_pkt = ControlPacket(dataPacked, type=sdn_protocols.SDN_PROTO_NC, len=payload_len)
+        cp_pkt = ControlPacket(
+            dataPacked, type=sdn_protocols.SDN_PROTO_NC, len=payload_len, rank=randrange(65535))
         cpPackedData = cp_pkt.pack()
         print(repr(cp_pkt))
         print(cpPackedData)
