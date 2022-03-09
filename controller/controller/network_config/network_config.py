@@ -179,9 +179,10 @@ class NetworkConfig(mp.Process):
                     while True:
                         try:
                             ack_pkt = self.ack_queue.get(block=True, timeout=7)
-                            print("correct ACK from ", ack_pkt.addr)
-                            if ((ack_pkt.ack == cp_pkt.rank+1) and (ack_pkt.addr == node)):
-                                print("correct ACK received from ", ack_pkt.addr)
+                            print("correct ACK from ", ack_pkt.addrStr)
+                            if ((ack_pkt.ack == cp_pkt.rank+1) and (ack_pkt.addrStr == node)):
+                                print("correct ACK received from ",
+                                      ack_pkt.addrStr)
                                 # set the routes deployed flag
                                 self.set_route_flag(node, df)
                                 break
