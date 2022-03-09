@@ -36,7 +36,7 @@ def compute_routes_from_path(path):
                 reverse = p[::-1]
                 node = reverse[0]
                 neigbour = reverse[1]
-                rts.add_route(node, "1.0", neigbour)
+                rts.add_route(node, "1.1", neigbour)
     return rts
 
 
