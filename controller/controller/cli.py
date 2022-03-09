@@ -73,6 +73,8 @@ def main(command, verbose, version, config, plot, daemon):
     # NC Queues
     nc_input_queue = mp.Queue()
     nc_output_queue = mp.Queue()
+    # Queue for ack packets
+    ack_queue = mp.Queue()
     """ Start the routing interface in background (as a daemon) """
     # rp stands for routing process
     # We need to consider that the computation of the new routing alg.
@@ -82,7 +84,7 @@ def main(command, verbose, version, config, plot, daemon):
     """ Start the NC interface in background (as a daemon) """
     # nc stands for network configuration
     nc = NetworkConfig(verbose, nc_input_queue,
-                       nc_output_queue, serial_input_queue)
+                       nc_output_queue, serial_input_queue, ack_queue)
     """ Start the serial interface in background (as a daemon) """
     sp = SerialBus(ServerConfig.from_json_file(config),
                    verbose, serial_input_queue, serial_output_queue)
@@ -122,4 +124,4 @@ def main(command, verbose, version, config, plot, daemon):
         # look for incoming request from the serial interface
         if not serial_output_queue.empty():
             data = serial_output_queue.get()
-            handle_serial_packet(data)
+            handle_serial_packet(data, ack_queue)

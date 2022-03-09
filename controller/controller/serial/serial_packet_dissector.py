@@ -8,7 +8,7 @@ import pandas as pd
 current_time = 0
 
 
-def handle_serial_packet(msg):
+def handle_serial_packet(msg, ack_queue):
     print("serial packet received")
     msg.print_packet()
     # Let's firt validate the packet
@@ -21,7 +21,7 @@ def handle_serial_packet(msg):
     match pkt.proto:
         case sdn_protocols.SDN_PROTO_CP:
             print("Processing control packet")
-            process_control_packet(pkt.scr, pkt.payload)
+            process_control_packet(pkt.scr, pkt.payload, ack_queue)
             return
         case sdn_protocols.SDN_PROTO_DATA:
             print("Processing data packet")
@@ -125,7 +125,7 @@ def process_data_packet(data):
         Database.insert("total_pdr", data)
 
 
-def process_control_packet(addr, data):
+def process_control_packet(addr, data, ack_queue):
     # Parse control packet
     pkt = ControlPacket.unpack(data)
     # We first check the entegrity of the control packet
@@ -147,7 +147,9 @@ def process_control_packet(addr, data):
             return
         case sdn_protocols.SDN_PROTO_NC_ACK:
             print("NC ACK processing")
-            process_nc_ack(addr, pkt)
+            ack = process_nc_ack(addr, pkt)
+            ack_queue.put(ack)
+            return
         case _:
             # Default
             print("control packet type not found")
@@ -296,8 +298,9 @@ def process_na_packet(addr, pkt):
 
 
 def process_nc_ack(addr, pkt):
-    pkt = NC_ACK_Packet.unpack(pkt.payload)
-    print("ack received: ", pkt.ack, " from ", addr)
+    pkt = NC_ACK_Packet.unpack(pkt.payload, addr)
+    print("ack received: ", pkt.ack, " from ", pkt.addr)
+    return pkt
 
 
 def insert_links(data):

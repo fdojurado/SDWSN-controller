@@ -1,3 +1,4 @@
+from logging import exception
 from controller.routing.routing import *
 from controller.database.database import Database
 from controller.network_config.queue import Queue
@@ -6,7 +7,7 @@ from controller.packet.packet import SerialPacket, ControlPacket, NC_RoutingPack
 import multiprocessing as mp
 import networkx as nx
 import pandas as pd
-import time
+import queue  # or Queue in Python 2
 # Generate random number for ack
 from random import randrange
 
@@ -57,7 +58,7 @@ def compute_routes_nc():
 
 
 class NetworkConfig(mp.Process):
-    def __init__(self, verbose, input_queue, output_queue, serial_input_queue):
+    def __init__(self, verbose, input_queue, output_queue, serial_input_queue, ack_queue):
         mp.Process.__init__(self)
         self.G = nx.Graph()
         self.running = False
@@ -65,6 +66,7 @@ class NetworkConfig(mp.Process):
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.serial_input_queue = serial_input_queue
+        self.ack_queue = ack_queue
         self.NC_routes = Queue(None)  # Queue for NC packets
         self.NC_ACK = Queue(None)  # Queue for ACKs
 
@@ -119,7 +121,7 @@ class NetworkConfig(mp.Process):
                            reserved0=0, reserved1=0)
         packedData = pkt.pack()
         print(repr(pkt))
-        return packedData
+        return cp_pkt, sdn_ip_pkt, packedData
 
     def read_routes(self, node):
         query = {"$and": [
@@ -133,6 +135,26 @@ class NetworkConfig(mp.Process):
         df = pd.DataFrame(db['routes'])
         df = df[(df['deployed'] == 0)]
         return df
+
+    def set_route_flag(self, node, df):
+        print("setting routes flag")
+        for index, route in df.iterrows():
+            query = {"$and": [
+                {"_id": node},
+                {"routes.scr": node},
+                {"routes.dst": route["dst"]},
+                {"routes.via": route["via"]},
+            ]}
+            db = Database.find_one("nodes", query)
+            if(db is None):
+                print("error route not found")
+            print("route found")
+            print(db)
+            update = {"$set": {"routes.$[elem].deployed": 1}}
+            arrayFilters = [{"elem.via": route["via"]},
+                            {"elem.dst": route["dst"]}]
+            Database.update_one("nodes", db, update, arrayFilters)
+            # Values to be updated.
 
     def run(self):
         while True:
@@ -148,26 +170,28 @@ class NetworkConfig(mp.Process):
                     print("routes for node ", node)
                     print(df)
                     # build the packet
-                    packetData = self.build_packet(node, df)
+                    cp_pkt, sdn_ip_pkt, packetData = self.build_packet(
+                        node, df)
                     # print("Sending NC packet to node ", node)
                     # set retransmission
                     rtx = 0
                     # Send NC packet
                     self.serial_input_queue.put(packetData)
-                    # We first set the timeout
-                    timeout = time.time() + 7   # 7 seconds from now
                     while True:
-                        # We resend the packet if timeout and retransmission < 7
-                        if((time.time() > timeout) and (rtx < 7)):
-                            # Send NC packet
+                        try:
+                            ack_pkt = self.ack_queue.get(block=True, timeout=7)
+                            print("correct ACK from ", ack_pkt.addr)
+                            if ((ack_pkt.ack == cp_pkt.rank+1) and (ack_pkt.addr == node)):
+                                print("correct ACK received from ", ack_pkt.addr)
+                                # set the routes deployed flag
+                                self.set_route_flag(node, df)
+                                break
+                        except queue.Empty:
+                            print("ACK not received")
+                            # We stop sending the current NC packet if
+                            # we reached the max RTX or we received ACK
+                            if(rtx >= 7):
+                                break
+                            # We resend the packet if retransmission < 7
                             rtx = rtx + 1
                             self.serial_input_queue.put(packetData)
-                            timeout = time.time() + 7   # 7 seconds from now
-                        # We stop sending the current NC packet if
-                        # we reached the max RTX or we received ACK
-                        if(rtx >= 7):
-                            break
-                        time.sleep(1)
-                        # If we received the correct ACK
-                        # if(True):
-                        #     break

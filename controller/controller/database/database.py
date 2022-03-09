@@ -63,6 +63,10 @@ class Database(object):
         )
 
     @staticmethod
+    def update_one(collection, filter, update, arrayFilters):
+        return Database.DATABASE[collection].update_one(filter, update, array_filters=arrayFilters)
+
+    @staticmethod
     def find(collection, query):
         return Database.DATABASE[collection].find(query)
 

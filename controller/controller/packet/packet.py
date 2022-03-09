@@ -242,20 +242,23 @@ class NA_Packet:
             '!HhH' + str(payload_size) + 's', packed_data)
         return cls(payload, addr=addr, rssi=rssi, rank=rank)
 
+
 class NC_ACK_Packet:
 
     def __init__(self, payload, **kwargs):
         # One-byte long field
         self.ack = kwargs.get("ack", 0)
+        self.addr = kwargs.get("addr", 0)
         self.payload = payload
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "NC_ACK_Packet(ack={}, payload={})".format(
-            self.ack, self.payload)
+        return "NC_ACK_Packet(ack={}, addr={}, payload={})".format(
+            self.ack, self.addr, self.payload)
 
     @classmethod
-    def unpack(cls, packed_data):
+    def unpack(cls, packed_data, addr):
         ack, payload = struct.unpack(
             '!H' + str(len(packed_data)-NC_ACK_PKT_SIZE) + 's', packed_data)
-        return cls(payload, ack=ack)
+        addr = str(addr)+".0"
+        return cls(payload, ack=ack, addr=addr)
