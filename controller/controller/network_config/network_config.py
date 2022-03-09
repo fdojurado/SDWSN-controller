@@ -151,8 +151,7 @@ class NetworkConfig(mp.Process):
             print("route found")
             print(db)
             update = {"$set": {"routes.$[elem].deployed": 1}}
-            arrayFilters = [{"elem.via": route["via"]},
-                            {"elem.dst": route["dst"]}]
+            arrayFilters = [{"elem.dst": route["dst"]}]
             Database.update_one("nodes", db, update, arrayFilters)
             # Values to be updated.
 
