@@ -68,7 +68,7 @@ def process_data_packet(data):
         data_pkt = DataPacketPayload.unpack(payload, payload_size)
         print(repr(data_pkt))
         payload = data_pkt.payload
-        src = str(data_pkt.addr)+'.0'
+        src = data_pkt.addrStr
         data = {
             'time': current_time,
             'src': src,
@@ -214,7 +214,8 @@ def sdn_cp_checksum(msg, len):
 
 
 def process_na_packet(addr, pkt):
-    addr = str(addr)+'.0'
+    addr=addrConversion.to_string(addr)
+    addr = addr.addrStr
     """ Let's process neighbour advertisement packets """
     # Process neighbours
     blocks = len(pkt.payload) // NA_PKT_SIZE
@@ -230,7 +231,7 @@ def process_na_packet(addr, pkt):
         na_pkt = NA_Packet.unpack(payload, payload_size)
         print(repr(na_pkt))
         payload = na_pkt.payload
-        dst = str(na_pkt.addr)+'.0'
+        dst = na_pkt.addrStr
         data = {
             'time': current_time,
             'scr': addr,
@@ -299,7 +300,7 @@ def process_na_packet(addr, pkt):
 
 def process_nc_ack(addr, pkt):
     pkt = NC_ACK_Packet.unpack(pkt.payload, addr)
-    print("ack received: ", pkt.ack, " from ", pkt.addr)
+    print("ack received: ", pkt.ack, " from ", pkt.addrStr)
     return pkt
 
 
