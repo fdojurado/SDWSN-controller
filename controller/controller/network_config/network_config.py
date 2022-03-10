@@ -1,4 +1,5 @@
 from logging import exception
+from controller.forwarding_table.forwarding_table import FWD_TABLE
 from controller.routing.routing import *
 from controller.database.database import Database
 from controller.network_config.queue import Queue
@@ -14,6 +15,8 @@ from random import randrange
 
 """ TODO: Set the maximum routes per node (e.g., 10). 
 Remove old routes with the new ones"""
+
+
 def routes_to_deploy(node, routes):
     """ Remove already deployed routes """
     for index, route in routes.iterrows():
@@ -41,7 +44,7 @@ def routes_to_deploy(node, routes):
 
 
 def compute_routes_nc():
-    df, G = load_data("routes", 'scr', 'via', None)
+    df, G = FWD_TABLE.fwd_get_graph('scr', 'via', None)
     if(nx.is_empty(G) == False):
         H = nx.DiGraph()
         H.add_edges_from(G.edges)
@@ -54,7 +57,7 @@ def compute_routes_nc():
             print("routes")
             print(routes)
             # Save routes in the "nodes" collection if they don't exist
-            routes_to_deploy(node, routes)
+            # routes_to_deploy(node, routes)
         return nodes
         # Now, we process routes for each sensor node
 
@@ -154,7 +157,7 @@ class NetworkConfig(mp.Process):
             print(db)
             update = {"$set": {"routes.$[elem].deployed": 1}}
             arrayFilters = [{"elem.dst": route["dst"]}]
-            Database.update_one("nodes", db, update, arrayFilters)
+            Database.update_one("nodes", db, update, False, arrayFilters)
             # Values to be updated.
 
     def run(self):

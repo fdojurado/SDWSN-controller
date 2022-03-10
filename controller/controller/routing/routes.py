@@ -3,6 +3,7 @@
 
 import pandas as pd
 from controller.database.database import Database
+from controller.forwarding_table.forwarding_table import FWD_TABLE
 from datetime import datetime
 
 
@@ -48,27 +49,7 @@ class Routes:
             Database.insert("historical-routes", data)
 
     def save_routes_db(self):
-        Database.delete_collection("routes")
         # Insert all routes in the collection
         self.time = datetime.now().timestamp() * 1000.0
         for index, row in self.routes.iterrows():
-            # Here, we first check if the route already exist in sensor node.
-            db = Database.find_one(
-                "nodes", {"$and": [
-                    {"_id": row['scr']},
-                    {"dst": row['dst']},
-                    {"via": row['via']}
-                ]
-                }
-            )
-            deployed = 0
-            if(db is not None):
-                deployed = 1
-            data = {
-                'time': self.time,
-                'scr': row['scr'],
-                'dst': row['dst'],
-                'via': row['via'],
-                'deployed': deployed
-            }
-            Database.insert("routes", data)
+            FWD_TABLE.fwd_add_entry(row['scr'], row['dst'], row['via'], 0)
