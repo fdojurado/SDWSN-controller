@@ -12,6 +12,8 @@ import queue  # or Queue in Python 2
 from random import randrange
 
 
+""" TODO: Set the maximum routes per node (e.g., 10). 
+Remove old routes with the new ones"""
 def routes_to_deploy(node, routes):
     """ Remove already deployed routes """
     for index, route in routes.iterrows():
@@ -179,7 +181,6 @@ class NetworkConfig(mp.Process):
                     while True:
                         try:
                             ack_pkt = self.ack_queue.get(block=True, timeout=7)
-                            print("correct ACK from ", ack_pkt.addrStr)
                             if ((ack_pkt.ack == cp_pkt.rank+1) and (ack_pkt.addrStr == node)):
                                 print("correct ACK received from ",
                                       ack_pkt.addrStr)
