@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import matplotlib.animation as animation
+from controller.forwarding_table.forwarding_table import FWD_TABLE
 import networkx as nx
 from controller.database.database import Database
 import pandas as pd
@@ -42,7 +43,7 @@ class SubplotAnimation(mp.Process):
                     self.prev_G, pos, edge_labels=labels, ax=self.ax1)
         # Now let's redraw the network for the current deployed routes
         # See if G has changed
-        self.G = self.load_data("routes", 'scr', 'via', None)
+        df, self.G = FWD_TABLE.fwd_get_graph('scr', 'via', None, 1)
         if(nx.is_empty(self.G) == False):
             equal_graphs = nx.is_isomorphic(
                 self.prev_routes_G, self.G, edge_match=lambda x, y: x == y)  # match weights

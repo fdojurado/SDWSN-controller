@@ -44,20 +44,12 @@ def routes_to_deploy(node, routes):
 
 
 def compute_routes_nc():
-    df, G = FWD_TABLE.fwd_get_graph('scr', 'via', None)
+    df, G = FWD_TABLE.fwd_get_graph('scr', 'via', None, 0)
     if(nx.is_empty(G) == False):
         H = nx.DiGraph()
         H.add_edges_from(G.edges)
         # Get ordered list of nodes to send NC packet
         nodes = list(nx.topological_sort(H))
-        for node in nodes:
-            print("list of routes for node ", node)
-            # Get the list of routes to send
-            routes = df[df['scr'] == node]
-            print("routes")
-            print(routes)
-            # Save routes in the "nodes" collection if they don't exist
-            # routes_to_deploy(node, routes)
         return nodes
         # Now, we process routes for each sensor node
 

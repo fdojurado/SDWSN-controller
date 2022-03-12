@@ -46,13 +46,15 @@ class FWD_TABLE(object):
         Database.update_one(FORWARDING_TABLE, db, update, False, None)
 
     @staticmethod
-    def fwd_get_graph(source, target, attribute):
+    def fwd_get_graph(source, target, attribute, deployed):
         db = Database.find_one(FORWARDING_TABLE, {})
         df = pd.DataFrame()
         Graph = nx.Graph()
         if(db is None):
             return df, Graph
         df = pd.DataFrame(list(Database.find(FORWARDING_TABLE, {})))
+        if(deployed):
+            df = df[df["deployed"] == 1]
         Graph = nx.from_pandas_edgelist(
             df, source=source, target=target, edge_attr=attribute)
         return df, Graph
