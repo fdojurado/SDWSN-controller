@@ -3,14 +3,12 @@ according to the deployed routes.
 
 The structure of the database is as follows.
 
-node_id:{
-    "routes":{
-        time:
-        scr:
-        dst:
-        via:
-        deployed:
-    }
+{
+    time:
+    scr:
+    dst:
+    via:
+    deployed:
 } """
 
 from controller.database.database import Database
@@ -35,6 +33,19 @@ class FWD_TABLE(object):
         return df.shape[0]
 
     @staticmethod
+    def fwd_set_deployed_flag(scr, dst, via, deployed):
+        query = {"$and": [
+                {"scr": scr},
+                {"dst": dst},
+                {"via": via},
+        ]}
+        db = Database.find_one(FORWARDING_TABLE, query)
+        if(db is None):
+            print("error route not found")
+        update = {"$set": {"deployed": deployed}}
+        Database.update_one(FORWARDING_TABLE, db, update, False, None)
+
+    @staticmethod
     def fwd_get_graph(source, target, attribute):
         db = Database.find_one(FORWARDING_TABLE, {})
         df = pd.DataFrame()
@@ -42,8 +53,6 @@ class FWD_TABLE(object):
         if(db is None):
             return df, Graph
         df = pd.DataFrame(list(Database.find(FORWARDING_TABLE, {})))
-        stdf = df['routes']
-        df = pd.DataFrame(stdf.tolist()[0])
         Graph = nx.from_pandas_edgelist(
             df, source=source, target=target, edge_attr=attribute)
         return df, Graph
@@ -60,10 +69,11 @@ class FWD_TABLE(object):
             'via': via,
             'deployed': deployed
         }
-        filter = {"_id": scr}
-        update = {"$push": {'routes': data}}
-        Database.update_one(
-            FORWARDING_TABLE, filter, update, True, None)
+        # filter = {"_id": scr}
+        # update = {"$push": {'routes': data}}
+        Database.insert(FORWARDING_TABLE, data)
+        # Database.update_one(
+        #     FORWARDING_TABLE, filter, update, True, None)
 
     @staticmethod
     def fwd_get_item(scr, dst, via):
@@ -95,16 +105,13 @@ class FWD_TABLE(object):
         # Continue if df is not empty
         if(not fwd_df.empty):
             # Lets filter the table by node id
-            df = fwd_df[(fwd_df["_id"] == scr)]
+            df = fwd_df[(fwd_df["scr"] == scr)]
             print("printing df of add entry for specific node")
             print(df.to_string())
             if(df.empty):
                 FWD_TABLE.fwd_insert_item(scr, dst, via, deployed)
                 return
             # Get the routes field
-            stdf = df['routes']
-            df = pd.DataFrame(stdf.tolist()[0])
-            print(df.to_string())
             # Check if the route already exist
             if ((df['scr'] == scr) & (df['dst'] == dst) & (df['via'] == via)).any():
                 print("route already exists")

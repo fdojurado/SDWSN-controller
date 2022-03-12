@@ -129,36 +129,18 @@ class NetworkConfig(mp.Process):
         return cp_pkt, sdn_ip_pkt, packedData
 
     def read_routes(self, node):
-        query = {"$and": [
-                {"_id": node},
-                {"routes": {"$exists": True}}
-        ]}
-        df = pd.DataFrame()
-        db = Database.find_one("nodes", query)
-        if(db is None):
+        df = FWD_TABLE.fwd_get_table()
+        df = df[df['scr'] == node]
+        if(df.empty):
             return df
-        df = pd.DataFrame(db['routes'])
         df = df[(df['deployed'] == 0)]
         return df
 
     def set_route_flag(self, node, df):
         print("setting routes flag")
         for index, route in df.iterrows():
-            query = {"$and": [
-                {"_id": node},
-                {"routes.scr": node},
-                {"routes.dst": route["dst"]},
-                {"routes.via": route["via"]},
-            ]}
-            db = Database.find_one("nodes", query)
-            if(db is None):
-                print("error route not found")
-            print("route found")
-            print(db)
-            update = {"$set": {"routes.$[elem].deployed": 1}}
-            arrayFilters = [{"elem.dst": route["dst"]}]
-            Database.update_one("nodes", db, update, False, arrayFilters)
-            # Values to be updated.
+            FWD_TABLE.fwd_set_deployed_flag(
+                node, route["dst"], route["via"], 1)
 
     def run(self):
         while True:
@@ -171,7 +153,7 @@ class NetworkConfig(mp.Process):
                 # read routes from node
                 df = self.read_routes(node)
                 if(not df.empty):
-                    print("routes for node ", node)
+                    print("routes to deploy for node ", node)
                     print(df)
                     # build the packet
                     cp_pkt, sdn_ip_pkt, packetData = self.build_packet(
