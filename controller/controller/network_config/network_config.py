@@ -165,10 +165,11 @@ class NetworkConfig(mp.Process):
                                 self.set_route_flag(node, df)
                                 break
                         except queue.Empty:
-                            print("ACK not received")
+                            print("ACK not received from ", node, " rtx ", rtx)
                             # We stop sending the current NC packet if
                             # we reached the max RTX or we received ACK
                             if(rtx >= 7):
+                                print("ACK never received from ", node, " rtx ", rtx)
                                 break
                             # We resend the packet if retransmission < 7
                             rtx = rtx + 1
