@@ -34,14 +34,10 @@ class FWD_TABLE(object):
 
     @staticmethod
     def fwd_set_deployed_flag(scr, dst, via, deployed):
-        query = {"$and": [
-                {"scr": scr},
-                {"dst": dst},
-                {"via": via},
-        ]}
-        db = Database.find_one(FORWARDING_TABLE, query)
+        db = FWD_TABLE.fwd_get_item(scr, dst, via)
         if(db is None):
             print("error route not found")
+            return
         update = {"$set": {"deployed": deployed}}
         Database.update_one(FORWARDING_TABLE, db, update, False, None)
 
@@ -80,23 +76,20 @@ class FWD_TABLE(object):
     @staticmethod
     def fwd_get_item(scr, dst, via):
         query = {"$and": [
-            {"_id": scr},
-            {"routes.scr": scr},
-            {"routes.dst": dst},
-            {"routes.via": via},
+                {"scr": scr},
+                {"dst": dst},
+                {"via": via},
         ]}
         db = Database.find_one(FORWARDING_TABLE, query)
-        if(db is None):
-            print("item does not exist in ", FORWARDING_TABLE)
         return db
 
     @staticmethod
-    def fwd_delete_destination(node, dst):
-        query = {"$and": [
-            {"_id": node},
-            {"routes.dst": dst},
-        ]}
-        Database.remove(FORWARDING_TABLE, query, True)
+    def fwd_delete_entry(scr, dst, via):
+        db = FWD_TABLE.fwd_get_item(scr, dst, via)
+        if(db is None):
+            print("deleting unexisting route")
+            return
+        Database.delete_one(FORWARDING_TABLE, db)
 
     @staticmethod
     def fwd_add_entry(scr, dst, via, deployed):
@@ -122,12 +115,15 @@ class FWD_TABLE(object):
             if(df['dst'] == dst).any():
                 print("We are changing the via")
                 # Then, we delete the old route and insert the new one
-                FWD_TABLE.fwd_delete_destination(scr, dst)
+                old_route = df[df['dst'] == dst]
+                FWD_TABLE.fwd_delete_entry(
+                    old_route['scr'].values[0], old_route['dst'].values[0], old_route['via'].values[0])
             # Check if we still have room for another entry
             if(FWD_TABLE.fwd_num_elements(df) > MAX_TABLE_SIZE):
                 # Delete old entry
                 last_route = df.iloc[-1]
-                FWD_TABLE.fwd_delete_destination(scr, last_route['dst'])
+                FWD_TABLE.fwd_delete_entry(
+                    last_route['scr'].values[0], last_route['dst'].values[0], last_route['via'].values[0])
             FWD_TABLE.fwd_insert_item(scr, dst, via, deployed)
         else:
             FWD_TABLE.fwd_insert_item(scr, dst, via, deployed)

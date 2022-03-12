@@ -71,8 +71,8 @@ class Database(object):
         return Database.DATABASE[collection].find(query)
 
     @staticmethod
-    def remove(collection, query, justOne):
-        return Database.DATABASE[collection].remove(query, justOne=justOne)
+    def delete_one(collection, query):
+        return Database.DATABASE[collection].delete_one(query)
 
     @staticmethod
     def print_documents(collection):

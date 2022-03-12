@@ -19,7 +19,7 @@ def compute_routes_from_path(path):
     rts = Routes()
     for u, p in path.items():
         if(u != '1.0'):
-            if(len(p) > 2):
+            if(len(p) >= 2):
                 # We set the route from the controller to nodes
                 for i in range(len(p)-1):
                     node = p[i]
