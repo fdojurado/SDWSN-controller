@@ -67,6 +67,10 @@ class Database(object):
         return Database.DATABASE[collection].update_one(filter, update, upsert=upsert, array_filters=arrayFilters)
 
     @staticmethod
+    def aggregate(collection):
+        return Database.DATABASE[collection].aggregate([{"$unwind": "$routes"}])
+
+    @staticmethod
     def find(collection, query):
         return Database.DATABASE[collection].find(query)
 

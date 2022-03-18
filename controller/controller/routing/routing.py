@@ -108,8 +108,4 @@ class Routing(mp.Process):
         # We want to compute the MST of the current connected network
         # We call the edges "path"
         mst = nx.minimum_spanning_tree(G, algorithm="kruskal", weight="rssi")
-        print("MST path")
-        print(sorted(mst.edges(data=True)))
-        length, path = nx.single_source_dijkstra(mst, "1.0", None, None, "rssi")
-        # Let's put the path in the queue
-        self.output_queue.put(path)
+        self.dijkstra(mst)

@@ -13,6 +13,22 @@ class SubplotAnimation(mp.Process):
     def __init__(self):
         mp.Process.__init__(self)
 
+    def load_data_latest_data(self, collection, source, target, attribute):
+        db = Database.find_one(collection, {})
+        Graph = nx.Graph()
+        if(db is None):
+            return Graph
+        db = Database.find(collection, {}).sort([("time", -1)]).limit(1)
+        print("load_data_latest_data")
+        print(db)
+        db = Database.aggregate([{"$unwind": "$routes"}])
+        print("unwind")
+        print(db)
+        df = pd.DataFrame(list(db))
+        Graph = nx.from_pandas_edgelist(
+            df, source=source, target=target, edge_attr=attribute)
+        return Graph
+
     def load_data(self, collection, source, target, attribute):
         db = Database.find_one(collection, {})
         Graph = nx.Graph()
@@ -43,7 +59,8 @@ class SubplotAnimation(mp.Process):
                     self.prev_G, pos, edge_labels=labels, ax=self.ax1)
         # Now let's redraw the network for the current deployed routes
         # See if G has changed
-        df, self.G = FWD_TABLE.fwd_get_graph('scr', 'via', None, 1)
+        self.G = self.load_data_latest_data(
+            "historical-routes", 'scr', 'dst', 'rssi')
         if(nx.is_empty(self.G) == False):
             equal_graphs = nx.is_isomorphic(
                 self.prev_routes_G, self.G, edge_match=lambda x, y: x == y)  # match weights
