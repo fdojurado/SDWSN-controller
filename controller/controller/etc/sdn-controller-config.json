@@ -2,7 +2,7 @@
     "site": "default",
     "mqtt": {
         "host": "127.0.0.1",
-        "port": 1883,
+        "port": 1884,
         "authentication": {
             "username": "sS0J03qjGyn0K5z8ubzy",
             "password": ""

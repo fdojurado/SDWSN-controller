@@ -6,6 +6,7 @@ from controller.network_config.network_config import *
 from controller.routing.routing import *
 from controller.serial.serial_packet_dissector import *
 from controller.plotting.plotting import SubplotAnimation
+from controller.mqtt.mqtt import MQTTClient
 # from controller.routing.routing import Routing
 from controller.serial.serial import SerialBus
 from controller.database.database import Database
@@ -70,6 +71,7 @@ def main(command, verbose, version, config, plot, daemon):
     # Routing Queues
     routing_input_queue = mp.Queue()
     routing_output_queue = mp.Queue()
+    routing_alg_queue = mp.Queue()
     # NC Queues
     nc_input_queue = mp.Queue()
     nc_output_queue = mp.Queue()
@@ -80,7 +82,7 @@ def main(command, verbose, version, config, plot, daemon):
     # We need to consider that the computation of the new routing alg.
     # can be change at run time
     rp = Routing(ServerConfig.from_json_file(config), verbose, "dijkstra",
-                 routing_input_queue, routing_output_queue)
+                 routing_input_queue, routing_output_queue, routing_alg_queue)
     """ Start the NC interface in background (as a daemon) """
     # nc stands for network configuration
     nc = NetworkConfig(verbose, nc_input_queue,
@@ -91,6 +93,9 @@ def main(command, verbose, version, config, plot, daemon):
     """ Let's start the plotting (animation) in background (as a daemon) """
     if plot:
         ntwk_plot = SubplotAnimation()
+    """ Let's create the MQTT client """
+    mqtt = MQTTClient(ServerConfig.from_json_file(config), verbose, routing_alg_queue)
+    mqtt.run()
     """ Let's start all processes """
     sp.daemon = True
     sp.start()

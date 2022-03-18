@@ -58,11 +58,12 @@ def load_data(collection, source, target, attribute):
 
 
 class Routing(mp.Process):
-    def __init__(self, config, verbose, alg, input_queue, output_queue):
+    def __init__(self, config, verbose, alg, input_queue, output_queue, routing_alg_queue):
         mp.Process.__init__(self)
         self.input_queue = input_queue
         self.alg = alg
         self.output_queue = output_queue
+        self.routing_alg_queue = routing_alg_queue
         self.interval = int(config.routing.time)
         self.verbose = verbose
 
@@ -83,17 +84,32 @@ class Routing(mp.Process):
                     if(nx.is_connected(G)):
                         # Now that we are sure it is a connected graph,
                         # we now run the selected routing algorithm
+                        # Check if the routing algorithm has changed
+                        if not self.routing_alg_queue.empty():
+                            self.alg = self.routing_alg_queue.get()
+                            print("algorithm changed to ", self.alg)
                         match self.alg:
                             case "dijkstra":
                                 print("running dijkstra")
                                 self.dijkstra(G)
                             case "mst":
                                 print("running MST")
+                                self.mst(G)
                             case _:
                                 print("running default alg.")
 
     def dijkstra(self, G):
         # We want to compute the SP from controller to all nodes
         length, path = nx.single_source_dijkstra(G, "1.0", None, None, "rssi")
+        # Let's put the path in the queue
+        self.output_queue.put(path)
+
+    def mst(self, G):
+        # We want to compute the MST of the current connected network
+        # We call the edges "path"
+        mst = nx.minimum_spanning_tree(G, algorithm="kruskal", weight="rssi")
+        print("MST path")
+        print(sorted(mst.edges(data=True)))
+        length, path = nx.single_source_dijkstra(mst, "1.0", None, None, "rssi")
         # Let's put the path in the queue
         self.output_queue.put(path)
