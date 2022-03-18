@@ -1,4 +1,5 @@
 from logging import exception
+from controller.forwarding_table.forwarding_table import FWD_TABLE
 from controller.routing.routing import *
 from controller.database.database import Database
 from controller.network_config.queue import Queue
@@ -14,6 +15,8 @@ from random import randrange
 
 """ TODO: Set the maximum routes per node (e.g., 10). 
 Remove old routes with the new ones"""
+
+
 def routes_to_deploy(node, routes):
     """ Remove already deployed routes """
     for index, route in routes.iterrows():
@@ -41,20 +44,12 @@ def routes_to_deploy(node, routes):
 
 
 def compute_routes_nc():
-    df, G = load_data("routes", 'scr', 'via', None)
+    df, G = FWD_TABLE.fwd_get_graph('scr', 'via', None, 0)
     if(nx.is_empty(G) == False):
         H = nx.DiGraph()
         H.add_edges_from(G.edges)
         # Get ordered list of nodes to send NC packet
         nodes = list(nx.topological_sort(H))
-        for node in nodes:
-            print("list of routes for node ", node)
-            # Get the list of routes to send
-            routes = df[df['scr'] == node]
-            print("routes")
-            print(routes)
-            # Save routes in the "nodes" collection if they don't exist
-            routes_to_deploy(node, routes)
         return nodes
         # Now, we process routes for each sensor node
 
@@ -126,36 +121,18 @@ class NetworkConfig(mp.Process):
         return cp_pkt, sdn_ip_pkt, packedData
 
     def read_routes(self, node):
-        query = {"$and": [
-                {"_id": node},
-                {"routes": {"$exists": True}}
-        ]}
-        df = pd.DataFrame()
-        db = Database.find_one("nodes", query)
-        if(db is None):
+        df = FWD_TABLE.fwd_get_table()
+        df = df[df['scr'] == node]
+        if(df.empty):
             return df
-        df = pd.DataFrame(db['routes'])
         df = df[(df['deployed'] == 0)]
         return df
 
     def set_route_flag(self, node, df):
         print("setting routes flag")
         for index, route in df.iterrows():
-            query = {"$and": [
-                {"_id": node},
-                {"routes.scr": node},
-                {"routes.dst": route["dst"]},
-                {"routes.via": route["via"]},
-            ]}
-            db = Database.find_one("nodes", query)
-            if(db is None):
-                print("error route not found")
-            print("route found")
-            print(db)
-            update = {"$set": {"routes.$[elem].deployed": 1}}
-            arrayFilters = [{"elem.dst": route["dst"]}]
-            Database.update_one("nodes", db, update, arrayFilters)
-            # Values to be updated.
+            FWD_TABLE.fwd_set_deployed_flag(
+                node, route["dst"], route["via"], 1)
 
     def run(self):
         while True:
@@ -168,7 +145,7 @@ class NetworkConfig(mp.Process):
                 # read routes from node
                 df = self.read_routes(node)
                 if(not df.empty):
-                    print("routes for node ", node)
+                    print("routes to deploy for node ", node)
                     print(df)
                     # build the packet
                     cp_pkt, sdn_ip_pkt, packetData = self.build_packet(
@@ -188,10 +165,11 @@ class NetworkConfig(mp.Process):
                                 self.set_route_flag(node, df)
                                 break
                         except queue.Empty:
-                            print("ACK not received")
+                            print("ACK not received from ", node, " rtx ", rtx)
                             # We stop sending the current NC packet if
                             # we reached the max RTX or we received ACK
                             if(rtx >= 7):
+                                print("ACK never received from ", node, " rtx ", rtx)
                                 break
                             # We resend the packet if retransmission < 7
                             rtx = rtx + 1
