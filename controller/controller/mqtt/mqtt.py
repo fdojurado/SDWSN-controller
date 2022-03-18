@@ -1,16 +1,24 @@
 """Module with an MQTT client.
+It requires:
+    - pip3 install paho-mqtt
+    - brew install mosquitto
+To run the server (macOS):
+/usr/local/sbin/mosquitto -c /usr/local/etc/mosquitto/mosquitto.conf -p 1884
+
+To publish a message using mosquitto:
+
+mosquitto_pub -h 127.0.0.1 -m "mst" -t alg -d -p 1884
 """
+
 from paho.mqtt.client import Client
 
+MQTT_TOPIC = [("alg", 0), ("control", 0), ("data", 0)]
 
-class MQTTClient:
-    """This class represents an MQTT client for Hermes Audio Server.
 
-    This is an abstract base class. You don't instantiate an object of this
-    class, but an object of one of its subclasses.
-    """
+class MQTTClient():
+    """This class represents an MQTT client for ELISE."""
 
-    def __init__(self, config, verbose):
+    def __init__(self, config, verbose, routing_alg_queue):
         """Initialize an MQTT client.
 
         Args:
@@ -18,11 +26,10 @@ class MQTTClient:
                 the MQTT client.
             verbose (bool): Whether or not the MQTT client runs in verbose
                 mode.
-            logger (:class:`logging.Logger`): The Logger object for logging
-                messages.
         """
         self.config = config
         self.verbose = verbose
+        self.routing_alg_queue = routing_alg_queue
         self.mqtt = Client()
 
         self.initialize()
@@ -30,7 +37,6 @@ class MQTTClient:
         self.mqtt.on_connect = self.on_connect
         self.mqtt.on_disconnect = self.on_disconnect
         self.mqtt.on_message = self.on_message
-        self.connect()
 
     def connect(self):
         """Connect to the MQTT broker defined in the configuration."""
@@ -70,8 +76,12 @@ class MQTTClient:
 
     def on_message(self, client, userdata, msg):
         """ The callback for when a PUBLISH message is received from the server. """
-        print('Message published')
-        print(msg.topic+" "+str(msg.payload))
+        print('Message received')
+        payload = msg.payload.decode("utf-8")
+        print(msg.topic+" "+payload)
+        if(msg.topic == "alg"):
+            # Send the message to the routing algorithm
+            self.routing_alg_queue.put(payload)
 
     def on_connect(self, client, userdata, flags, result_code):
         """Callback that is called when the client connects to the MQTT broker.
@@ -87,3 +97,12 @@ class MQTTClient:
         broker."""
         # This callback doesn't seem to be called.
         print('Disconnected with result code %s.', result_code)
+
+    def run(self):
+        self.connect()
+        self.mqtt.subscribe(MQTT_TOPIC)
+
+        rc = 0
+        while rc == 0:
+            rc = self.mqtt.loop_start()
+        return rc
