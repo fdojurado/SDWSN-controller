@@ -67,6 +67,10 @@ class Database(object):
         return Database.DATABASE[collection].update_one(filter, update, upsert=upsert, array_filters=arrayFilters)
 
     @staticmethod
+    def aggregate(collection, pipeline):
+        return Database.DATABASE[collection].aggregate(pipeline)
+
+    @staticmethod
     def find(collection, query):
         return Database.DATABASE[collection].find(query)
 
@@ -80,8 +84,8 @@ class Database(object):
             print(document)
 
     @staticmethod
-    def find_one(collection, query):
-        return Database.DATABASE[collection].find_one(query)
+    def find_one(collection, query, sort=None):
+        return Database.DATABASE[collection].find_one(query, sort=sort)
 
     @staticmethod
     def delete_collection(collection):

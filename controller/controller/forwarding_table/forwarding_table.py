@@ -43,7 +43,7 @@ class FWD_TABLE(object):
 
     @staticmethod
     def fwd_get_graph(source, target, attribute, deployed):
-        db = Database.find_one(FORWARDING_TABLE, {})
+        db = Database.find_one(FORWARDING_TABLE, {},None)
         df = pd.DataFrame()
         Graph = nx.Graph()
         if(db is None):
@@ -80,7 +80,7 @@ class FWD_TABLE(object):
                 {"dst": dst},
                 {"via": via},
         ]}
-        db = Database.find_one(FORWARDING_TABLE, query)
+        db = Database.find_one(FORWARDING_TABLE, query,None)
         return db
 
     @staticmethod

@@ -26,7 +26,7 @@ def routes_to_deploy(node, routes):
             {"routes.dst": route["dst"]},
             {"routes.via": route["via"]},
         ]}
-        db = Database.find_one("nodes", query)
+        db = Database.find_one("nodes", query,None)
         print("printing db for route")
         print(route)
         print("printing db for route2")
