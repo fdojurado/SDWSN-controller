@@ -10,8 +10,8 @@ class Database(object):
         client = pymongo.MongoClient(Database.URI)
         client.drop_database('SDN')
         Database.DATABASE = client["SDN"]
-        for db in client.list_databases():
-            print(db)
+        # for db in client.list_databases():
+        #     print(db)
 
     @staticmethod
     def insert(collection, data):
