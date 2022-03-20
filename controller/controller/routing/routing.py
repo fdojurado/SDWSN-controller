@@ -84,6 +84,8 @@ class Routing(mp.Process):
                     if(nx.is_connected(G)):
                         # Now that we are sure it is a connected graph,
                         # we now run the selected routing algorithm
+                        if(not G.has_node("1.0")):
+                            return
                         # Check if the routing algorithm has changed
                         if not self.routing_alg_queue.empty():
                             self.alg = self.routing_alg_queue.get()
