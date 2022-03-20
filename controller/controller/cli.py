@@ -41,13 +41,14 @@ SERVER = {'serial-controller': SerialBus}
 Database.initialise()
 
 
-def main(command, verbose, version, config, plot, daemon):
+def main(command, verbose, version, config, plot, mqtt_client, daemon):
     """The main function run by the CLI command.
 
     Args:
         command (str): The command to run.
         verbose (bool): Use verbose output if True.
         plot    (bool): Show the plots.
+        mqtt    (bool): Run the MQTT client
         version (bool): Print version information and exit if True.
         config (str): Configuration file.
         daemon (bool): Run as a daemon if True.
@@ -94,8 +95,10 @@ def main(command, verbose, version, config, plot, daemon):
     if plot:
         ntwk_plot = SubplotAnimation()
     """ Let's create the MQTT client """
-    mqtt = MQTTClient(ServerConfig.from_json_file(config), verbose, routing_alg_queue)
-    mqtt.run()
+    if mqtt_client:
+        mqtt = MQTTClient(ServerConfig.from_json_file(
+            config), verbose, routing_alg_queue)
+        mqtt.run()
     """ Let's start all processes """
     sp.daemon = True
     sp.start()
