@@ -109,6 +109,10 @@ def main(command, verbose, version, config, plot, daemon):
     interval = ServerConfig.from_json_file(config).routing.time
     timeout = time.time()+int(interval)
     while True:
+        # look for incoming request from the serial interface
+        if not serial_output_queue.empty():
+            data = serial_output_queue.get()
+            handle_serial_packet(data, ack_queue)
         # Run the routing protocol?
         if(time.time() > timeout):
             # put a job
@@ -126,7 +130,3 @@ def main(command, verbose, version, config, plot, daemon):
             for node in nodes:
                 nc_input_queue.put(node)
             # nc_input_queue.put(path)
-        # look for incoming request from the serial interface
-        if not serial_output_queue.empty():
-            data = serial_output_queue.get()
-            handle_serial_packet(data, ack_queue)

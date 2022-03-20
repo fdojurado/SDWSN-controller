@@ -1,3 +1,4 @@
+from ast import Not
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -7,6 +8,7 @@ import networkx as nx
 from controller.database.database import Database
 import pandas as pd
 import multiprocessing as mp
+import pymongo
 
 
 class SubplotAnimation(mp.Process):
@@ -14,23 +16,47 @@ class SubplotAnimation(mp.Process):
         mp.Process.__init__(self)
 
     def load_data_latest_data(self, collection, source, target, attribute):
-        db = Database.find_one(collection, {})
+        # pymongo.Descending is not necessary here, we may delete it
+        db = Database.find_one(collection, {}, [('time', pymongo.DESCENDING)])
         Graph = nx.Graph()
         if(db is None):
             return Graph
-        db = Database.find(collection, {}).sort([("time", -1)]).limit(1)
-        print("load_data_latest_data")
-        print(db)
-        db = Database.aggregate([{"$unwind": "$routes"}])
-        print("unwind")
-        print(db)
-        df = pd.DataFrame(list(db))
+        pipeline = [
+            {"$sort": {"time": -1}},
+            {"$limit": 1},
+            {"$unwind": "$routes"},
+            {
+                '$project': {
+                    "_id": 0,
+                    'scr': '$routes.scr',
+                    'dst': '$routes.dst',
+                    'via': '$routes.via'
+                }
+            }
+        ]
+        # Make empty dataframe
+        df = pd.DataFrame()
+        # load last routes in the collection
+        for doc in Database.aggregate(collection, pipeline):
+            df_doc = pd.DataFrame(doc, index=[0])
+            df = pd.concat([df, df_doc], ignore_index=True)
+        # Now, we only plot routes that are already acked (deployed)
+        list_index = []
+        for index, route in df.iterrows():
+            db = FWD_TABLE.fwd_get_item(
+                route["scr"], route["dst"], route["via"])
+            if (db is not None):
+                if(db["deployed"] == 0):
+                    list_index.append(index)
+            else:
+                list_index.append(index)
+        df = df.drop(index=list_index)
         Graph = nx.from_pandas_edgelist(
             df, source=source, target=target, edge_attr=attribute)
         return Graph
 
     def load_data(self, collection, source, target, attribute):
-        db = Database.find_one(collection, {})
+        db = Database.find_one(collection, {}, None)
         Graph = nx.Graph()
         if(db is None):
             return Graph
@@ -60,7 +86,7 @@ class SubplotAnimation(mp.Process):
         # Now let's redraw the network for the current deployed routes
         # See if G has changed
         self.G = self.load_data_latest_data(
-            "historical-routes", 'scr', 'dst', 'rssi')
+            "historical-routes", 'scr', 'via', None)
         if(nx.is_empty(self.G) == False):
             equal_graphs = nx.is_isomorphic(
                 self.prev_routes_G, self.G, edge_match=lambda x, y: x == y)  # match weights

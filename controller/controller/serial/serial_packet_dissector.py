@@ -88,7 +88,7 @@ def process_data_packet(data):
             Database.insert("nodes", node)
         else:
             # look for last seq number for that node
-            db = Database.find_one("nodes", {"data.src": src})
+            db = Database.find_one("nodes", {"data.src": src},None)
             if(db is not None):
                 df = pd.DataFrame(db['data'])
                 df = df.tail(1)
@@ -312,7 +312,7 @@ def insert_links(data):
         'rssi': data['rssi'],
     }
     # load the collection to pandas frame
-    db = Database.find_one("links", {})
+    db = Database.find_one("links", {},None)
     if(db is None):
         Database.insert("links", links)
     else:
