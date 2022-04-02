@@ -17,6 +17,10 @@
         "host": "localhost",
         "port": 60001
     },
+    "iotlab": {
+        "host": "127.0.0.1",
+        "port": 2001
+    },
     "routing":{
         "time": "10",
         "algorithm": "dijkstra"

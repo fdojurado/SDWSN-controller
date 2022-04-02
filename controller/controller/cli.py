@@ -4,6 +4,7 @@
 from hashlib import new
 from controller.network_config.network_config import *
 from controller.routing.routing import *
+from controller.config.serial import SerialConfig
 from controller.serial.serial_packet_dissector import *
 from controller.plotting.plotting import SubplotAnimation
 from controller.mqtt.mqtt import MQTTClient
@@ -41,7 +42,7 @@ SERVER = {'serial-controller': SerialBus}
 Database.initialise()
 
 
-def main(command, verbose, version, config, plot, mqtt_client, daemon):
+def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None):
     """The main function run by the CLI command.
 
     Args:
@@ -89,7 +90,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon):
     nc = NetworkConfig(verbose, nc_input_queue,
                        nc_output_queue, serial_input_queue, ack_queue)
     """ Start the serial interface in background (as a daemon) """
-    sp = SerialBus(ServerConfig.from_json_file(config),
+    sp = SerialBus(ServerConfig.from_json_file(config, fit),
                    verbose, serial_input_queue, serial_output_queue)
     """ Let's start the plotting (animation) in background (as a daemon) """
     if plot:
