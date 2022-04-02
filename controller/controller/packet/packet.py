@@ -77,7 +77,7 @@ class addrConversion:
     def to_string(cls, addr):
         aux = addr.to_bytes(2, 'big')
         # Converts int addr to string addr
-        addr0, addr1 = struct.unpack("!BB", aux)
+        addr1, addr0 = struct.unpack("!BB", aux)
         addrStr = str(addr1)+"."+str(addr0)
         return cls(addr=addr, addrStr=addrStr)
 
@@ -258,7 +258,7 @@ class DataPacketPayload:
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
         return "DataPacketPayload(addr={}, seq={}, temp={}, humidity={}, payload={})".format(
-            self.addr, self.seq, self.temp, self.humidity, self.payload)
+            hex(self.addr), self.seq, self.temp, self.humidity, self.payload)
 
     @classmethod
     def unpack(cls, packed_data, payload_size):

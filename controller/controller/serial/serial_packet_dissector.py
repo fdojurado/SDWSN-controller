@@ -39,7 +39,7 @@ def save_serial_packet(msg):
     msg.print_packet()
     addr0 = str(msg.addr0)
     addr1 = str(msg.addr1)
-    addr = addr0+'.'+addr1
+    addr = addr1+'.'+addr0
     hex_data = bytes(msg.data).hex()
     data = {
         "ts": current_time,
