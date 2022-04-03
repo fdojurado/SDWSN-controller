@@ -33,7 +33,9 @@ class SerialBus(mp.Process):
         # Serial interface
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_address = (self.config.serial.host, self.config.serial.port)
-        self.ser.connect_ex(server_address)
+        result = self.ser.connect_ex(server_address)
+        if (result != 0):
+            print("error connecting to serial port")
 
     def decodeByte(self, n):
         data = bytearray()
