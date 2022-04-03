@@ -1,5 +1,6 @@
 import struct
 import types
+import sys
 
 # Packet sizes
 NC_ROUTING_PKT_SIZE = 4
@@ -75,7 +76,7 @@ class addrConversion:
 
     @classmethod
     def to_string(cls, addr):
-        aux = addr.to_bytes(2, 'big')
+        aux = addr.to_bytes(2, sys.byteorder)
         # Converts int addr to string addr
         addr1, addr0 = struct.unpack("!BB", aux)
         addrStr = str(addr1)+"."+str(addr0)
