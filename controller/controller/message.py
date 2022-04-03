@@ -124,7 +124,7 @@ class Message:
     def print_packet(self):
         addr0 = str(self.addr0)
         addr1 = str(self.addr1)
-        print("addr:"+addr1+"."+addr0)
+        print("addr:"+addr0+"."+addr1)
         message_type = str(self.message_type)
         print("Message type:"+message_type)
         payload_len = str(self.payload_len)

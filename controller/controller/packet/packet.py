@@ -76,10 +76,8 @@ class addrConversion:
 
     @classmethod
     def to_string(cls, addr):
-        aux = addr.to_bytes(2, sys.byteorder)
-        # Converts int addr to string addr
-        addr1, addr0 = struct.unpack("!BB", aux)
-        addrStr = str(addr1)+"."+str(addr0)
+        addr_packed = struct.pack("!H", addr)
+        addrStr = str(addr_packed[1])+"."+str(addr_packed[0])
         return cls(addr=addr, addrStr=addrStr)
 
 
