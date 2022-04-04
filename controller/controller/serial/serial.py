@@ -79,8 +79,7 @@ class SerialBus(mp.Process):
             return None
 
         if rx_byte and ord(rx_byte) == 0x7E:
-            addr0 = ord(self.decodeByte(1))
-            addr1 = ord(self.decodeByte(1))
+            addr = self.decodeByte(2)
             message_type = ord(self.decodeByte(1))
             payload_len = ord(self.decodeByte(1))-6
             reserved0 = ord(self.decodeByte(1))
@@ -90,8 +89,7 @@ class SerialBus(mp.Process):
             if rxd_byte == 0x7E:
                 # received message data okay
                 msg = Message(
-                    addr0=addr0,
-                    addr1=addr1,
+                    addr=addr,
                     message_type=message_type,
                     payload_len=payload_len,
                     reserved0=reserved0,

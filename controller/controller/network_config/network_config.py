@@ -113,7 +113,7 @@ class NetworkConfig(mp.Process):
         sdn_ip_packed = sdn_ip_pkt.pack()
         print(repr(sdn_ip_pkt))
         # Control packet as payload of the serial packet
-        pkt = SerialPacket(sdn_ip_packed, addr0=0, addr1=0,
+        pkt = SerialPacket(sdn_ip_packed, addr=0,
                            message_type=2, payload_len=length,
                            reserved0=0, reserved1=0)
         packedData = pkt.pack()
