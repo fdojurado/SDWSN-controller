@@ -96,7 +96,7 @@ class NetworkConfig(mp.Process):
         print(dataPacked)
         # Build control packet
         cp_pkt = ControlPacket(
-            dataPacked, type=sdn_protocols.SDN_PROTO_NC, len=payload_len, rank=randrange(65535))
+            dataPacked, type=sdn_protocols.SDN_PROTO_NC, len=payload_len, rank=randrange(65535), energy=0xffff)
         cpPackedData = cp_pkt.pack()
         print(repr(cp_pkt))
         print(cpPackedData)

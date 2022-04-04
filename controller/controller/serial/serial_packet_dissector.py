@@ -37,9 +37,8 @@ def save_serial_packet(msg):
     # Get Unix timestamp from a datetime object
     current_time = datetime.now().timestamp() * 1000.0
     msg.print_packet()
-    addr0 = str(msg.addr0)
-    addr1 = str(msg.addr1)
-    addr = addr0+'.'+addr1
+    addr = bytes(msg.addr)
+    addr = str(addr[0])+'.'+str(addr[1])
     hex_data = bytes(msg.data).hex()
     data = {
         "ts": current_time,
