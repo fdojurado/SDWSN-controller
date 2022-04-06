@@ -8,13 +8,18 @@ import pandas as pd
 current_time = 0
 
 
-def handle_serial_packet(msg, ack_queue):
+def handle_serial_packet(data, ack_queue):
     print("serial packet received")
-    msg.print_packet()
+    print(data)
+    # Let's parse serial packet
+    serial_pkt = process_serial_packet(data)
+    if serial_pkt is None:
+        "bad serial packet"
+        return
     # Let's firt validate the packet
-    save_serial_packet(msg)
+    save_serial_packet(serial_pkt)
     # Let's first process the sdn IP packet
-    pkt = process_sdn_ip_packet(msg)
+    pkt = process_sdn_ip_packet(serial_pkt.payload)
     # We exit processing if empty result returned
     if(not pkt):
         return
@@ -31,24 +36,33 @@ def handle_serial_packet(msg, ack_queue):
             print("sdn IP packet type not found")
             return
 
+def process_serial_packet(data):
+    # Parse sdn IP packet
+    print("processing serial packet")
+    pkt = SerialPacket.unpack(data)
+    print(repr(pkt))
+    # If the reported payload length in the serial header doesnot match the packet size,
+    # then we drop the packet.
+    if(len(pkt.payload) < pkt.payload_len):
+        print("packet shorter than reported in serial header")
+        return None
+    # serial packet succeed
+    print("succeed unpacking serial packet")
+    return pkt
 
-def save_serial_packet(msg):
+def save_serial_packet(pkt):
     global current_time
     # Get Unix timestamp from a datetime object
     current_time = datetime.now().timestamp() * 1000.0
-    msg.print_packet()
-    addr = bytes(msg.addr)
-    addr = str(addr[0])+'.'+str(addr[1])
-    hex_data = bytes(msg.data).hex()
     data = {
         "ts": current_time,
         "values": {
-            "addr": addr,
-            "type": msg.message_type,
-            "payload_len": msg.payload_len,
-            "reserved0": msg.reserved0,
-            "reserved1": msg.reserved1,
-            "payload": hex_data
+            "addr": pkt.addr,
+            "type": pkt.message_type,
+            "payload_len": pkt.payload_len,
+            "reserved0": pkt.reserved0,
+            "reserved1": pkt.reserved1,
+            "payload": pkt.payload
         }
     }
     Database.insert("packets", data)
@@ -154,18 +168,18 @@ def process_control_packet(addr, data, ack_queue):
             print("control packet type not found")
 
 
-def process_sdn_ip_packet(msg):
+def process_sdn_ip_packet(data):
     # We first check the entegrity of the HEADER of the sdn IP packet
-    if(sdn_ip_checksum(msg.data, IP_PKT_HEADER_SIZE) != 0xffff):
+    if(sdn_ip_checksum(data, IP_PKT_HEADER_SIZE) != 0xffff):
         print("bad checksum")
         return
     # Parse sdn IP packet
     print("processing IP packet")
-    pkt = SDN_IP_Packet.unpack(msg.data)
+    pkt = SDN_IP_Packet.unpack(data)
     print(repr(pkt))
     # If the reported length in the sdn IP header doesnot match the packet size,
     # then we drop the packet.
-    if(len(msg.data) < pkt.length):
+    if(len(data) < pkt.length):
         print("packet shorter than reported in IP header")
         return
     # sdn IP packet succeed
@@ -196,7 +210,7 @@ def sdn_ip_checksum(msg, len):
         print("return chksum ", result)
     else:
         result = struct.pack(">i", sum)
-        print("return chksum ", ord(result))
+        print("return chksum ", result)
     return result
 
 
