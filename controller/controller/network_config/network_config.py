@@ -26,7 +26,7 @@ def routes_to_deploy(node, routes):
             {"routes.dst": route["dst"]},
             {"routes.via": route["via"]},
         ]}
-        db = Database.find_one("nodes", query,None)
+        db = Database.find_one("nodes", query, None)
         print("printing db for route")
         print(route)
         print("printing db for route2")
@@ -45,13 +45,11 @@ def routes_to_deploy(node, routes):
 
 def compute_routes_nc():
     df, G = FWD_TABLE.fwd_get_graph('scr', 'via', None, 0)
-    if(nx.is_empty(G) == False):
-        H = nx.DiGraph()
-        H.add_edges_from(G.edges)
-        # Get ordered list of nodes to send NC packet
-        nodes = list(nx.topological_sort(H))
-        return nodes
-        # Now, we process routes for each sensor node
+    length, path = nx.single_source_dijkstra(G, "1.0")
+    node_list = []
+    for u, p in path.items():
+        node_list.extend([str(u)])
+    return node_list
 
 
 class NetworkConfig(mp.Process):
@@ -169,7 +167,8 @@ class NetworkConfig(mp.Process):
                             # We stop sending the current NC packet if
                             # we reached the max RTX or we received ACK
                             if(rtx >= 7):
-                                print("ACK never received from ", node, " rtx ", rtx)
+                                print("ACK never received from ",
+                                      node, " rtx ", rtx)
                                 break
                             # We resend the packet if retransmission < 7
                             rtx = rtx + 1
