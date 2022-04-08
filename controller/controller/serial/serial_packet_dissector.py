@@ -222,7 +222,7 @@ def sdn_cp_checksum(msg, len):
         print("return chksum ", result)
     else:
         result = struct.pack(">i", sum)
-        print("return chksum ", ord(result))
+        print("return chksum ", result)
     return result
 
 

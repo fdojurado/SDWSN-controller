@@ -80,84 +80,52 @@ class SerialBus(mp.Process):
             # ser.read can return an empty string
             # or raise a SerialException
             rx_byte = self.ser.recv(1)
-        except serial.SerialException:
+            if rx_byte and ord(rx_byte) == 0x7E:
+                # print("FRAME_BOUNDARY_OCTET detected")
+                if (self.escape_character == 1):
+                    # print("serial: escape_character == true")
+                    self.escape_character = 0
+                elif (self.overflow):
+                    # print("serial overflow")
+                    self.overflow = 0
+                    self.frame_length = 0
+                    self.byte_msg = bytearray()
+                elif (self.frame_length >= 6):
+                    # Wake up consumer process
+                    # print("Wake up consumer process")
+                    self.frame_length = 0
+                    msg_buffer = self.byte_msg
+                    self.byte_msg = bytearray()
+                    return msg_buffer
+                else:
+                    # re-synchronization. Start over
+                    # print("serial re-synchronization\n")
+                    self.byte_msg = bytearray()
+                    self.frame_length = 0
+                    return 0
+                return 0
+            if(self.escape_character):
+                self.escape_character = 0
+                a = int.from_bytes(rx_byte, 'big')
+                b = int.from_bytes(b'\x20', 'big')
+                rx_byte = a ^ b
+                rx_byte = rx_byte.to_bytes(1, 'big')
+            elif(rx_byte and ord(rx_byte) == 0x7D):
+                self.escape_character = 1
+                return 0
+
+            if (self.frame_length < (122 + 2)):
+                # Adding 2 bytes from serial communication
+                self.byte_msg.extend(rx_byte)
+                self.frame_length = self.frame_length + 1
+            else:
+                self.overflow = 1
+                # print("Packet size overflow: %u bytes\n", self.frame_length)
+
+        except socket.error as e:
             return None
 
-        if rx_byte and ord(rx_byte) == 0x7E:
-            # print("FRAME_BOUNDARY_OCTET detected")
-            if (self.escape_character == 1):
-                # print("serial: escape_character == true")
-                self.escape_character = 0
-            elif (self.overflow):
-                # print("serial overflow")
-                self.overflow = 0
-                self.frame_length = 0
-                self.byte_msg = bytearray()
-            elif (self.frame_length >= 6):
-                # Wake up consumer process
-                # print("Wake up consumer process")
-                self.frame_length = 0
-                msg_buffer = self.byte_msg
-                self.byte_msg = bytearray()
-                return msg_buffer
-            else:
-                # re-synchronization. Start over
-                # print("serial re-synchronization\n")
-                self.byte_msg = bytearray()
-                self.frame_length = 0
-                return 0
-            return 0
-        if(self.escape_character):
-            # print("escape_character")
-            self.escape_character = 0
-            rx_byte = rx_byte ^ (0x20)
-        elif(rx_byte and ord(rx_byte) == 0x7D):
-            # print("escape_character detected")
-            self.escape_character = 1
-            return 0
-        if (self.frame_length < (122 + 2)):
-            # Adding 2 bytes from serial communication
-            self.byte_msg.extend(rx_byte)
-            self.frame_length = self.frame_length + 1
-        else:
-            self.overflow = 1
-            # print("Packet size overflow: %u bytes\n", self.frame_length)
         return 0
-
-        # if rx_byte and ord(rx_byte) == 0x7E:
-        #     print("we are in ")
-        #     addr = self.decodeByte(2)
-        #     # print("addr: ", addr)
-        #     message_type = ord(self.decodeByte(1))
-        #     # print("message_type: ", message_type)
-        #     payload_len = ord(self.decodeByte(1))-6
-        #     # print("payload_len: ", payload_len)
-        #     reserved0 = ord(self.decodeByte(1))
-        #     reserved1 = ord(self.decodeByte(1))
-        #     # print("data")
-        #     data = self.decodeByte(payload_len)
-        #     # print("data2")
-        #     # print("data: ", hex(data))
-        #     rxd_byte = ord(self.ser.recv(1))
-        #     print("addr: ", addr, "message_type :", message_type, "payload_len: ",
-        #           payload_len, "reserved0: ", reserved0, "reserved1: ",
-        #           reserved1, "data: ", data, "rxd_byte: ", hex(rxd_byte))
-        #     # print("rxd_byte: ", hex(rxd_byte))
-        #     if hex(rxd_byte) == 0x7E:
-        #         print("data ok.")
-        #         # received message data okay
-        #         msg = Message(
-        #             addr=addr,
-        #             message_type=message_type,
-        #             payload_len=payload_len,
-        #             reserved0=reserved0,
-        #             reserved1=reserved1,
-        #             data=data,
-        #         )
-        #         return msg
-
-        # else:
-        #     return None
 
     def recv(self, timeout: Optional[float] = None) -> Optional[Message]:
         """Block waiting for a message from the Bus.
