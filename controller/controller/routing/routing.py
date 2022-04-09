@@ -84,21 +84,20 @@ class Routing(mp.Process):
                     if(nx.is_connected(G)):
                         # Now that we are sure it is a connected graph,
                         # we now run the selected routing algorithm
-                        if(not G.has_node("1.0")):
-                            return
-                        # Check if the routing algorithm has changed
-                        if not self.routing_alg_queue.empty():
-                            self.alg = self.routing_alg_queue.get()
-                            print("algorithm changed to ", self.alg)
-                        match self.alg:
-                            case "dijkstra":
-                                print("running dijkstra")
-                                self.dijkstra(G)
-                            case "mst":
-                                print("running MST")
-                                self.mst(G)
-                            case _:
-                                print("running default alg.")
+                        if(G.has_node("1.0")):
+                            # Check if the routing algorithm has changed
+                            if not self.routing_alg_queue.empty():
+                                self.alg = self.routing_alg_queue.get()
+                                print("algorithm changed to ", self.alg)
+                            match self.alg:
+                                case "dijkstra":
+                                    print("running dijkstra")
+                                    self.dijkstra(G)
+                                case "mst":
+                                    print("running MST")
+                                    self.mst(G)
+                                case _:
+                                    print("running default alg.")
 
     def dijkstra(self, G):
         # We want to compute the SP from controller to all nodes

@@ -24,8 +24,7 @@ class Message:
     """
 
     __slots__ = (
-        "addr0",
-        "addr1",
+        "addr",
         "message_type",
         "payload_len",
         "reserved0",
@@ -35,8 +34,7 @@ class Message:
 
     def __init__(
         self,
-        addr0: int = 0,
-        addr1: int = 0,
+        addr: int = 0,
         message_type: int = 0,
         payload_len: int = 0,
         reserved0: int = 0,
@@ -56,8 +54,7 @@ class Message:
 
         :raises ValueError: iff `check` is set to `True` and one or more arguments were invalid
         """
-        self.addr0 = addr0
-        self.addr1 = addr1
+        self.addr = addr
         self.message_type = message_type
         self.payload_len = payload_len
         self.reserved0 = reserved0
@@ -90,19 +87,12 @@ class Message:
         :raises ValueError: iff one or more attributes are invalid
         """
 
-        if self.addr0 < 0 or self.addr0 > 255:
-            raise ValueError("addr0 invalid")
-        if isinf(self.addr0):
-            raise ValueError("addr0 may not be infinite")
-        if isnan(self.addr0):
-            raise ValueError("addr0 may not be NaN")
-
-        if self.addr1 < 0 or self.addr1 > 255:
-            raise ValueError("addr1 invalid")
-        if isinf(self.addr1):
-            raise ValueError("addr1 may not be infinite")
-        if isnan(self.addr1):
-            raise ValueError("addr1 may not be NaN")
+        if self.addr < 0 or self.addr > 65536:
+            raise ValueError("addr invalid")
+        if isinf(self.addr):
+            raise ValueError("addr may not be infinite")
+        if isnan(self.addr):
+            raise ValueError("addr may not be NaN")
 
         if self.message_type < 0:
             raise ValueError("message_type may not be negative")
@@ -122,9 +112,7 @@ class Message:
         return bytes(self.data)
 
     def print_packet(self):
-        addr0 = str(self.addr0)
-        addr1 = str(self.addr1)
-        print("addr:"+addr0+"."+addr1)
+        print("addr:"+self.addr.hex())
         message_type = str(self.message_type)
         print("Message type:"+message_type)
         payload_len = str(self.payload_len)
@@ -139,8 +127,7 @@ class Message:
 
     def __copy__(self) -> "Message":
         new = Message(
-            addr0=self.addr0,
-            addr1=self.addr1,
+            addr=self.addr,
             message_type=self.message_type,
             payload_len=self.payload_len,
             reserved0=self.reserved0,

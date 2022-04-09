@@ -59,7 +59,7 @@ class ServerConfig:
         self.site = site
 
     @classmethod
-    def from_json_file(cls, filename=None):
+    def from_json_file(cls, filename=None, iotlab=None):
         """Initialize a :class:`.ServerConfig` object with settings
         from a JSON file.
 
@@ -118,16 +118,17 @@ class ServerConfig:
             }
         }
         """
+        if iotlab:
+            global SERIAL
+            SERIAL = 'iotlab'
         if not filename:
             filename = DEFAULT_CONFIG
 
         try:
             with Path(filename).open('r') as json_file:
-                print('oopening json file')
+                print('opening json file')
                 configuration = json.load(json_file)
-                print('after config')
                 print(configuration)
-                print('end config')
         except FileNotFoundError as error:
             raise ConfigurationFileNotFoundError(error.filename)
 

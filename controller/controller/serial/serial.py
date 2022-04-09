@@ -1,4 +1,5 @@
 import socket
+import sys
 # import logging
 from controller import Message
 from typing import Optional
@@ -30,10 +31,16 @@ class SerialBus(mp.Process):
         self.output_queue = output_queue
         self.config = config
         self.verbose = verbose
+        self.byte_msg = bytearray()
+        self.overflow = 0
+        self.escape_character = 0
+        self.frame_length = 0
         # Serial interface
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_address = (self.config.serial.host, self.config.serial.port)
-        self.ser.connect_ex(server_address)
+        result = self.ser.connect_ex(server_address)
+        if (result != 0):
+            print("error connecting to serial port")
 
     def decodeByte(self, n):
         data = bytearray()
@@ -73,33 +80,52 @@ class SerialBus(mp.Process):
             # ser.read can return an empty string
             # or raise a SerialException
             rx_byte = self.ser.recv(1)
-        except serial.SerialException:
+            if rx_byte and ord(rx_byte) == 0x7E:
+                # print("FRAME_BOUNDARY_OCTET detected")
+                if (self.escape_character == 1):
+                    # print("serial: escape_character == true")
+                    self.escape_character = 0
+                elif (self.overflow):
+                    # print("serial overflow")
+                    self.overflow = 0
+                    self.frame_length = 0
+                    self.byte_msg = bytearray()
+                elif (self.frame_length >= 6):
+                    # Wake up consumer process
+                    # print("Wake up consumer process")
+                    self.frame_length = 0
+                    msg_buffer = self.byte_msg
+                    self.byte_msg = bytearray()
+                    return msg_buffer
+                else:
+                    # re-synchronization. Start over
+                    # print("serial re-synchronization\n")
+                    self.byte_msg = bytearray()
+                    self.frame_length = 0
+                    return 0
+                return 0
+            if(self.escape_character):
+                self.escape_character = 0
+                a = int.from_bytes(rx_byte, 'big')
+                b = int.from_bytes(b'\x20', 'big')
+                rx_byte = a ^ b
+                rx_byte = rx_byte.to_bytes(1, 'big')
+            elif(rx_byte and ord(rx_byte) == 0x7D):
+                self.escape_character = 1
+                return 0
+
+            if (self.frame_length < (122 + 2)):
+                # Adding 2 bytes from serial communication
+                self.byte_msg.extend(rx_byte)
+                self.frame_length = self.frame_length + 1
+            else:
+                self.overflow = 1
+                # print("Packet size overflow: %u bytes\n", self.frame_length)
+
+        except socket.error as e:
             return None
 
-        if rx_byte and ord(rx_byte) == 0x7E:
-            addr0 = ord(self.decodeByte(1))
-            addr1 = ord(self.decodeByte(1))
-            message_type = ord(self.decodeByte(1))
-            payload_len = ord(self.decodeByte(1))-6
-            reserved0 = ord(self.decodeByte(1))
-            reserved1 = ord(self.decodeByte(1))
-            data = self.decodeByte(payload_len)
-            rxd_byte = ord(self.ser.recv(1))
-            if rxd_byte == 0x7E:
-                # received message data okay
-                msg = Message(
-                    addr0=addr0,
-                    addr1=addr1,
-                    message_type=message_type,
-                    payload_len=payload_len,
-                    reserved0=reserved0,
-                    reserved1=reserved1,
-                    data=data,
-                )
-                return msg
-
-        else:
-            return None
+        return 0
 
     def recv(self, timeout: Optional[float] = None) -> Optional[Message]:
         """Block waiting for a message from the Bus.
@@ -115,7 +141,7 @@ class SerialBus(mp.Process):
 
         while True:
             msg = self._recv_internal(timeout=time_left)
-            if msg is not None:
+            if (msg != 0):
                 return msg
             # if not, and timeout is None, try indefinitely
             if timeout is None:
@@ -135,27 +161,27 @@ class SerialBus(mp.Process):
         """
         print('Sending message over the serial interface')
         byte_msg = bytearray()
-        byte_msg.append(0x7E)
-
+        byte_msg.extend(bytes.fromhex('7E'))
+        data = [data[i:i+1] for i in range(len(data))]
         for i in range(0, len(data)):
-            # print('msg.data')
-            # print(msg.data[i])
+            # print('data')
+            # print((data[i]))
             self.check_byte(byte_msg, data[i])
-        byte_msg.append(0x7E)
+        byte_msg.extend(bytes.fromhex('7E'))
         # print('packet to send')
         # print(byte_msg.hex())
         self.ser.send(byte_msg)
 
     def check_byte(self, byte_data, data):
-        if (data == 0x7E or data == 0x7D):
-            byte_data.append(0x7D)
-            invert = data ^ (0x20)
-            byte_data.append(invert)
+        if (ord(data) == 0x7E or ord(data) == 0x7D):
+            byte_data.extend(bytes.fromhex('7D'))
+            invert = ord(data) ^ ord(b'\x20')
+            invert_bytes = invert.to_bytes(len(data), sys.byteorder)
+            byte_data.extend(invert_bytes)
         else:
-            byte_data.append(data)
+            byte_data.extend(data)
 
     def run(self):
-        msg = Message()
         while(1):
             # look for incoming  request
             if not self.input_queue.empty():
@@ -166,7 +192,7 @@ class SerialBus(mp.Process):
                 self.send(data)
             try:
                 msg = self.recv(0.1)
-                if msg is not None:
+                if(len(msg) > 0):
                     # send it back to main
                     self.output_queue.put(msg)
             except TypeError:
