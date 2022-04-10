@@ -250,7 +250,7 @@ def process_na_packet(addr, pkt):
             'scr': addr,
             'dst': dst,
             'rssi': na_pkt.rssi,
-            'rank': na_pkt.rank,
+            'etx': na_pkt.etx,
         }
         node = {
             '_id': addr,

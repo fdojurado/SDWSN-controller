@@ -274,20 +274,20 @@ class NA_Packet:
         # Direct acces to addr in x.x format
         self.addrStr = kwargs.get("addrStr", "0.0")
         self.rssi = kwargs.get("rssi", 0)
-        self.rank = kwargs.get("rank", 0)
+        self.etx = kwargs.get("etx", 0)
         self.payload = payload
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "NA_Packet(addr={}, rssi={}, rank={}, payload={})".format(
-            self.addr, self.rssi, self.rank, self.payload)
+        return "NA_Packet(addr={}, rssi={}, etx={}, payload={})".format(
+            self.addr, self.rssi, self.etx, self.payload)
 
     @classmethod
     def unpack(cls, packed_data, payload_size):
-        addr, rssi, rank, payload = struct.unpack(
+        addr, rssi, etx, payload = struct.unpack(
             '!HhH' + str(payload_size) + 's', packed_data)
         addrStr = addrConversion.to_string(addr)
-        return cls(payload, addr=addr, addrStr=addrStr.addrStr, rssi=rssi, rank=rank)
+        return cls(payload, addr=addr, addrStr=addrStr.addrStr, rssi=rssi, etx=etx)
 
 
 class NC_ACK_Packet:
