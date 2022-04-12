@@ -23,10 +23,16 @@ def handle_serial_packet(data, ack_queue):
     # We exit processing if empty result returned
     if(not pkt):
         return
-    match pkt.proto:
-        case sdn_protocols.SDN_PROTO_CP:
-            print("Processing control packet")
-            process_control_packet(pkt.scr, pkt.payload, ack_queue)
+    b = int.from_bytes(b'\x0F', 'big')
+    protocol = pkt.vap & b
+    match protocol:
+        case sdn_protocols.SDN_PROTO_NA:
+            print("Processing NA packet")
+            na_pkt = process_na_packet(
+                pkt.scr, pkt.payload, pkt.tlen-SDN_IPH_LEN)
+            if(not na_pkt):
+                return
+            process_na_payload(pkt.scr, na_pkt.payload)
             return
         case sdn_protocols.SDN_PROTO_DATA:
             print("Processing data packet")
@@ -35,6 +41,7 @@ def handle_serial_packet(data, ack_queue):
         case _:
             print("sdn IP packet type not found")
             return
+
 
 def process_serial_packet(data):
     # Parse sdn IP packet
@@ -49,6 +56,7 @@ def process_serial_packet(data):
     # serial packet succeed
     print("succeed unpacking serial packet")
     return pkt
+
 
 def save_serial_packet(pkt):
     global current_time
@@ -72,11 +80,11 @@ def process_data_packet(data):
     # Process data packet header
     pkt_hdr = DataPacketHeader.unpack(data)
     print(repr(pkt_hdr))
-    blocks = pkt_hdr.length // DATA_PKT_PAYLOAD_SIZE
+    blocks = pkt_hdr.length // SDN_DATA_LEN
     payload = pkt_hdr.payload
     payload_size = pkt_hdr.length
     for x in range(1, blocks+1):
-        payload_size = payload_size - DATA_PKT_PAYLOAD_SIZE
+        payload_size = payload_size - SDN_DATA_LEN
         print("remaining payload size: ", payload_size)
         data_pkt = DataPacketPayload.unpack(payload, payload_size)
         print(repr(data_pkt))
@@ -101,7 +109,7 @@ def process_data_packet(data):
             Database.insert("nodes", node)
         else:
             # look for last seq number for that node
-            db = Database.find_one("nodes", {"data.src": src},None)
+            db = Database.find_one("nodes", {"data.src": src}, None)
             if(db is not None):
                 df = pd.DataFrame(db['data'])
                 df = df.tail(1)
@@ -138,39 +146,9 @@ def process_data_packet(data):
         Database.insert("total_pdr", data)
 
 
-def process_control_packet(addr, data, ack_queue):
-    # Parse control packet
-    pkt = ControlPacket.unpack(data)
-    # We first check the entegrity of the control packet
-    if(sdn_cp_checksum(data, pkt.length+CP_PKT_HEADER_SIZE) != 0xffff):
-        print("bad checksum")
-        return
-    print(repr(pkt))
-    # If the reported length in the cp header doesnot match the packet size,
-    # then we drop the packet.
-    if(len(data) < (pkt.length+CP_PKT_HEADER_SIZE)):
-        print("packet shorter than reported in CP header")
-        return
-    # Type of control packet
-    match pkt.type:
-        case sdn_protocols.SDN_PROTO_NA:
-            # NA packet
-            print("NA processing")
-            process_na_packet(addr, pkt)
-            return
-        case sdn_protocols.SDN_PROTO_NC_ACK:
-            print("NC ACK processing")
-            ack = process_nc_ack(addr, pkt)
-            ack_queue.put(ack)
-            return
-        case _:
-            # Default
-            print("control packet type not found")
-
-
 def process_sdn_ip_packet(data):
     # We first check the entegrity of the HEADER of the sdn IP packet
-    if(sdn_ip_checksum(data, IP_PKT_HEADER_SIZE) != 0xffff):
+    if(sdn_ip_checksum(data, SDN_IPH_LEN) != 0xffff):
         print("bad checksum")
         return
     # Parse sdn IP packet
@@ -179,7 +157,7 @@ def process_sdn_ip_packet(data):
     print(repr(pkt))
     # If the reported length in the sdn IP header doesnot match the packet size,
     # then we drop the packet.
-    if(len(data) < pkt.length):
+    if(len(data) < pkt.tlen):
         print("packet shorter than reported in IP header")
         return
     # sdn IP packet succeed
@@ -214,57 +192,24 @@ def sdn_ip_checksum(msg, len):
     return result
 
 
-def sdn_cp_checksum(msg, len):
-    sum = chksum(0, msg, len)
-    result = 0
-    if(sum == 0):
-        result = 0xffff
-        print("return chksum ", result)
-    else:
-        result = struct.pack(">i", sum)
-        print("return chksum ", result)
-    return result
-
-
-def process_na_packet(addr, pkt):
-    addr=addrConversion.to_string(addr)
+def process_na_packet(addr, data, length):
+    addr = addrConversion.to_string(addr)
     addr = addr.addrStr
-    """ Let's process neighbour advertisement packets """
-    # Process neighbours
-    blocks = len(pkt.payload) // NA_PKT_SIZE
-    payload = pkt.payload
-    print("payload")
-    print(payload)
-    payload_size = len(pkt.payload)
-    print("payload_size")
-    print(payload_size)
-    for x in range(1, blocks+1):
-        payload_size = payload_size - NA_PKT_SIZE
-        print("remaining payload size: ", payload_size)
-        na_pkt = NA_Packet.unpack(payload, payload_size)
-        print(repr(na_pkt))
-        payload = na_pkt.payload
-        dst = na_pkt.addrStr
-        data = {
-            'time': current_time,
-            'scr': addr,
-            'dst': dst,
-            'rssi': na_pkt.rssi,
-            'etx': na_pkt.etx,
-        }
-        node = {
-            '_id': addr,
-            'nbr': [
-                data,
-            ]
-        }
-        if Database.exist("nodes", addr) == 0:
-            Database.insert("nodes", node)
-        else:
-            Database.push_doc("nodes", addr, 'nbr', data)
-        #  Insert entry to the current links table
-        insert_links(data)
-    """ Now, we want to process node information embedded in the CP packet """
+    # We first check the entegrity of the HEADER of the sdn IP packet
+    if(sdn_ip_checksum(data, length) != 0xffff):
+        print("bad checksum")
+        return
+    # Parse sdn IP packet
+    pkt = NA_Packet.unpack(data, length)
+    print(repr(pkt))
+    # If the reported length in the sdn IP header doesnot match the packet size,
+    # then we drop the packet.
+    if(len(data) < (pkt.payload_len+SDN_NAH_LEN)):
+        print("packet shorter than reported in NA header")
+        return
+    # sdn IP packet succeed
+    print("succeed unpacking SDN NA packet")
+    """ Now, we want to process node information embedded in the NA packet """
     nodes = Database.find("nodes", {})
     # Total number of NB
     num_nb = 0
@@ -309,6 +254,40 @@ def process_na_packet(addr, pkt):
         "energy": int(summation),
     }
     Database.insert("total_energy", data)
+    return pkt
+
+
+def process_na_payload(addr, data):
+    addr = addrConversion.to_string(addr).addrStr
+    # """ Let's process NA payload """
+    # Process neighbours
+    blocks = len(data) // SDN_NAPL_LEN
+    idx_start = 0
+    idx_end = 0
+    for x in range(1, blocks+1):
+        idx_end += SDN_NAPL_LEN
+        payload = data[idx_start:idx_end]
+        idx_start = idx_end
+        payload_unpacked = NA_Packet_Payload.unpack(payload)
+        data_structure = {
+            'time': current_time,
+            'scr': addr,
+            'dst': payload_unpacked.addrStr,
+            'rssi': payload_unpacked.rssi,
+            'etx': payload_unpacked.etx,
+        }
+        node = {
+            '_id': addr,
+            'nbr': [
+                data_structure,
+            ]
+        }
+        if Database.exist("nodes", addr) == 0:
+            Database.insert("nodes", node)
+        else:
+            Database.push_doc("nodes", addr, 'nbr', data_structure)
+        #  Insert entry to the current links table
+        insert_links(data_structure)
 
 
 def process_nc_ack(addr, pkt):
@@ -325,7 +304,7 @@ def insert_links(data):
         'rssi': data['rssi'],
     }
     # load the collection to pandas frame
-    db = Database.find_one("links", {},None)
+    db = Database.find_one("links", {}, None)
     if(db is None):
         Database.insert("links", links)
     else:
