@@ -164,10 +164,12 @@ class NetworkConfig(mp.Process):
                     self.serial_input_queue.put(packetData)
                     while True:
                         try:
-                            ack_pkt = self.ack_queue.get(block=True, timeout=7)
-                            if ((ack_pkt.ack == rt_pkt.ack+1) and (ack_pkt.addrStr == node)):
+                            pkt = self.ack_queue.get(block=True, timeout=7)
+                            rcv_rt_pkt = process_nc_route_packet(
+                                pkt.payload, pkt.tlen-SDN_IPH_LEN)
+                            if ((rcv_rt_pkt.ack == rt_pkt.seq+1) and (pkt.scrStr == node)):
                                 print("correct ACK received from ",
-                                      ack_pkt.addrStr)
+                                      pkt.scrStr)
                                 # set the routes deployed flag
                                 self.set_route_flag(node, df)
                                 break

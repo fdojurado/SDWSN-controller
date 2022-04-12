@@ -34,6 +34,10 @@ def handle_serial_packet(data, ack_queue):
                 return
             process_na_payload(pkt.scr, na_pkt.payload)
             return
+        case sdn_protocols.SDN_PROTO_NC_ROUTE:
+            # rt_pkt = process_nc_route_packet(pkt.payload, pkt.tlen-SDN_IPH_LEN)
+            ack_queue.put(pkt)
+            return
         case sdn_protocols.SDN_PROTO_DATA:
             print("Processing data packet")
             process_data_packet(pkt.payload)
@@ -288,6 +292,25 @@ def process_na_payload(addr, data):
             Database.push_doc("nodes", addr, 'nbr', data_structure)
         #  Insert entry to the current links table
         insert_links(data_structure)
+
+
+def process_nc_route_packet(data, length):
+    print("Processing NC route packet")
+    # We first check the entegrity of the HEADER of the sdn IP packet
+    if(sdn_ip_checksum(data, length) != 0xffff):
+        print("bad checksum")
+        return
+    # Parse NC route packet
+    pkt = NC_Routing_Packet.unpack(data, length)
+    print(repr(pkt))
+    # If the reported length in the sdn IP header doesnot match the packet size,
+    # then we drop the packet.
+    if(len(data) < (pkt.payload_len+SDN_NCH_LEN)):
+        print("packet shorter than reported in NC route header")
+        return
+    # sdn IP packet succeed
+    print("succeed unpacking NC route packet")
+    return pkt
 
 
 def process_nc_ack(addr, pkt):

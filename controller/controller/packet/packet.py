@@ -158,8 +158,8 @@ class NC_Routing_Packet:
         self.payload_len = kwargs.get("payload_len", 0)
         self.seq = kwargs.get("seq", 0)
         self.ack = kwargs.get("ack", 0)
-        self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.padding = kwargs.get("padding", 0)
+        self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.payload = payload
 
     def pack(self):
@@ -181,9 +181,9 @@ class NC_Routing_Packet:
 
     @classmethod
     def unpack(cls, packed_data, length):
-        payload_len, rank, energy, pkt_chksum, payload = struct.unpack(
-            '!BBHH' + str(length-SDN_NAH_LEN) + 's', packed_data)
-        return cls(payload, payload_len=payload_len, rank=rank, energy=energy, pkt_chksum=pkt_chksum)
+        payload_len, seq, ack, padding, pkt_chksum, payload = struct.unpack(
+            '!BBBBH' + str(length-SDN_NCH_LEN) + 's', packed_data)
+        return cls(payload, payload_len=payload_len, seq=seq, ack=ack, padding=padding, pkt_chksum=pkt_chksum)
 
 
 class NC_Routing_Payload:
