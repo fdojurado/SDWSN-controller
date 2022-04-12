@@ -40,7 +40,7 @@ def handle_serial_packet(data, ack_queue):
             return
         case sdn_protocols.SDN_PROTO_DATA:
             print("Processing data packet")
-            process_data_packet(pkt.payload)
+            process_data_packet(pkt.scr, pkt.payload)
             return
         case _:
             print("sdn IP packet type not found")
@@ -69,7 +69,7 @@ def save_serial_packet(pkt):
     data = {
         "ts": current_time,
         "values": {
-            "addr": pkt.addr,
+            "addr": addrConversion.to_string(pkt.addr).addrStr,
             "type": pkt.message_type,
             "payload_len": pkt.payload_len,
             "reserved0": pkt.reserved0,
@@ -80,74 +80,66 @@ def save_serial_packet(pkt):
     Database.insert("packets", data)
 
 
-def process_data_packet(data):
+def process_data_packet(src, data):
+    src = addrConversion.to_string(src)
+    src = src.addrStr
     # Process data packet header
-    pkt_hdr = DataPacketHeader.unpack(data)
-    print(repr(pkt_hdr))
-    blocks = pkt_hdr.length // SDN_DATA_LEN
-    payload = pkt_hdr.payload
-    payload_size = pkt_hdr.length
-    for x in range(1, blocks+1):
-        payload_size = payload_size - SDN_DATA_LEN
-        print("remaining payload size: ", payload_size)
-        data_pkt = DataPacketPayload.unpack(payload, payload_size)
-        print(repr(data_pkt))
-        payload = data_pkt.payload
-        src = data_pkt.addrStr
-        data = {
-            'time': current_time,
-            'src': src,
-            'last_seq': data_pkt.seq,
-            'num_seq': 1,
-            'temp': data_pkt.temp,
-            'humidity': data_pkt.humidity,
-        }
-        node = {
-            '_id': src,
-            'data': [
-                data,
-            ]
-        }
-        """ Does this node exist in DB """
-        if Database.exist("nodes", src) == 0:
-            Database.insert("nodes", node)
-        else:
-            # look for last seq number for that node
-            db = Database.find_one("nodes", {"data.src": src}, None)
-            if(db is not None):
-                df = pd.DataFrame(db['data'])
-                df = df.tail(1)
-                if df['last_seq'].values[0] == data_pkt.seq:
-                    print("duplicated data packet")
-                    # update num_seq field with the one in DB
-                    data['num_seq'] = int(df['num_seq'].values[0])
-                else:
-                    data['num_seq'] = int(df['num_seq'].values[0]+1)
-                    Database.push_doc("nodes", src, 'data', data)
+    pkt = Data_Packet.unpack(data)
+    print(repr(pkt))
+    data_structure = {
+        'time': current_time,
+        'last_seq': pkt.seq,
+        'num_seq': 1,
+        'temp': pkt.temp,
+        'humidity': pkt.humidity,
+        'light': pkt.light,
+    }
+    node = {
+        '_id': src,
+        'data': [
+            data_structure,
+        ]
+    }
+    """ Does this node exist in DB """
+    if Database.exist("nodes", src) == 0:
+        Database.insert("nodes", node)
+    else:
+        # look for last seq number for that node
+        db = Database.find_one("nodes", {"data.src": src}, None)
+        if(db is not None):
+            df = pd.DataFrame(db['data'])
+            df = df.tail(1)
+            if df['last_seq'].values[0] == pkt.seq:
+                print("duplicated data packet")
+                # update num_seq field with the one in DB
+                data_structure['num_seq'] = int(df['num_seq'].values[0])
             else:
-                Database.push_doc("nodes", src, 'data', data)
-        """ Create a current PDR database """
-        pdr = data['num_seq'] * 100.0 / data['last_seq']
-        pdr_data = {
-            '_id': src,
-            'time': current_time,
-            'pdr': pdr,
-        }
-        if Database.exist("pdr", src) == 0:
-            Database.insert("pdr", pdr_data)
+                data_structure['num_seq'] = int(df['num_seq'].values[0]+1)
+                Database.push_doc("nodes", src, 'data', data_structure)
         else:
-            Database.update_pdr("pdr", src, pdr_data)
-        ''' after we finish updating the pdr field, we
-            want to create/update pdr text so the canvas can
-            be updated '''
-        coll = Database.find("pdr", {})
-        df = pd.DataFrame(coll)
-        mean = df.pdr.mean()
-        data = {
-            "ts": current_time,
-            "pdr": mean,
-        }
-        Database.insert("total_pdr", data)
+            Database.push_doc("nodes", src, 'data', data_structure)
+    """ Create a current PDR database """
+    pdr = data_structure['num_seq'] * 100.0 / data_structure['last_seq']
+    pdr_data = {
+        '_id': src,
+        'time': current_time,
+        'pdr': pdr,
+    }
+    if Database.exist("pdr", src) == 0:
+        Database.insert("pdr", pdr_data)
+    else:
+        Database.update_pdr("pdr", src, pdr_data)
+    ''' after we finish updating the pdr field, we
+        want to create/update pdr text so the canvas can
+        be updated '''
+    coll = Database.find("pdr", {})
+    df = pd.DataFrame(coll)
+    mean = df.pdr.mean()
+    data_structure = {
+        "ts": current_time,
+        "pdr": mean,
+    }
+    Database.insert("total_pdr", data_structure)
 
 
 def process_sdn_ip_packet(data):
