@@ -4,7 +4,7 @@ from controller.routing.routing import *
 from controller.database.database import Database
 from controller.network_config.queue import Queue
 from controller.serial.serial_packet_dissector import *
-from controller.packet.packet import SerialPacket, ControlPacket, NC_RoutingPacket
+from controller.packet.packet import SerialPacket, NC_Routing_Packet
 import multiprocessing as mp
 import networkx as nx
 import pandas as pd
@@ -85,29 +85,38 @@ class NetworkConfig(mp.Process):
     def ack_nc(self):
         print('Processing NC ack')
 
+    def routes_packet(self, routes):
+        # Let's loop into routes
+        payload = []
+        for index, route in routes.iterrows():
+            dst = route['dst']
+            via = route['via']
+            route_pkt = NC_Routing_Payload(dst=dst, via=via, payload=payload)
+            route_packed = route_pkt.pack()
+            payload = route_packed
+        return payload
+
     def build_packet(self, node, df):
         payload_len = df.shape[0]*4
         # Build packet data
-        data_packet = NC_RoutingPacket(df)
-        dataPacked = data_packet.pack()
-        print(repr(data_packet))
+        dataPacked = self.routes_packet(df)
+        print("data packed")
         print(dataPacked)
-        # Build control packet
-        cp_pkt = ControlPacket(
-            dataPacked, type=sdn_protocols.SDN_PROTO_NC, len=payload_len, rank=randrange(65535), energy=0xffff)
-        cpPackedData = cp_pkt.pack()
-        print(repr(cp_pkt))
-        print(cpPackedData)
+        # Build NC routing packet
+        rt_pkt = NC_Routing_Packet(
+            dataPacked, payload_len=payload_len, seq=randrange(250))
+        rt_packed = rt_pkt.pack()
+        print(repr(rt_pkt))
+        print(rt_packed)
         # Build sdn IP packet
-        vahl = 0x2a  # 0x2a: version 2, header length 10
+        vap = 0x23  # 0x2a: version 2, header length 10
         # length of the entire packet
-        length = payload_len+CP_PKT_HEADER_SIZE+IP_PKT_HEADER_SIZE
+        length = payload_len+SDN_NCH_LEN+SDN_IPH_LEN
         ttl = 0x40  # 0x40: Time to live
-        proto = sdn_protocols.SDN_PROTO_CP  # NC packet
         scr = 0x0101  # Controller is sending
         dest = int(float(node))
-        sdn_ip_pkt = SDN_IP_Packet(cpPackedData,
-                                   vahl=vahl, len=length, ttl=ttl, proto=proto, scr=scr, dest=dest)
+        sdn_ip_pkt = SDN_IP_Packet(rt_packed,
+                                   vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
         sdn_ip_packed = sdn_ip_pkt.pack()
         print(repr(sdn_ip_pkt))
         # Control packet as payload of the serial packet
@@ -116,7 +125,7 @@ class NetworkConfig(mp.Process):
                            reserved0=0, reserved1=0)
         packedData = pkt.pack()
         print(repr(pkt))
-        return cp_pkt, sdn_ip_pkt, packedData
+        return rt_pkt, sdn_ip_pkt, packedData
 
     def read_routes(self, node):
         df = FWD_TABLE.fwd_get_table()
@@ -146,7 +155,7 @@ class NetworkConfig(mp.Process):
                     print("routes to deploy for node ", node)
                     print(df)
                     # build the packet
-                    cp_pkt, sdn_ip_pkt, packetData = self.build_packet(
+                    rt_pkt, sdn_ip_pkt, packetData = self.build_packet(
                         node, df)
                     # print("Sending NC packet to node ", node)
                     # set retransmission
@@ -155,10 +164,12 @@ class NetworkConfig(mp.Process):
                     self.serial_input_queue.put(packetData)
                     while True:
                         try:
-                            ack_pkt = self.ack_queue.get(block=True, timeout=7)
-                            if ((ack_pkt.ack == cp_pkt.rank+1) and (ack_pkt.addrStr == node)):
+                            pkt = self.ack_queue.get(block=True, timeout=7)
+                            rcv_rt_pkt = process_nc_route_packet(
+                                pkt.payload, pkt.tlen-SDN_IPH_LEN)
+                            if ((rcv_rt_pkt.ack == rt_pkt.seq+1) and (pkt.scrStr == node)):
                                 print("correct ACK received from ",
-                                      ack_pkt.addrStr)
+                                      pkt.scrStr)
                                 # set the routes deployed flag
                                 self.set_route_flag(node, df)
                                 break
