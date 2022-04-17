@@ -1,17 +1,25 @@
 from ast import Not
 from pickletools import read_uint1
+import types
 
 
-UC_RX = 0
-UC_TX = 1
+# Protocols encapsulated in sdn IP packet
+cell_type = types.SimpleNamespace()
+cell_type.UC_RX = 0
+cell_type.UC_TX = 1
 
 
 class Cell:
-    def __init__(self, source=None, destination=None, channeloffset=None, timeoffset=None):
+    def __init__(self, source=None, type=None, destination=None, channeloffset=None, timeoffset=None):
         self.source = source
+        self.type = type
         self.destination = destination
         self.timeoffset = timeoffset
         self.channeloffset = channeloffset
+
+    def __repr__(self):
+        return "Cell(source={}, type={}, dest={}, timeoffset={}, channeloffset={})".format(
+            self.source, self.type, self.destination, self.timeoffset, self.channeloffset)
 
 
 class Create_Node:
@@ -22,20 +30,27 @@ class Create_Node:
 
     def add_rx_cell(self, channeloffset, timeoffset):
         # print("adding rx cell")
-        rx_cell = Cell(source=self.node, channeloffset=channeloffset, timeoffset=timeoffset,
-                       )
+        rx_cell = Cell(source=self.node, type=cell_type.UC_RX,
+                       channeloffset=channeloffset, timeoffset=timeoffset)
         self.rx.append(rx_cell)
-        # print(self.rx)
+        return rx_cell
 
     def add_tx_cell(self, destination, timeoffset, channeloffset):
         # print("adding tx cell")
-        tx_cell = Cell(source=self.node, destination=destination,
+        # Cell duplicated?
+        for tx_link in self.tx:
+            if((tx_link.type == cell_type.UC_TX) and (tx_link.destination == destination)):
+                # print("duplicated cell")
+                return None
+
+        tx_cell = Cell(source=self.node, type=cell_type.UC_TX, destination=destination,
                        timeoffset=timeoffset, channeloffset=channeloffset)
+
         self.tx.append(tx_cell)
-        # print(self.tx)
+        return tx_cell
 
     def is_link_in_cell(self, type, timeoffset, channeloffset, destination=None):
-        if(type == UC_RX):
+        if(type == cell_type.UC_RX):
             if not self.rx:
                 for rx in self.rx:
                     if((timeoffset == rx.timeoffset) and (channeloffset == rx.channeloffset)):
@@ -48,6 +63,10 @@ class Create_Node:
         else:
             return 1
 
+    def __repr__(self):
+        return "Create_Node(Node={}, rx={}, tx={})".format(
+            self.node, self.rx, self.tx)
+
 
 class Schedule:
     def __init__(self, size, channel_offsets):
@@ -57,38 +76,43 @@ class Schedule:
         self.clear_schedule()
 
     def add_uc(self, node, type, channeloffset=None, timeoffset=None, destination=None):
-        print("adding uc link node: ", node, " destination: ", destination, "type: ", type,
-              " channeloffset: ", channeloffset, " timeoffset: ", timeoffset)
+        # print("adding uc link node: ", node, " destination: ", destination, "type: ", type,
+        #   " channeloffset: ", channeloffset, " timeoffset: ", timeoffset)
         if(not self.list_nodes):
             sensor = Create_Node(node)
             self.list_nodes.append(sensor)
+            # print("creating new sensor")
         else:
             for elem in self.list_nodes:
                 if (elem.node == node):
+                    # print("sensor already exist")
                     sensor = elem
                     break
                 else:
-                    sensor = Create_Node(node)
-                    self.list_nodes.append(sensor)
-                    break
-        print("list of nodes: ", self.list_nodes)
-        if(type == UC_RX):
+                    sensor = None
+            if (sensor is None):
+                sensor = Create_Node(node)
+                self.list_nodes.append(sensor)
+        # print("list of nodes: ", self.list_nodes)
+        if(type == cell_type.UC_RX):
             # Check if the node already has a rx link
             if(not sensor.has_rx()):
-                print("adding rx uc at channeloffset ",
-                      channeloffset, " timeoffset ", timeoffset)
-                sensor.add_rx_cell(channeloffset, timeoffset)
-                self.schedule[channeloffset][timeoffset].append(sensor)
-        if(type == UC_TX and destination is not None):
+                # print("adding rx uc at channeloffset ",
+                #   channeloffset, " timeoffset ", timeoffset)
+                rx_cell = sensor.add_rx_cell(channeloffset, timeoffset)
+                self.schedule[channeloffset][timeoffset].append(rx_cell)
+        if(type == cell_type.UC_TX and destination is not None):
             channeloffset, timeoffset = self.get_rx_coordinates(
                 destination)
             if (channeloffset is not None and timeoffset is not None):
-                print("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
-                      channeloffset, " timeoffset ", timeoffset)
-                sensor.add_tx_cell(destination, timeoffset, channeloffset)
-                self.schedule[channeloffset][timeoffset].append(sensor)
+                # print("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
+                #   channeloffset, " timeoffset ", timeoffset)
+                tx_cell = sensor.add_tx_cell(
+                    destination, timeoffset, channeloffset)
+                if(tx_cell is not None):
+                    self.schedule[channeloffset][timeoffset].append(tx_cell)
 
-        self.print_schedule()
+        # self.print_schedule()
 
     def get_rx_coordinates(self, addr):
         # Get the time and channel offset from the given addr.
@@ -107,5 +131,34 @@ class Schedule:
                 self.schedule[i][j] = []
         self.list_nodes = []
 
+    def format_printing_cell(self, cell):
+        if(cell):
+            # infr = "Node {fnode}, I'm {age}".format(fnode = cell.source, age = 36)
+            match(cell.type):
+                case cell_type.UC_RX:
+                    info = "Rx ({fnode})".format(fnode=cell.source)
+                    return info
+                case cell_type.UC_TX:
+                    info = "Tx ({fnode}-{dnode})".format(fnode=cell.source,
+                                                         dnode=cell.destination)
+                    return info
+                case _:
+                    print("unkown cell type")
+                    return None
+
     def print_schedule(self):
-        print(*self.schedule, sep='\n')
+        # print(*self.schedule, sep='\n')
+        rows, cols = (self.num_channel_offsets, self.slotframe_size)
+        print_schedule = [[0 for i in range(cols)] for j in range(rows)]
+        for i in range(rows):
+            for j in range(cols):
+                print_schedule[i][j] = []
+        for i in range(rows):
+            for j in range(cols):
+                if (self.schedule[i][j]):
+                    for elem in self.schedule[i][j]:
+                        txt = self.format_printing_cell(elem)
+                        if(txt is not None):
+                            print_schedule[i][j].append(txt)
+        # print("printing schedule 2")
+        print(*print_schedule, sep='\n')

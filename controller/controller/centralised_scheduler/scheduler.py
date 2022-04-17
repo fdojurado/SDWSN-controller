@@ -25,24 +25,25 @@ class Scheduler(mp.Process):
                 self.schedule.clear_schedule()
                 for u, p in path.items():
                     if(len(p) >= 2):
-                        print("try to add uc for ", p)
+                        # print("try to add uc for ", p)
                         for i in range(len(p)-1):
                             node = p[i]
                             neigbour = p[i+1]
-                            print("rx ", str(node), "tx: ", str(neigbour))
+                            # print("rx ", str(node), "tx: ", str(neigbour))
                             timeslot = randrange(
                                 self.schedule.slotframe_size-1)
                             channeloffset = randrange(
                                 self.schedule.num_channel_offsets-1)
                             self.schedule.add_uc(
-                                str(node), UC_RX, channeloffset, timeslot)
+                                str(node), cell_type.UC_RX, channeloffset, timeslot)
                             self.schedule.add_uc(
-                                str(neigbour), UC_TX, destination=node)
+                                str(neigbour), cell_type.UC_TX, destination=node)
 
                     else:
-                        print("add an uc rx for node ", p[0])
+                        # print("add an uc rx for node ", p[0])
                         timeslot = randrange(self.schedule.slotframe_size-1)
                         channeloffset = randrange(
                             self.schedule.num_channel_offsets-1)
                         self.schedule.add_uc(
-                            p[0], UC_RX, channeloffset, timeslot)
+                            p[0], cell_type.UC_RX, channeloffset, timeslot)
+                self.schedule.print_schedule()
