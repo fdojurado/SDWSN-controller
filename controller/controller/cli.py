@@ -98,7 +98,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
                    verbose, serial_input_queue, serial_output_queue)
     """ Start the centralised scheduler in background (as a daemon) """
     sc = Scheduler(ServerConfig.from_json_file(config),
-                   verbose, schedule_input_queue, schedule_output_queue)
+                   verbose, schedule_input_queue, schedule_output_queue, nc_input_queue)
     """ Let's start the plotting (animation) in background (as a daemon) """
     if plot:
         ntwk_plot = SubplotAnimation()

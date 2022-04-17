@@ -11,6 +11,7 @@ import pandas as pd
 import queue  # or Queue in Python 2
 # Generate random number for ack
 from random import randrange
+import json
 
 
 """ TODO: Set the maximum routes per node (e.g., 10). 
@@ -149,6 +150,9 @@ class NetworkConfig(mp.Process):
                 node = self.input_queue.get()
                 print("there is a new job")
                 print(node)
+                print("job type")
+                data= json.loads(node)
+                print(data['job_type'])
                 # read routes from node
                 df = self.read_routes(node)
                 if(not df.empty):

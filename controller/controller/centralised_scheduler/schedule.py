@@ -1,6 +1,7 @@
 from ast import Not
 from pickletools import read_uint1
 import types
+import json
 
 
 # Protocols encapsulated in sdn IP packet
@@ -20,6 +21,10 @@ class Cell:
     def __repr__(self):
         return "Cell(source={}, type={}, dest={}, timeoffset={}, channeloffset={})".format(
             self.source, self.type, self.destination, self.timeoffset, self.channeloffset)
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__,
+                          sort_keys=True, indent=4)
 
 
 class Create_Node:
@@ -162,3 +167,68 @@ class Schedule:
                             print_schedule[i][j].append(txt)
         # print("printing schedule 2")
         print(*print_schedule, sep='\n')
+
+    def schedule_toJSON(self):
+        # Build the schedule in a JSON format to be shared with the NC class
+        # {
+        #   "job_type": "TSCH",
+        #   "cells":[
+        #               {
+        #                  "co_1,to_1":[
+        #                              {
+        #                                  "addr": cell.source,
+        #                                  "type": cell.type,
+        #                                  "dest": cell.destination
+        #                              },
+        #                              {
+        #                                  addr": cell.source,
+        #                                  "type": cell.type,
+        #                                  "dest": cell.destination
+        #                              },
+        #                          ],
+        #                  "co_2,to_2":{
+        #                                  addr": cell.source,
+        #                                  "type": cell.type,
+        #                                  "dest": cell.destination
+        #                              },
+        #                              .
+        #                              .
+        #                              .
+        #              }
+        #       ]
+        # }
+        json_message_format = '{"job_type": "TSCH", "cells":[]}'
+        # parsing JSON string:
+        json_message = json.loads(json_message_format)
+        rows, cols = (self.num_channel_offsets, self.slotframe_size)
+        for i in range(rows):
+            for j in range(cols):
+                if (self.schedule[i][j]):
+                    for elem in self.schedule[i][j]:
+                        channel_offset = str(elem.channeloffset)
+                        slot_offset = str(elem.timeoffset)
+                        coordinate = channel_offset+","+slot_offset
+                        data = {"addr": elem.source, "type": elem.type,
+                                "dest": elem.destination}
+                        # print("adding at coordinate: ",
+                        #       coordinate, " data: ", data)
+                        if(json_message["cells"]):
+                            msg = 0
+                            for link in json_message["cells"]:
+                                if (str(coordinate) in link):
+                                    # print("Key exist in JSON data: ",
+                                    #       str(coordinate))
+                                    link[coordinate].append(data)
+                                    msg = 0
+                                    break
+                                else:
+                                    msg = None
+                            if(msg is None):
+                                # print("Key does NOT exist in JSON data")
+                                json_message["cells"].append(
+                                    {coordinate: [data]})
+                        else:
+                            json_message["cells"].append({coordinate: [data]})
+        json_dump = json.dumps(json_message, indent=4, sort_keys=True)
+        print(json_dump)
+        return json_dump

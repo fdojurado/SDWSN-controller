@@ -1,16 +1,18 @@
 import multiprocessing as mp
 from controller.centralised_scheduler.schedule import *
 from random import randrange
+import json
 
 # This is a simple scheduler which puts a tx and rx uc link for each edge in the current routing protocol.
 
 
 class Scheduler(mp.Process):
-    def __init__(self, config, verbose, input_queue, output_queue):
+    def __init__(self, config, verbose, input_queue, output_queue, nc_job_queue):
         mp.Process.__init__(self)
         self.config = config
         self.verbose = verbose
         self.input_queue = input_queue
+        self.nc_job_queue = nc_job_queue
         self.output_queue = output_queue
         self.schedule = Schedule(
             self.config.tsch.slotframe_size, self.config.tsch.num_of_channels)
@@ -47,3 +49,11 @@ class Scheduler(mp.Process):
                         self.schedule.add_uc(
                             p[0], cell_type.UC_RX, channeloffset, timeslot)
                 self.schedule.print_schedule()
+                # Let's build the message in json format
+                self.nc_job_queue.put(self.schedule.schedule_toJSON())
+                # job = {"type": 0, "payload": self.schedule.schedule}
+                # json_dump = json.dumps(job)
+                # print(json_dump)
+                # self.nc_job_queue.put(json_dump)
+
+
