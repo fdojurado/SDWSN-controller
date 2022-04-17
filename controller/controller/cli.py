@@ -12,6 +12,7 @@ from controller.mqtt.mqtt import MQTTClient
 from controller.serial.serial import SerialBus
 from controller.database.database import Database
 from controller.config import ServerConfig, DEFAULT_CONFIG
+from controller.centralised_scheduler.scheduler import Scheduler
 # from controller.gui.gui import SDNcontrollerapp, f, animate
 from controller.message import Message
 from controller.node import Node
@@ -67,6 +68,9 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     signal.signal(signal.SIGQUIT, exit_process)
     signal.signal(signal.SIGTERM, exit_process)
     """ Define Queues """
+    # TSCH scheduler Queues
+    schedule_input_queue = mp.Queue()
+    schedule_output_queue = mp.Queue()
     # Serial Queues
     serial_input_queue = mp.Queue()
     serial_output_queue = mp.Queue()
@@ -92,6 +96,9 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     """ Start the serial interface in background (as a daemon) """
     sp = SerialBus(ServerConfig.from_json_file(config, fit),
                    verbose, serial_input_queue, serial_output_queue)
+    """ Start the centralised scheduler in background (as a daemon) """
+    sc = Scheduler(ServerConfig.from_json_file(config),
+                   verbose, schedule_input_queue, schedule_output_queue)
     """ Let's start the plotting (animation) in background (as a daemon) """
     if plot:
         ntwk_plot = SubplotAnimation()
@@ -107,6 +114,8 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     rp.start()
     nc.daemon = True
     nc.start()
+    sc.daemon = True
+    sc.start()
     if plot:
         ntwk_plot.daemon = True
         ntwk_plot.start()
@@ -128,6 +137,8 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
             path = routing_output_queue.get()
             rts = compute_routes_from_path(path)
             save_routes(rts)
+            # Compute schedules
+            schedule_input_queue.put(path)
             # We now trigger NC
             nodes = compute_routes_nc()
             # Now, we put them in the Queue
