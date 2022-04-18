@@ -2,7 +2,7 @@ from ast import Not
 from pickletools import read_uint1
 import types
 import json
-
+from controller.network_config.network_config import *
 
 # Protocols encapsulated in sdn IP packet
 cell_type = types.SimpleNamespace()
@@ -174,30 +174,23 @@ class Schedule:
         #   "job_type": "TSCH",
         #   "cells":[
         #               {
-        #                  "co_1,to_1":[
-        #                              {
-        #                                  "addr": cell.source,
-        #                                  "type": cell.type,
-        #                                  "dest": cell.destination
-        #                              },
-        #                              {
-        #                                  addr": cell.source,
-        #                                  "type": cell.type,
-        #                                  "dest": cell.destination
-        #                              },
-        #                          ],
-        #                  "co_2,to_2":{
-        #                                  addr": cell.source,
-        #                                  "type": cell.type,
-        #                                  "dest": cell.destination
-        #                              },
-        #                              .
-        #                              .
-        #                              .
-        #              }
+        #                   "addr": cell.source,
+        #                   "channel": cell.channel,
+        #                   "timeslot": cell.timeslot,
+        #                   "type": cell.type,
+        #                   "dest": cell.destination
+        #                },
+        #               {
+        #                   "addr": cell.source,
+        #                   "channel": cell.channel,
+        #                   "timeslot": cell.timeslot,
+        #                   "type": cell.type,
+        #                   "dest": cell.destination
+        #                },
         #       ]
         # }
-        json_message_format = '{"job_type": "TSCH", "cells":[]}'
+        json_message_format = '{"job_type": ' + \
+            str(job_type.TSCH)+', "cells":[]}'
         # parsing JSON string:
         json_message = json.loads(json_message_format)
         rows, cols = (self.num_channel_offsets, self.slotframe_size)
@@ -205,30 +198,11 @@ class Schedule:
             for j in range(cols):
                 if (self.schedule[i][j]):
                     for elem in self.schedule[i][j]:
-                        channel_offset = str(elem.channeloffset)
-                        slot_offset = str(elem.timeoffset)
-                        coordinate = channel_offset+","+slot_offset
-                        data = {"addr": elem.source, "type": elem.type,
+                        channel = str(elem.channeloffset)
+                        timeslot = str(elem.timeoffset)
+                        data = {"channel": channel, "timeslot": timeslot, "addr": elem.source, "type": elem.type,
                                 "dest": elem.destination}
-                        # print("adding at coordinate: ",
-                        #       coordinate, " data: ", data)
-                        if(json_message["cells"]):
-                            msg = 0
-                            for link in json_message["cells"]:
-                                if (str(coordinate) in link):
-                                    # print("Key exist in JSON data: ",
-                                    #       str(coordinate))
-                                    link[coordinate].append(data)
-                                    msg = 0
-                                    break
-                                else:
-                                    msg = None
-                            if(msg is None):
-                                # print("Key does NOT exist in JSON data")
-                                json_message["cells"].append(
-                                    {coordinate: [data]})
-                        else:
-                            json_message["cells"].append({coordinate: [data]})
+                        json_message["cells"].append(data)
         json_dump = json.dumps(json_message, indent=4, sort_keys=True)
         print(json_dump)
         return json_dump

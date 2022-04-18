@@ -10,6 +10,7 @@ SDN_NAH_LEN = 6   # Size of neighbor advertisment packet header */
 SDN_NAPL_LEN = 6  # Size of neighbor advertisment payload size */
 SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
 SDN_NCR_LEN = 4  # Size of NC routing packet*/
+SDN_NCS_LEN = 6  # Size of SR schedule packet*/
 SDN_DATA_LEN = 8  # Size of data packet */
 SDN_SERIAL_PACKETH_LEN = 6
 
@@ -201,6 +202,52 @@ class NC_Routing_Payload:
                                  's', self.via, self.dst, bytes(self.payload))
         else:
             packed = struct.pack('!2s2s', self.via, self.dst)
+        return packed
+
+
+class Cell_Packet:
+
+    def __init__(self, payload, **kwargs):
+        self.payload_len = kwargs.get("payload_len", 0)
+        self.padding = kwargs.get("padding", 0)
+        self.seq = kwargs.get("seq", 0)
+        self.pkt_chksum = kwargs.get("pkt_chksum", 0)
+        self.payload = payload
+
+    def pack(self):
+        #  Let's first compute the checksum
+        data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.padding,
+                           self.seq, self.pkt_chksum, bytes(self.payload))
+        self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_NCS_LEN)
+        print("computed checksum")
+        print(self.pkt_chksum)
+        return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.padding,
+                           self.seq, self.pkt_chksum, bytes(self.payload))
+
+
+class Cell_Packet_Payload:
+
+    def __init__(self, payload, **kwargs):
+        self.type = kwargs.get("type", 0)
+        self.channel = kwargs.get("channel", 0)
+        self.timeslot = kwargs.get("timeslot", 0)
+        self.padding = kwargs.get("padding", 0)
+        self.scr = kwargs.get("scr", 0)
+        self.scr = addrConversion.to_int(self.scr).addr
+        self.dst = kwargs.get("dst", 0)
+        if self.dst is not None:
+            self.dst = addrConversion.to_int(self.dst).addr
+        else:
+            self.dst = addrConversion.to_int('0.0').addr
+        self.payload = payload
+
+    def pack(self):
+        if self.payload:
+            packed = struct.pack('>bBBB2s2s'+str(len(self.payload)) +
+                                 's', self.type, self.channel, self.timeslot, self.padding, self.scr, self.dst, bytes(self.payload))
+        else:
+            packed = struct.pack('!bBBB2s2s', self.type, self.channel,
+                                 self.timeslot, self.padding, self.scr, self.dst)
         return packed
 
 
