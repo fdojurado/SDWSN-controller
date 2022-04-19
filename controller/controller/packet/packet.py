@@ -8,20 +8,19 @@ SDN_IPH_LEN = 10  # Size of layer 3 packet header */
 SDN_NDH_LEN = 6   # Size of neighbor discovery header */
 SDN_NAH_LEN = 6   # Size of neighbor advertisment packet header */
 SDN_NAPL_LEN = 6  # Size of neighbor advertisment payload size */
-SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
-SDN_NCR_LEN = 4  # Size of NC routing packet*/
-SDN_NCS_LEN = 6  # Size of SR schedule packet*/
+# SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
+SDN_RAH_LEN = 6  # Size of RA header routing packet*/
+SDN_SAH_LEN = 6  # Size of SA header schedule packet*/
 SDN_DATA_LEN = 8  # Size of data packet */
 SDN_SERIAL_PACKETH_LEN = 6
 
 # Protocols encapsulated in sdn IP packet
 sdn_protocols = types.SimpleNamespace()
 sdn_protocols.SDN_PROTO_ND = 1
-sdn_protocols.SDN_PROTO_NA = 2              # Neighbor advertisement
-sdn_protocols.SDN_PROTO_NC_ROUTE = 3        # Network configuration for routes
-# Network configuration for schedules
-sdn_protocols.SDN_PROTO_NC_SCHEDULES = 4
-sdn_protocols.SDN_PROTO_DATA = 5            # Data packet
+sdn_protocols.SDN_PROTO_NA = 2        # Neighbor advertisement
+sdn_protocols.SDN_PROTO_RA = 3        # Routes Advertisement
+sdn_protocols.SDN_PROTO_SA = 4        # Schedule Advertisement
+sdn_protocols.SDN_PROTO_DATA = 5      # Data packet
 
 
 def chksum(sum, data, len):
@@ -153,41 +152,40 @@ class SDN_IP_Packet:
                    scr=scr, scrStr=scrStr.addrStr, dest=dest, destStr=destStr.addrStr)
 
 
-class NC_Routing_Packet:
+class RA_Packet:
 
     def __init__(self, payload, **kwargs):
         self.payload_len = kwargs.get("payload_len", 0)
-        self.seq = kwargs.get("seq", 0)
-        self.ack = kwargs.get("ack", 0)
         self.padding = kwargs.get("padding", 0)
+        self.seq = kwargs.get("seq", 0)
         self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.payload = payload
 
     def pack(self):
         #  Let's first compute the checksum
-        data = struct.pack('!BBBBH' + str(len(self.payload)) + 's', self.payload_len, self.seq,
-                           self.ack, self.padding, self.pkt_chksum, bytes(self.payload))
-        self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_NCH_LEN)
+        data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
+                           self.padding, self.seq, self.pkt_chksum, bytes(self.payload))
+        self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_RAH_LEN)
         print("computed checksum")
         print(self.pkt_chksum)
-        return struct.pack('!BBBBH' + str(len(self.payload)) + 's', self.payload_len, self.seq,
-                           self.ack, self.padding, self.pkt_chksum, bytes(self.payload))
+        return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
+                           self.padding, self.seq, self.pkt_chksum, bytes(self.payload))
 
     # optional: nice string representation of packet for printing purposes
 
     def __repr__(self):
-        return "NC_Routing_Packet(payload_len={}, seq={}, ack={}, pkt_chksum={}, payload={})".format(
-            hex(self.payload_len), hex(self.seq),
-            hex(self.ack), hex(self.pkt_chksum), self.payload)
+        return "NC_Routing_Packet(payload_len={}, padding={}, seq={}, pkt_chksum={}, payload={})".format(
+            hex(self.payload_len), self.padding, self.seq,
+            hex(self.pkt_chksum), self.payload)
 
     @classmethod
     def unpack(cls, packed_data, length):
-        payload_len, seq, ack, padding, pkt_chksum, payload = struct.unpack(
-            '!BBBBH' + str(length-SDN_NCH_LEN) + 's', packed_data)
-        return cls(payload, payload_len=payload_len, seq=seq, ack=ack, padding=padding, pkt_chksum=pkt_chksum)
+        payload_len, padding, seq, pkt_chksum, payload = struct.unpack(
+            '!BBHH' + str(length-SDN_RAH_LEN) + 's', packed_data)
+        return cls(payload, payload_len=payload_len, padding=padding, seq=seq, pkt_chksum=pkt_chksum)
 
 
-class NC_Routing_Payload:
+class RA_Payload:
 
     def __init__(self, payload, **kwargs):
         self.scr = kwargs.get("scr", 0)
@@ -201,9 +199,9 @@ class NC_Routing_Payload:
     def pack(self):
         if self.payload:
             packed = struct.pack('>2s2s2s'+str(len(self.payload)) +
-                                 's', self.scr, self.via, self.dst, bytes(self.payload))
+                                 's', self.scr, self.dst, self.via, bytes(self.payload))
         else:
-            packed = struct.pack('!2s2s2s', self.scr, self.via, self.dst)
+            packed = struct.pack('!2s2s2s', self.scr, self.dst, self.via)
         return packed
 
 
@@ -220,7 +218,7 @@ class Cell_Packet:
         #  Let's first compute the checksum
         data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.padding,
                            self.seq, self.pkt_chksum, bytes(self.payload))
-        self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_NCS_LEN)
+        self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_SAH_LEN)
         print("computed checksum")
         print(self.pkt_chksum)
         return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.padding,

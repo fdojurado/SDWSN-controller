@@ -4,7 +4,7 @@ from controller.forwarding_table.forwarding_table import FWD_TABLE
 from controller.database.database import Database
 from controller.network_config.queue import Queue
 from controller.serial.serial_packet_dissector import *
-from controller.packet.packet import SerialPacket, NC_Routing_Packet
+from controller.packet.packet import SerialPacket
 import multiprocessing as mp
 import networkx as nx
 import pandas as pd
@@ -24,6 +24,7 @@ job_type.TSCH = 0
 job_type.ROUTING = 1
 
 schedule_sequence = 0
+routes_sequence = 0
 
 
 def routes_to_deploy(node, routes):
@@ -100,37 +101,36 @@ class NetworkConfig(mp.Process):
         for rt in routes['routes']:
             print("routes")
             print(rt)
-            route_pkt = NC_Routing_Payload(
+            route_pkt = RA_Payload(
                 dst=rt['dst'], scr=rt['scr'], via=rt['via'], payload=payload)
             routed_packed = route_pkt.pack()
             payload = routed_packed
         return payload
 
     def build_routes_packet(self, data):
+        global routes_sequence
+        routes_sequence += 1
         print("building routing packet")
-        # payload_len = df.shape[0]*4
         # Build routes payload
         payloadPacked = self.process_json_routes_packets(data)
         print("payload packed")
         print(payloadPacked)
-        # Build packet data
-        dataPacked = self.routes_packet(df)
-        print("data packed")
-        print(dataPacked)
-        # Build NC routing packet
-        rt_pkt = NC_Routing_Packet(
-            dataPacked, payload_len=payload_len, seq=randrange(250))
-        rt_packed = rt_pkt.pack()
-        print(repr(rt_pkt))
-        print(rt_packed)
+        payload_len = len(payloadPacked)
+        # Build RA packet
+        ra_pkt = RA_Packet(
+            payloadPacked, payload_len=payload_len, seq=routes_sequence)
+        ra_packed = ra_pkt.pack()
+        print(repr(ra_pkt))
+        print(ra_packed)
         # Build sdn IP packet
-        vap = 0x23  # 0x2a: version 2, header length 10
+        # 0x23: version 2, protocol RA = 3
+        vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_RA
         # length of the entire packet
-        length = payload_len+SDN_NCH_LEN+SDN_IPH_LEN
+        length = payload_len+SDN_RAH_LEN+SDN_IPH_LEN
         ttl = 0x40  # 0x40: Time to live
         scr = 0x0101  # Controller is sending
-        dest = int(float(node))
-        sdn_ip_pkt = SDN_IP_Packet(rt_packed,
+        dest = int(float(0))
+        sdn_ip_pkt = SDN_IP_Packet(ra_packed,
                                    vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
         sdn_ip_packed = sdn_ip_pkt.pack()
         print(repr(sdn_ip_pkt))
@@ -140,7 +140,7 @@ class NetworkConfig(mp.Process):
                            reserved0=0, reserved1=0)
         packedData = pkt.pack()
         print(repr(pkt))
-        return rt_pkt, sdn_ip_pkt, packedData
+        return packedData
 
     def set_route_flag(self, node, df):
         print("setting routes flag")
@@ -176,9 +176,10 @@ class NetworkConfig(mp.Process):
         # print(repr(rt_pkt))
         print(cell_packed)
         # Build sdn IP packet
-        vap = 0x24  # 0x2a: version 2, header length 10
+        # 0x24: version 2, protocol SA = 4
+        vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_SA
         # length of the entire packet
-        length = payload_len+SDN_NCS_LEN+SDN_IPH_LEN
+        length = payload_len+SDN_SAH_LEN+SDN_IPH_LEN
         ttl = 0x32  # 0x40: Time to live
         scr = 0x0101  # Controller is sending
         dest = int(float(0))
