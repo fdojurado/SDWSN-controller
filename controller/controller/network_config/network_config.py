@@ -1,6 +1,6 @@
 from logging import exception
 from controller.forwarding_table.forwarding_table import FWD_TABLE
-from controller.routing.routing import *
+# from controller.routing.routing import *
 from controller.database.database import Database
 from controller.network_config.queue import Queue
 from controller.serial.serial_packet_dissector import *
@@ -94,19 +94,25 @@ class NetworkConfig(mp.Process):
     def ack_nc(self):
         print('Processing NC ack')
 
-    def routes_packet(self, routes):
+    def process_json_routes_packets(self, routes):
         # Let's loop into routes
         payload = []
-        for index, route in routes.iterrows():
-            dst = route['dst']
-            via = route['via']
-            route_pkt = NC_Routing_Payload(dst=dst, via=via, payload=payload)
-            route_packed = route_pkt.pack()
-            payload = route_packed
+        for rt in routes['routes']:
+            print("routes")
+            print(rt)
+            route_pkt = NC_Routing_Payload(
+                dst=rt['dst'], scr=rt['scr'], via=rt['via'], payload=payload)
+            routed_packed = route_pkt.pack()
+            payload = routed_packed
         return payload
 
-    def build_packet(self, node, df):
-        payload_len = df.shape[0]*4
+    def build_routes_packet(self, data):
+        print("building routing packet")
+        # payload_len = df.shape[0]*4
+        # Build routes payload
+        payloadPacked = self.process_json_routes_packets(data)
+        print("payload packed")
+        print(payloadPacked)
         # Build packet data
         dataPacked = self.routes_packet(df)
         print("data packed")
@@ -136,14 +142,6 @@ class NetworkConfig(mp.Process):
         print(repr(pkt))
         return rt_pkt, sdn_ip_pkt, packedData
 
-    def read_routes(self, node):
-        df = FWD_TABLE.fwd_get_table()
-        df = df[df['scr'] == node]
-        if(df.empty):
-            return df
-        df = df[(df['deployed'] == 0)]
-        return df
-
     def set_route_flag(self, node, df):
         print("setting routes flag")
         for index, route in df.iterrows():
@@ -170,7 +168,7 @@ class NetworkConfig(mp.Process):
         payloadPacked = self.process_json_schedule_packets(data)
         print("payload packed")
         print(payloadPacked)
-        payload_len=len(payloadPacked)
+        payload_len = len(payloadPacked)
         # Build schedule packet header
         cell_pkt = Cell_Packet(
             payloadPacked, payload_len=payload_len, seq=schedule_sequence)
@@ -211,6 +209,7 @@ class NetworkConfig(mp.Process):
                         packedData = self.build_schedule_packet(data)
                     case job_type.ROUTING:
                         print("routing job type")
+                        packedData = self.build_routes_packet(data)
                     case _:
                         print("unknown job tpye")
                         return None

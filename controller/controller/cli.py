@@ -135,13 +135,15 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
         # look for incoming request from routing
         if not routing_output_queue.empty():
             path = routing_output_queue.get()
-            rts = compute_routes_from_path(path)
-            save_routes(rts)
+            # rts = compute_routes_from_path(path)
+            # save_routes(rts)
             # Compute schedules
             schedule_input_queue.put(path)
             # We now trigger NC
-            nodes = compute_routes_nc()
+            rts = compute_routes_from_path(path)
+            save_routes(rts)
+            nc_input_queue.put(routes_toJSON())
             # Now, we put them in the Queue
-            for node in nodes:
-                nc_input_queue.put(node)
+            # for node in nodes:
+            #     nc_input_queue.put(node)
             # nc_input_queue.put(path)

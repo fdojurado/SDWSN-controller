@@ -190,6 +190,8 @@ class NC_Routing_Packet:
 class NC_Routing_Payload:
 
     def __init__(self, payload, **kwargs):
+        self.scr = kwargs.get("scr", 0)
+        self.scr = addrConversion.to_int(self.scr).addr
         self.dst = kwargs.get("dst", 0)
         self.dst = addrConversion.to_int(self.dst).addr
         self.via = kwargs.get("via", 0)
@@ -198,10 +200,10 @@ class NC_Routing_Payload:
 
     def pack(self):
         if self.payload:
-            packed = struct.pack('>2s2s'+str(len(self.payload)) +
-                                 's', self.via, self.dst, bytes(self.payload))
+            packed = struct.pack('>2s2s2s'+str(len(self.payload)) +
+                                 's', self.scr, self.via, self.dst, bytes(self.payload))
         else:
-            packed = struct.pack('!2s2s', self.via, self.dst)
+            packed = struct.pack('!2s2s2s', self.scr, self.via, self.dst)
         return packed
 
 

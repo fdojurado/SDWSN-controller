@@ -11,6 +11,39 @@ from controller.routing.routes import Routes
 from controller.database.database import Database
 import networkx as nx
 import pandas as pd
+import json
+from controller.forwarding_table.forwarding_table import FWD_TABLE
+from controller.network_config.network_config import *
+
+
+def routes_toJSON():
+    # Build the routing job in a JSON format to be shared with the NC class
+    # {
+    #   "job_type": "Routing",
+    #   "routes":[
+    #               {
+    #                   "scr": cell.source,
+    #                   "dst": cell.channel,
+    #                   "via": cell.timeslot
+    #                },
+    #               {
+    #                   "scr": cell.source,
+    #                   "dst": cell.channel,
+    #                   "via": cell.timeslot
+    #                }
+    #       ]
+    # }
+    json_message_format = '{"job_type": ' + \
+        str(job_type.ROUTING)+', "routes":[]}'
+    # parsing JSON string:
+    json_message = json.loads(json_message_format)
+    df = FWD_TABLE.fwd_get_table()
+    for index, row in df.iterrows():
+        data = {"scr": row['scr'], "dst": row['dst'], "via": row['via']}
+        json_message["routes"].append(data)
+    json_dump = json.dumps(json_message, indent=4, sort_keys=True)
+    print(json_dump)
+    return json_dump
 
 
 def compute_routes_from_path(path):
