@@ -32,10 +32,10 @@ class Scheduler(mp.Process):
                             node = p[i]
                             neigbour = p[i+1]
                             # print("rx ", str(node), "tx: ", str(neigbour))
-                            timeslot = randrange(
-                                self.schedule.slotframe_size-1)
-                            channeloffset = randrange(
-                                self.schedule.num_channel_offsets-1)
+                            timeslot = randrange(0,
+                                                 self.schedule.slotframe_size-1)
+                            channeloffset = randrange(1,
+                                                      self.schedule.num_channel_offsets-1)
                             self.schedule.add_uc(
                                 str(node), cell_type.UC_RX, channeloffset, timeslot)
                             self.schedule.add_uc(
@@ -43,9 +43,9 @@ class Scheduler(mp.Process):
 
                     else:
                         # print("add an uc rx for node ", p[0])
-                        timeslot = randrange(self.schedule.slotframe_size-1)
-                        channeloffset = randrange(
-                            self.schedule.num_channel_offsets-1)
+                        timeslot = randrange(0, self.schedule.slotframe_size-1)
+                        channeloffset = randrange(1,
+                                                  self.schedule.num_channel_offsets-1)
                         self.schedule.add_uc(
                             p[0], cell_type.UC_RX, channeloffset, timeslot)
                 self.schedule.print_schedule()
@@ -55,5 +55,3 @@ class Scheduler(mp.Process):
                 # json_dump = json.dumps(job)
                 # print(json_dump)
                 # self.nc_job_queue.put(json_dump)
-
-
