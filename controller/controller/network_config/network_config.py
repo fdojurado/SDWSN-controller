@@ -7,6 +7,7 @@ from controller.serial.serial_packet_dissector import *
 from controller.packet.packet import SerialPacket
 import multiprocessing as mp
 import networkx as nx
+from time import sleep
 import pandas as pd
 import queue  # or Queue in Python 2
 # Generate random number for ack
@@ -218,3 +219,4 @@ class NetworkConfig(mp.Process):
                 print("sending NC packet")
                 # Send NC packet
                 self.serial_input_queue.put(packedData)
+            sleep(0.5)
