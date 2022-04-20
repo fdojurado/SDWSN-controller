@@ -34,10 +34,10 @@ def handle_serial_packet(data, ack_queue):
                 return
             process_na_payload(pkt.scr, na_pkt.payload)
             return
-        case sdn_protocols.SDN_PROTO_NC_ROUTE:
-            # rt_pkt = process_nc_route_packet(pkt.payload, pkt.tlen-SDN_IPH_LEN)
-            ack_queue.put(pkt)
-            return
+        # case sdn_protocols.SDN_PROTO_NC_ROUTE:
+        #     # rt_pkt = process_nc_route_packet(pkt.payload, pkt.tlen-SDN_IPH_LEN)
+        #     ack_queue.put(pkt)
+        #     return
         case sdn_protocols.SDN_PROTO_DATA:
             print("Processing data packet")
             process_data_packet(pkt.scr, pkt.payload)

@@ -101,7 +101,7 @@ class NetworkConfig(mp.Process):
         for rt in routes['routes']:
             print("routes")
             print(rt)
-            route_pkt = RA_Payload(
+            route_pkt = RA_Packet_Payload(
                 dst=rt['dst'], scr=rt['scr'], via=rt['via'], payload=payload)
             routed_packed = route_pkt.pack()
             payload = routed_packed

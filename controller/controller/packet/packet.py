@@ -174,7 +174,7 @@ class RA_Packet:
     # optional: nice string representation of packet for printing purposes
 
     def __repr__(self):
-        return "NC_Routing_Packet(payload_len={}, padding={}, seq={}, pkt_chksum={}, payload={})".format(
+        return "RA_Packet(payload_len={}, padding={}, seq={}, pkt_chksum={}, payload={})".format(
             hex(self.payload_len), self.padding, self.seq,
             hex(self.pkt_chksum), self.payload)
 
@@ -185,7 +185,7 @@ class RA_Packet:
         return cls(payload, payload_len=payload_len, padding=padding, seq=seq, pkt_chksum=pkt_chksum)
 
 
-class RA_Payload:
+class RA_Packet_Payload:
 
     def __init__(self, payload, **kwargs):
         self.scr = kwargs.get("scr", 0)
