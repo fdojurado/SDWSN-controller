@@ -156,7 +156,7 @@ class RA_Packet:
 
     def __init__(self, payload, **kwargs):
         self.payload_len = kwargs.get("payload_len", 0)
-        self.padding = kwargs.get("padding", 0)
+        self.hop_limit = kwargs.get("hop_limit", 0)
         self.seq = kwargs.get("seq", 0)
         self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.payload = payload
@@ -164,25 +164,25 @@ class RA_Packet:
     def pack(self):
         #  Let's first compute the checksum
         data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
-                           self.padding, self.seq, self.pkt_chksum, bytes(self.payload))
+                           self.hop_limit, self.seq, self.pkt_chksum, bytes(self.payload))
         self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_RAH_LEN)
         print("computed checksum")
         print(self.pkt_chksum)
         return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
-                           self.padding, self.seq, self.pkt_chksum, bytes(self.payload))
+                           self.hop_limit, self.seq, self.pkt_chksum, bytes(self.payload))
 
     # optional: nice string representation of packet for printing purposes
 
     def __repr__(self):
-        return "RA_Packet(payload_len={}, padding={}, seq={}, pkt_chksum={}, payload={})".format(
-            hex(self.payload_len), self.padding, self.seq,
+        return "RA_Packet(payload_len={}, hop_limit={}, seq={}, pkt_chksum={}, payload={})".format(
+            hex(self.payload_len), self.hop_limit, self.seq,
             hex(self.pkt_chksum), self.payload)
 
     @classmethod
     def unpack(cls, packed_data, length):
-        payload_len, padding, seq, pkt_chksum, payload = struct.unpack(
+        payload_len, hop_limit, seq, pkt_chksum, payload = struct.unpack(
             '!BBHH' + str(length-SDN_RAH_LEN) + 's', packed_data)
-        return cls(payload, payload_len=payload_len, padding=padding, seq=seq, pkt_chksum=pkt_chksum)
+        return cls(payload, payload_len=payload_len, hop_limit=hop_limit, seq=seq, pkt_chksum=pkt_chksum)
 
 
 class RA_Packet_Payload:
@@ -209,19 +209,19 @@ class Cell_Packet:
 
     def __init__(self, payload, **kwargs):
         self.payload_len = kwargs.get("payload_len", 0)
-        self.padding = kwargs.get("padding", 0)
+        self.hop_limit = kwargs.get("hop_limit", 0)
         self.seq = kwargs.get("seq", 0)
         self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.payload = payload
 
     def pack(self):
         #  Let's first compute the checksum
-        data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.padding,
+        data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
                            self.seq, self.pkt_chksum, bytes(self.payload))
         self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_SAH_LEN)
         print("computed checksum")
         print(self.pkt_chksum)
-        return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.padding,
+        return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
                            self.seq, self.pkt_chksum, bytes(self.payload))
 
 

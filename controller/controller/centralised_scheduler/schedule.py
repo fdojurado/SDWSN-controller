@@ -188,6 +188,7 @@ class Schedule:
         #                   "dest": cell.destination
         #                },
         #       ]
+        #   "hop_limit": "255"
         # }
         json_message_format = '{"job_type": ' + \
             str(job_type.TSCH)+', "cells":[]}'
@@ -203,6 +204,7 @@ class Schedule:
                         data = {"channel": channel, "timeslot": timeslot, "addr": elem.source, "type": elem.type,
                                 "dest": elem.destination}
                         json_message["cells"].append(data)
+        json_message["hop_limit"] = 255
         json_dump = json.dumps(json_message, indent=4, sort_keys=True)
         print(json_dump)
         return json_dump

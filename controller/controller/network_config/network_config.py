@@ -100,8 +100,6 @@ class NetworkConfig(mp.Process):
         # Let's loop into routes
         payload = []
         for rt in routes['routes']:
-            print("routes")
-            print(rt)
             route_pkt = RA_Packet_Payload(
                 dst=rt['dst'], scr=rt['scr'], via=rt['via'], payload=payload)
             routed_packed = route_pkt.pack()
@@ -119,7 +117,7 @@ class NetworkConfig(mp.Process):
         payload_len = len(payloadPacked)
         # Build RA packet
         ra_pkt = RA_Packet(
-            payloadPacked, payload_len=payload_len, seq=routes_sequence)
+            payloadPacked, payload_len=payload_len, hop_limit=data['hop_limit'], seq=routes_sequence)
         ra_packed = ra_pkt.pack()
         print(repr(ra_pkt))
         print(ra_packed)
@@ -153,8 +151,6 @@ class NetworkConfig(mp.Process):
         # Let's loop into routes
         payload = []
         for cell in schedules['cells']:
-            print("cell")
-            print(cell)
             cell_pkt = Cell_Packet_Payload(type=int(cell['type']), channel=int(cell['channel']), timeslot=int(cell['timeslot']),
                                            scr=cell['addr'], dst=cell['dest'], payload=payload)
             cell_packed = cell_pkt.pack()
@@ -172,7 +168,7 @@ class NetworkConfig(mp.Process):
         payload_len = len(payloadPacked)
         # Build schedule packet header
         cell_pkt = Cell_Packet(
-            payloadPacked, payload_len=payload_len, seq=schedule_sequence)
+            payloadPacked, payload_len=payload_len, hop_limit=data['hop_limit'], seq=schedule_sequence)
         cell_packed = cell_pkt.pack()
         # print(repr(rt_pkt))
         print(cell_packed)
