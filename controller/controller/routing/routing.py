@@ -43,6 +43,8 @@ def routes_toJSON():
     for index, row in df.iterrows():
         data = {"scr": row['scr'], "dst": row['dst'], "via": row['via']}
         json_message["routes"].append(data)
+    # TODO: We need to look for the rank values of all route sources and
+    # set the hop limit to the highest rank among the source address.
     json_message["hop_limit"] = 255
     json_dump = json.dumps(json_message, indent=4, sort_keys=True)
     print(json_dump)
