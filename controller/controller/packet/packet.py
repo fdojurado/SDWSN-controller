@@ -258,17 +258,20 @@ class Data_Packet:
         self.temp = kwargs.get("temp", 0)
         self.humidity = kwargs.get("humidity", 0)
         self.light = kwargs.get("light", 0)
+        self.asn_ls2b = kwargs.get("asn_ls2b", 0)
+        self.asn_ms2b = kwargs.get("asn_ms2b", 0)
+        self.asn = (self.asn_ms2b << 16) | (self.asn_ls2b)
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "DataPacketPayload(seq={}, temp={}, humidity={}, light={})".format(
-            self.seq, self.temp, self.humidity, self.light)
+        return "DataPacketPayload(seq={}, temp={}, humidity={}, light={}, asn={})".format(
+            self.seq, self.temp, self.humidity, self.light, self.asn)
 
     @classmethod
     def unpack(cls, packed_data):
-        seq, temp, humidity, light = struct.unpack(
-            '!HHHH', packed_data)
-        return cls(seq=seq, temp=temp, humidity=humidity, light=light)
+        seq, temp, humidity, light, asn_ls2b, asn_ms2b = struct.unpack(
+            '!HHHHHH', packed_data)
+        return cls(seq=seq, temp=temp, humidity=humidity, light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
 
 
 class NA_Packet:
