@@ -93,6 +93,7 @@ def process_data_packet(src, data):
         'temp': pkt.temp,
         'humidity': pkt.humidity,
         'light': pkt.light,
+        'delay': pkt.asn * SLOT_DURATION
     }
     node = {
         '_id': src,
@@ -105,7 +106,12 @@ def process_data_packet(src, data):
         Database.insert("nodes", node)
     else:
         # look for last seq number for that node
-        db = Database.find_one("nodes", {"data.src": src}, None)
+        query = {"$and": [
+            {"_id": src},
+            {"data": {"$exists": True}}
+        ]}
+        # query = {"data": {"$exists": True}}
+        db = Database.find_one("nodes", query, None)
         if(db is not None):
             df = pd.DataFrame(db['data'])
             df = df.tail(1)
