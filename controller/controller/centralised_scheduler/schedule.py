@@ -6,7 +6,7 @@ from controller.network_config.network_config import *
 
 # Protocols encapsulated in sdn IP packet
 cell_type = types.SimpleNamespace()
-cell_type.UC_RX = 0
+cell_type.UC_RX = 2
 cell_type.UC_TX = 1
 
 
