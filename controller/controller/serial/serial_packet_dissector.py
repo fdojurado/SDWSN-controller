@@ -212,50 +212,50 @@ def process_na_packet(addr, data, length):
     # sdn IP packet succeed
     print("succeed unpacking SDN NA packet")
     """ Now, we want to process node information embedded in the NA packet """
-    nodes = Database.find("nodes", {})
-    # Total number of NB
-    num_nb = 0
-    for node in nodes:
-        if node['_id'] == addr:
-            df = pd.DataFrame(node['nbr'])
-            num_nb = df.dst.nunique()
-    data = {
-        'time': current_time,
-        'energy': pkt.energy,
-        'rank': pkt.rank,
-        'total_nb': num_nb
-    }
-    node = {
-        '_id': addr,
-        'info': [
-            data
-        ]
-    }
-    if Database.exist("nodes", addr) == 0:
-        Database.insert("nodes", node)
-    else:
-        Database.push_doc("nodes", addr, 'info', data)
-    """ Create a current energy database """
-    data = {
-        '_id': addr,
-        'time': current_time,
-        'energy': pkt.energy,
-    }
-    if Database.exist("energy", addr) == 0:
-        Database.insert("energy", data)
-    else:
-        print('updating energy')
-        Database.update_energy("energy", addr, data)
-    ''' after we finish updating the energy field, we
-     want to create/update energy text so the canvas can be updated '''
-    coll = Database.find("energy", {})
-    df = pd.DataFrame(coll)
-    summation = df.energy.sum()
-    data = {
-        "ts": current_time,
-        "energy": int(summation),
-    }
-    Database.insert("total_energy", data)
+    # nodes = Database.find("nodes", {})
+    # # Total number of NB
+    # num_nb = 0
+    # for node in nodes:
+    #     if node['_id'] == addr:
+    #         df = pd.DataFrame(node['nbr'])
+    #         num_nb = df.dst.nunique()
+    # data = {
+    #     'time': current_time,
+    #     'energy': pkt.energy,
+    #     'rank': pkt.rank,
+    #     'total_nb': num_nb
+    # }
+    # node = {
+    #     '_id': addr,
+    #     'info': [
+    #         data
+    #     ]
+    # }
+    # if Database.exist("nodes", addr) == 0:
+    #     Database.insert("nodes", node)
+    # else:
+    #     Database.push_doc("nodes", addr, 'info', data)
+    # """ Create a current energy database """
+    # data = {
+    #     '_id': addr,
+    #     'time': current_time,
+    #     'energy': pkt.energy,
+    # }
+    # if Database.exist("energy", addr) == 0:
+    #     Database.insert("energy", data)
+    # else:
+    #     print('updating energy')
+    #     Database.update_energy("energy", addr, data)
+    # ''' after we finish updating the energy field, we
+    #  want to create/update energy text so the canvas can be updated '''
+    # coll = Database.find("energy", {})
+    # df = pd.DataFrame(coll)
+    # summation = df.energy.sum()
+    # data = {
+    #     "ts": current_time,
+    #     "energy": int(summation),
+    # }
+    # Database.insert("total_energy", data)
     return pkt
 
 
