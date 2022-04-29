@@ -4,6 +4,7 @@ from random import randrange
 import json
 
 # This is a simple scheduler which puts a tx and rx uc link for each edge in the current routing protocol.
+# Rx for relay nodes are assigned randomly
 
 
 class Scheduler(mp.Process):
