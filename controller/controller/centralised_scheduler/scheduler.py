@@ -31,8 +31,8 @@ class Scheduler(mp.Process):
                         # print("try to add uc for ", p)
                         for i in range(len(p)-1):
                             node = p[i]
-                            neigbour = p[i+1]
-                            # print("rx ", str(node), "tx: ", str(neigbour))
+                            neighbor = p[i+1]
+                            # print("rx ", str(node), "tx: ", str(neighbor))
                             timeslot = randrange(0,
                                                  self.schedule.slotframe_size-1)
                             channeloffset = randrange(1,
@@ -40,7 +40,7 @@ class Scheduler(mp.Process):
                             self.schedule.add_uc(
                                 str(node), cell_type.UC_RX, channeloffset, timeslot)
                             self.schedule.add_uc(
-                                str(neigbour), cell_type.UC_TX, destination=node)
+                                str(neighbor), cell_type.UC_TX, destination=node)
 
                     else:
                         # print("add an uc rx for node ", p[0])
