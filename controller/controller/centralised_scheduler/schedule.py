@@ -62,6 +62,17 @@ class Create_Node:
                         return 1
         return 0
 
+    def timeslot_empty(self, timeoffset):
+        if not self.rx:
+            for rx in self.rx:
+                if(timeoffset == rx.timeoffset):
+                    return 0
+        if not self.tx:
+            for tx in self.tx:
+                if(timeoffset == tx.timeoffset):
+                    return 0
+        return 1
+
     def has_rx(self):
         if(not self.rx):
             return 0

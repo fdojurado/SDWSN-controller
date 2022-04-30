@@ -209,7 +209,7 @@ class NetworkConfig(mp.Process):
                         print("routing job type")
                         packedData = self.build_routes_packet(data)
                     case _:
-                        print("unknown job tpye")
+                        print("unknown job type")
                         return None
                 # read routes from node
                 print("sending NC packet")
