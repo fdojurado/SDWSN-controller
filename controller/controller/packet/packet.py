@@ -1,6 +1,7 @@
 from email.policy import strict
 import struct
 import types
+import json
 import sys
 
 # Packet sizes
@@ -108,6 +109,10 @@ class SerialPacket:
             'HBBBB' + str(len(packed_data)-SDN_SERIAL_PACKETH_LEN) + 's', packed_data)
         return cls(payload, addr=addr, message_type=message_type, payload_len=payload_len,
                    reserved0=reserved0, reserved1=reserved1)
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__ if type(o) is not bytes else str(o),
+                          sort_keys=True, indent=4)
 
 
 class SDN_IP_Packet:

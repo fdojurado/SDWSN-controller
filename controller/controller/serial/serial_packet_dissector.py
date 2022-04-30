@@ -1,7 +1,7 @@
 # from controller.message import Message
 from datetime import datetime
 import struct
-from controller.database.database import Database
+from controller.database.database import *
 from controller.packet.packet import *
 import pandas as pd
 
@@ -9,6 +9,9 @@ current_time = 0
 
 
 def handle_serial_packet(data, ack_queue):
+    global current_time
+    # Get Unix timestamp from a datetime object
+    current_time = datetime.now().timestamp() * 1000.0
     print("serial packet received")
     print(data)
     # Let's parse serial packet
@@ -63,21 +66,14 @@ def process_serial_packet(data):
 
 
 def save_serial_packet(pkt):
-    global current_time
-    # Get Unix timestamp from a datetime object
-    current_time = datetime.now().timestamp() * 1000.0
-    data = {
-        "ts": current_time,
-        "values": {
-            "addr": addrConversion.to_string(pkt.addr).addrStr,
-            "type": pkt.message_type,
-            "payload_len": pkt.payload_len,
-            "reserved0": pkt.reserved0,
-            "reserved1": pkt.reserved1,
-            "payload": pkt.payload
-        }
-    }
-    Database.insert("packets", data)
+    data = json.loads(pkt.toJSON())
+    data["timestamp"] = current_time
+    update = {"$push":
+              {
+                  "historical": data
+              }
+              }
+    Database.update_one(PACKETS, {}, update, True, None)
 
 
 def process_data_packet(src, data):
