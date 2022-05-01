@@ -13,11 +13,13 @@ EWMA_ALPHA = 40
 # Sensor nodes electrical parameters references
 VOLTAGE = 3
 I_LPM = 0.545  # mA
-I_TX = 17.4  # mA
+# I_TX = 17.4  # mA
+I_RX = 20  # mA
 # Constants for energy normalization
 ENERGY_SAMPLE_DURATION = 10  # seconds
-EMIN = VOLTAGE * ENERGY_SAMPLE_DURATION * I_LPM
-EMAX = VOLTAGE * ENERGY_SAMPLE_DURATION * I_TX
+EMIN = VOLTAGE * ENERGY_SAMPLE_DURATION * I_LPM * 1e3 # Value in micro
+EMAX = VOLTAGE * ENERGY_SAMPLE_DURATION * I_RX * 1.2 * 1e3 # Value in micro
+MIN_TX = (EMAX-EMIN)/3  # Max energy for the last node in the network
 
 current_time = 0
 
@@ -178,8 +180,7 @@ def save_energy(pkt, na_pkt):
     # We first need to calculate the emax_n = for this specific node which depends
     # on the rank of the node.
     h = na_pkt.rank/H_MAX
-    k = (EMAX-EMIN)/5
-    k_n = k/EMAX
+    k_n = MIN_TX/EMAX
     k_n = k_n**h
     emax_n = EMAX * k_n
     ewma_energy_normalized = (na_pkt.energy - EMIN)/(emax_n-EMIN)
