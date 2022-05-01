@@ -17,9 +17,15 @@ I_LPM = 0.545  # mA
 I_RX = 20  # mA
 # Constants for energy normalization
 ENERGY_SAMPLE_DURATION = 10  # seconds
-EMIN = VOLTAGE * ENERGY_SAMPLE_DURATION * I_LPM * 1e3 # Value in micro
-EMAX = VOLTAGE * ENERGY_SAMPLE_DURATION * I_RX * 1.2 * 1e3 # Value in micro
+EMIN = VOLTAGE * ENERGY_SAMPLE_DURATION * I_LPM * 1e3  # Value in micro
+EMAX = VOLTAGE * ENERGY_SAMPLE_DURATION * I_RX * 1.2 * 1e3  # Value in micro
 MIN_TX = (EMAX-EMIN)/3  # Max energy for the last node in the network
+# Constants for packet delay calculation
+SLOT_DURATION = 10
+NUM_SLOTS = 17
+Q_MAX = 4  # Maximum size of the queue
+R_MAX = 3   # Maximum number of retransmissions
+SLOTFRAME_SIZE = NUM_SLOTS * SLOT_DURATION  # Size of the dataplane slotframe
 
 current_time = 0
 
@@ -68,6 +74,8 @@ def handle_serial_packet(data, ack_queue):
                 return
             # We now build the pdr DB
             save_pdr(pkt, data_pkt)
+            # We now build the delay DB
+            save_delay(pkt, data_pkt)
             return
         case _:
             print("sdn IP packet type not found")
@@ -276,8 +284,7 @@ def save_pdr(pkt, data_pkt):
             num_seq = doc['num_seq'] + 1
         # Compute EWMA
         pdr = num_seq/data_pkt.seq
-        ewma_pdr = (pdr_n_1 * (EWMA_SCALE - EWMA_ALPHA) +
-                    pdr * EWMA_ALPHA) / EWMA_SCALE
+        ewma_pdr = compute_ewma(pdr_n_1, pdr)
     data = {
         "timestamp": current_time,
         "seq": data_pkt.seq,
@@ -287,6 +294,68 @@ def save_pdr(pkt, data_pkt):
     update = {
         "$push": {
             "pdr": data
+        }
+    }
+    filter = {
+        "node_id": pkt.scrStr
+    }
+    Database.update_one(NODES_INFO, filter, update, True, None)
+
+
+def save_delay(pkt, data_pkt):
+    sampled_delay = data_pkt.asn * SLOT_DURATION
+    # To calculate the min and max delay, we need to obtain the rank of the sensor node
+    rank = get_rank(pkt.scrStr)
+    if rank is None:
+        # We have not received an NA packet yet.
+        rank = H_MAX
+        min_delay = 1 * SLOT_DURATION
+    else:
+        min_delay = rank * SLOT_DURATION
+    max_delay = Q_MAX * rank * R_MAX * SLOTFRAME_SIZE
+    # We now need to check whether we already have knowledge of previous delay packets
+    # for this sensor node
+    query = {
+        "$and": [
+            {"node_id": pkt.scrStr},
+            {"delay": {"$exists": True}}
+        ]
+    }
+    db = Database.find_one(NODES_INFO, query)
+    if(db is None):
+        ewma_delay = sampled_delay
+    else:
+        # get last seq in DB
+        pipeline = [
+            {"$match": {"node_id": pkt.scrStr}},
+            {"$unwind": "$delay"},
+            {"$sort": {"delay.timestamp": -1}},
+            {"$limit": 1},
+            {'$project':
+             {
+                 "_id": 1,
+                 'timestamp': '$delay.timestamp',
+                 'ewma_delay': '$delay.ewma_delay'
+             }
+             }
+        ]
+        db = Database.aggregate(NODES_INFO, pipeline)
+        for doc in db:
+            delay_n_1 = doc['ewma_delay']
+        # Compute EWMA
+        ewma_delay = compute_ewma(delay_n_1, sampled_delay)
+    # Let's normalized the delay packet
+    ewma_delay_normalized = (ewma_delay - min_delay)/(max_delay-min_delay)
+    # Save data
+    data = {
+        "timestamp": current_time,
+        "sampled_delay": sampled_delay,
+        "ewma_delay": ewma_delay,
+        "ewma_delay_normalized": ewma_delay_normalized
+    }
+    update = {
+        "$push": {
+            "delay": data
         }
     }
     filter = {
@@ -335,3 +404,22 @@ def insert_links(data):
         # It first checks if the links already exists in the collection.
         # If it does, it update with the current values, otherwise it creates it.
         Database.push_links("links", links)
+
+
+def compute_ewma(old_data, new_data):
+    return (old_data * (EWMA_SCALE - EWMA_ALPHA) +
+            new_data * EWMA_ALPHA) / EWMA_SCALE
+
+
+def get_rank(addr):
+    query = {
+        "$and": [
+            {"node_id": addr},
+            {"rank": {"$exists": True}}
+        ]
+    }
+    db = Database.find_one(NODES_INFO, query)
+    if db is None:
+        return
+    else:
+        return db["rank"]
