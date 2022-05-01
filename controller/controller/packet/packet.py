@@ -7,8 +7,8 @@ import sys
 # Packet sizes
 SDN_IPH_LEN = 10  # Size of layer 3 packet header */
 SDN_NDH_LEN = 6   # Size of neighbor discovery header */
-SDN_NAH_LEN = 6   # Size of neighbor advertisment packet header */
-SDN_NAPL_LEN = 6  # Size of neighbor advertisment payload size */
+SDN_NAH_LEN = 6   # Size of neighbor advertisement packet header */
+SDN_NAPL_LEN = 6  # Size of neighbor advertisement payload size */
 # SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
 SDN_RAH_LEN = 6  # Size of RA header routing packet*/
 SDN_SAH_LEN = 6  # Size of SA header schedule packet*/
@@ -126,10 +126,10 @@ class SDN_IP_Packet:
         # These are two bytes long
         self.hdr_chksum = kwargs.get("hdr_chksum", 0)
         self.scr = kwargs.get("scr", 0)
-        # Direct acces to addr in x.x format
+        # Direct access to addr in x.x format
         self.scrStr = kwargs.get("scrStr", "0.0")
         self.dest = kwargs.get("dest", 0)
-        # Direct acces to addr in x.x format
+        # Direct access to addr in x.x format
         self.destStr = kwargs.get("destStr", "0.0")
         self.payload = payload
 

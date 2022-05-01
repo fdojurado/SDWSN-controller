@@ -5,6 +5,20 @@ from controller.database.database import *
 from controller.packet.packet import *
 import pandas as pd
 
+# Network parameters
+H_MAX = 10  # max number of hops
+#  EWMA (exponential moving average) used to maintain statistics over time
+EWMA_SCALE = 100
+EWMA_ALPHA = 40
+# Sensor nodes electrical parameters references
+VOLTAGE = 3
+I_LPM = 0.545  # mA
+I_TX = 17.4  # mA
+# Constants for energy normalization
+ENERGY_SAMPLE_DURATION = 10  # seconds
+EMIN = VOLTAGE * ENERGY_SAMPLE_DURATION * I_LPM
+EMAX = VOLTAGE * ENERGY_SAMPLE_DURATION * I_TX
+
 current_time = 0
 
 
@@ -19,9 +33,9 @@ def handle_serial_packet(data, ack_queue):
     if serial_pkt is None:
         "bad serial packet"
         return
-    # Let's firt validate the packet
+    # Let's first save the packet
     save_serial_packet(serial_pkt)
-    # Let's first process the sdn IP packet
+    # Let's now process the sdn IP packet
     pkt = process_sdn_ip_packet(serial_pkt.payload)
     # We exit processing if empty result returned
     if(not pkt):
@@ -31,11 +45,14 @@ def handle_serial_packet(data, ack_queue):
     match protocol:
         case sdn_protocols.SDN_PROTO_NA:
             print("Processing NA packet")
-            na_pkt = process_na_packet(
-                pkt.scr, pkt.payload, pkt.tlen-SDN_IPH_LEN)
-            if(not na_pkt):
+            na_pkt = process_na_packet(pkt)
+            if na_pkt is None:
+                "bad NA packet"
                 return
-            process_na_payload(pkt.scr, na_pkt.payload)
+            # We now build the energy DB
+            save_energy(pkt, na_pkt)
+            # We now build the neighbors DB
+            save_neighbors(pkt, na_pkt)
             return
         # case sdn_protocols.SDN_PROTO_NC_ROUTE:
         #     # rt_pkt = process_nc_route_packet(pkt.payload, pkt.tlen-SDN_IPH_LEN)
@@ -43,7 +60,12 @@ def handle_serial_packet(data, ack_queue):
         #     return
         case sdn_protocols.SDN_PROTO_DATA:
             print("Processing data packet")
-            process_data_packet(pkt.scr, pkt.payload)
+            data_pkt = process_data_packet(pkt)
+            if data_pkt is None:
+                "bad Data packet"
+                return
+            # We now build the pdr DB
+            save_pdr(pkt, data_pkt)
             return
         case _:
             print("sdn IP packet type not found")
@@ -68,84 +90,25 @@ def process_serial_packet(data):
 def save_serial_packet(pkt):
     data = json.loads(pkt.toJSON())
     data["timestamp"] = current_time
-    update = {"$push":
-              {
-                  "historical": data
-              }
-              }
-    Database.update_one(PACKETS, {}, update, True, None)
+    Database.insert(PACKETS, data)
 
 
-def process_data_packet(src, data):
-    src = addrConversion.to_string(src)
-    src = src.addrStr
+def process_data_packet(pkt):
+    # If the reported length in the sdn IP header doesnot match the packet size,
+    # then we drop the packet.
+    if(len(pkt.payload) < (pkt.tlen-SDN_IPH_LEN)):
+        print("Data packet shorter than reported in IP header")
+        return
     # Process data packet header
-    pkt = Data_Packet.unpack(data)
+    pkt = Data_Packet.unpack(pkt.payload)
     print(repr(pkt))
-    data_structure = {
-        'time': current_time,
-        'last_seq': pkt.seq,
-        'num_seq': 1,
-        'temp': pkt.temp,
-        'humidity': pkt.humidity,
-        'light': pkt.light,
-        'delay': pkt.asn * SLOT_DURATION
-    }
-    node = {
-        '_id': src,
-        'data': [
-            data_structure,
-        ]
-    }
-    """ Does this node exist in DB """
-    if Database.exist("nodes", src) == 0:
-        Database.insert("nodes", node)
-    else:
-        # look for last seq number for that node
-        query = {"$and": [
-            {"_id": src},
-            {"data": {"$exists": True}}
-        ]}
-        # query = {"data": {"$exists": True}}
-        db = Database.find_one("nodes", query, None)
-        if(db is not None):
-            df = pd.DataFrame(db['data'])
-            df = df.tail(1)
-            if df['last_seq'].values[0] == pkt.seq:
-                print("duplicated data packet")
-                # update num_seq field with the one in DB
-                data_structure['num_seq'] = int(df['num_seq'].values[0])
-            else:
-                data_structure['num_seq'] = int(df['num_seq'].values[0]+1)
-                Database.push_doc("nodes", src, 'data', data_structure)
-        else:
-            Database.push_doc("nodes", src, 'data', data_structure)
-    """ Create a current PDR database """
-    pdr = data_structure['num_seq'] * 100.0 / data_structure['last_seq']
-    pdr_data = {
-        '_id': src,
-        'time': current_time,
-        'pdr': pdr,
-    }
-    if Database.exist("pdr", src) == 0:
-        Database.insert("pdr", pdr_data)
-    else:
-        Database.update_pdr("pdr", src, pdr_data)
-    ''' after we finish updating the pdr field, we
-        want to create/update pdr text so the canvas can
-        be updated '''
-    coll = Database.find("pdr", {})
-    df = pd.DataFrame(coll)
-    mean = df.pdr.mean()
-    data_structure = {
-        "ts": current_time,
-        "pdr": mean,
-    }
-    Database.insert("total_pdr", data_structure)
+    # sdn IP packet succeed
+    print("succeed unpacking sdn data packet")
+    return pkt
 
 
 def process_sdn_ip_packet(data):
-    # We first check the entegrity of the HEADER of the sdn IP packet
+    # We first check the integrity of the HEADER of the sdn IP packet
     if(sdn_ip_checksum(data, SDN_IPH_LEN) != 0xffff):
         print("bad checksum")
         return
@@ -190,107 +153,150 @@ def sdn_ip_checksum(msg, len):
     return result
 
 
-def process_na_packet(addr, data, length):
-    addr = addrConversion.to_string(addr)
-    addr = addr.addrStr
-    # We first check the entegrity of the HEADER of the sdn IP packet
-    if(sdn_ip_checksum(data, length) != 0xffff):
-        print("bad checksum")
+def process_na_packet(pkt):
+    length = pkt.tlen-SDN_IPH_LEN
+    # We first check the integrity of the entire SDN NA packet
+    if(sdn_ip_checksum(pkt.payload, length) != 0xffff):
+        print("bad NA checksum")
         return
-    # Parse sdn IP packet
-    pkt = NA_Packet.unpack(data, length)
+    # Parse sdn NA packet
+    pkt = NA_Packet.unpack(pkt.payload, length)
     print(repr(pkt))
-    # If the reported length in the sdn IP header doesnot match the packet size,
+    # If the reported payload length in the sdn NA header does not match the packet size,
     # then we drop the packet.
-    if(len(data) < (pkt.payload_len+SDN_NAH_LEN)):
-        print("packet shorter than reported in NA header")
+    if(len(pkt.payload) < pkt.payload_len):
+        print("NA packet shorter than reported in the header")
         return
     # sdn IP packet succeed
     print("succeed unpacking SDN NA packet")
-    """ Now, we want to process node information embedded in the NA packet """
-    # nodes = Database.find("nodes", {})
-    # # Total number of NB
-    # num_nb = 0
-    # for node in nodes:
-    #     if node['_id'] == addr:
-    #         df = pd.DataFrame(node['nbr'])
-    #         num_nb = df.dst.nunique()
-    # data = {
-    #     'time': current_time,
-    #     'energy': pkt.energy,
-    #     'rank': pkt.rank,
-    #     'total_nb': num_nb
-    # }
-    # node = {
-    #     '_id': addr,
-    #     'info': [
-    #         data
-    #     ]
-    # }
-    # if Database.exist("nodes", addr) == 0:
-    #     Database.insert("nodes", node)
-    # else:
-    #     Database.push_doc("nodes", addr, 'info', data)
-    # """ Create a current energy database """
-    # data = {
-    #     '_id': addr,
-    #     'time': current_time,
-    #     'energy': pkt.energy,
-    # }
-    # if Database.exist("energy", addr) == 0:
-    #     Database.insert("energy", data)
-    # else:
-    #     print('updating energy')
-    #     Database.update_energy("energy", addr, data)
-    # ''' after we finish updating the energy field, we
-    #  want to create/update energy text so the canvas can be updated '''
-    # coll = Database.find("energy", {})
-    # df = pd.DataFrame(coll)
-    # summation = df.energy.sum()
-    # data = {
-    #     "ts": current_time,
-    #     "energy": int(summation),
-    # }
-    # Database.insert("total_energy", data)
     return pkt
 
 
-def process_na_payload(addr, data):
-    addr = addrConversion.to_string(addr).addrStr
+def save_energy(pkt, na_pkt):
+    # na_pkt.energy already contains the EWMA which was computed at the sensor node
+    # We only need to normalize it
+    # We first need to calculate the emax_n = for this specific node which depends
+    # on the rank of the node.
+    h = na_pkt.rank/H_MAX
+    k = (EMAX-EMIN)/5
+    k_n = k/EMAX
+    k_n = k_n**h
+    emax_n = EMAX * k_n
+    ewma_energy_normalized = (na_pkt.energy - EMIN)/(emax_n-EMIN)
+    # historical energy
+    data = {
+        "timestamp": current_time,
+        "ewma_energy": na_pkt.energy,
+        "ewma_energy_normalized": ewma_energy_normalized,
+    }
+    update = {
+        "$push": {
+            "energy": data
+        }
+    }
+    filter = {
+        "node_id": pkt.scrStr
+    }
+    Database.update_one(NODES_INFO, filter, update, True, None)
+    # Set the rank
+    update = {
+        "$set": {
+            "rank": na_pkt.rank
+        }
+    }
+    filter = {
+        "node_id": pkt.scrStr
+    }
+    Database.update_one(NODES_INFO, filter, update, True, None)
+
+
+def save_neighbors(pkt, na_pkt):
     # """ Let's process NA payload """
-    # Process neighbours
-    blocks = len(data) // SDN_NAPL_LEN
+    # Process neighbors
+    blocks = len(na_pkt.payload) // SDN_NAPL_LEN
     idx_start = 0
     idx_end = 0
     for x in range(1, blocks+1):
         idx_end += SDN_NAPL_LEN
-        payload = data[idx_start:idx_end]
+        payload = na_pkt.payload[idx_start:idx_end]
         idx_start = idx_end
         payload_unpacked = NA_Packet_Payload.unpack(payload)
-        data_structure = {
-            'time': current_time,
-            'scr': addr,
+        data = {
+            'timestamp': current_time,
             'dst': payload_unpacked.addrStr,
             'rssi': payload_unpacked.rssi,
             'etx': payload_unpacked.etx,
         }
-        node = {
-            '_id': addr,
-            'nbr': [
-                data_structure,
-            ]
+        update = {
+            "$push": {
+                "neighbors": data
+            }
         }
-        if Database.exist("nodes", addr) == 0:
-            Database.insert("nodes", node)
-        else:
-            Database.push_doc("nodes", addr, 'nbr', data_structure)
-        #  Insert entry to the current links table
-        insert_links(data_structure)
+        filter = {
+            "node_id": pkt.scrStr
+        }
+        Database.update_one(NODES_INFO, filter, update, True, None)
+
+
+def save_pdr(pkt, data_pkt):
+    # Process PDR
+    # We first check if we already have knowledge of previous seq for this
+    # sensor node
+    query = {
+        "$and": [
+            {"node_id": pkt.scrStr},
+            {"pdr": {"$exists": True}}
+        ]
+    }
+    db = Database.find_one(NODES_INFO, query)
+    if(db is None):
+        num_seq = 1
+        ewma_pdr = num_seq/data_pkt.seq
+    else:
+        # get last seq in DB
+        pipeline = [
+            {"$match": {"node_id": pkt.scrStr}},
+            {"$unwind": "$pdr"},
+            {"$sort": {"pdr.timestamp": -1}},
+            {"$limit": 1},
+            {'$project':
+             {
+                 "_id": 1,
+                 'timestamp': '$pdr.timestamp',
+                 'seq': '$pdr.seq',
+                 'num_seq': '$pdr.num_seq',
+                 'ewma_pdr': '$pdr.ewma_pdr'
+             }
+             }
+        ]
+        db = Database.aggregate(NODES_INFO, pipeline)
+        for doc in db:
+            pdr_n_1 = doc['ewma_pdr']
+            num_seq = doc['num_seq'] + 1
+        # Compute EWMA
+        pdr = num_seq/data_pkt.seq
+        ewma_pdr = (pdr_n_1 * (EWMA_SCALE - EWMA_ALPHA) +
+                    pdr * EWMA_ALPHA) / EWMA_SCALE
+    data = {
+        "timestamp": current_time,
+        "seq": data_pkt.seq,
+        "num_seq": num_seq,
+        "ewma_pdr": ewma_pdr
+    }
+    update = {
+        "$push": {
+            "pdr": data
+        }
+    }
+    filter = {
+        "node_id": pkt.scrStr
+    }
+    Database.update_one(NODES_INFO, filter, update, True, None)
 
 
 def process_nc_route_packet(data, length):
     print("Processing NC route packet")
-    # We first check the entegrity of the HEADER of the sdn IP packet
+    # We first check the integrity of the HEADER of the sdn IP packet
     if(sdn_ip_checksum(data, length) != 0xffff):
         print("bad checksum")
         return
