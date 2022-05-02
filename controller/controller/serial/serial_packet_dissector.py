@@ -16,10 +16,10 @@ I_LPM = 0.545  # mA
 # I_TX = 17.4  # mA
 I_RX = 20  # mA
 # Constants for energy normalization
-ENERGY_SAMPLE_DURATION = 10  # seconds
-EMIN = VOLTAGE * ENERGY_SAMPLE_DURATION * I_LPM * 1e3  # Value in micro
-EMAX = VOLTAGE * ENERGY_SAMPLE_DURATION * I_RX * 1.2 * 1e3  # Value in micro
-MIN_TX = (EMAX-EMIN)/3  # Max energy for the last node in the network
+# ENERGY_SAMPLE_DURATION = 10  # seconds
+PMIN = VOLTAGE * I_LPM * 1e3  # Value in micro
+PMAX = VOLTAGE * I_RX * 1.2 * 1e3  # Value in micro
+MIN_TX = PMAX/3  # Max energy for the last node in the network
 # Constants for packet delay calculation
 SLOT_DURATION = 10
 NUM_SLOTS = 17
@@ -185,13 +185,13 @@ def process_na_packet(pkt):
 def save_energy(pkt, na_pkt):
     # na_pkt.energy already contains the EWMA which was computed at the sensor node
     # We only need to normalize it
-    # We first need to calculate the emax_n = for this specific node which depends
+    # We first need to calculate the pmax_n = for this specific node which depends
     # on the rank of the node.
     h = na_pkt.rank/H_MAX
-    k_n = MIN_TX/EMAX
+    k_n = MIN_TX/PMAX
     k_n = k_n**h
-    emax_n = EMAX * k_n
-    ewma_energy_normalized = (na_pkt.energy - EMIN)/(emax_n-EMIN)
+    pmax_n = PMAX * k_n
+    ewma_energy_normalized = (na_pkt.energy - PMIN)/(pmax_n-PMIN)
     # historical energy
     data = {
         "timestamp": current_time,
@@ -308,11 +308,14 @@ def save_delay(pkt, data_pkt):
     rank = get_rank(pkt.scrStr)
     if rank is None:
         # We have not received an NA packet yet.
+        # print("we don't know the rank yet")
         rank = H_MAX
         min_delay = 1 * SLOT_DURATION
     else:
         min_delay = rank * SLOT_DURATION
     max_delay = Q_MAX * rank * R_MAX * SLOTFRAME_SIZE
+    # print("rank: "+str(rank)+" min delay: "+str(min_delay)+" max delay: " +
+    #       str(max_delay))
     # We now need to check whether we already have knowledge of previous delay packets
     # for this sensor node
     query = {
@@ -345,7 +348,9 @@ def save_delay(pkt, data_pkt):
         # Compute EWMA
         ewma_delay = compute_ewma(delay_n_1, sampled_delay)
     # Let's normalized the delay packet
+    # print("ewma delay: "+str(ewma_delay))
     ewma_delay_normalized = (ewma_delay - min_delay)/(max_delay-min_delay)
+    # print("ewma delay normalized: "+str(ewma_delay_normalized))
     # Save data
     data = {
         "timestamp": current_time,
