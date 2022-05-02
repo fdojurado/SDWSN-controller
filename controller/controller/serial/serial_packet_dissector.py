@@ -3,6 +3,7 @@ from datetime import datetime
 import struct
 from controller.database.database import *
 from controller.packet.packet import *
+import numpy as np
 import pandas as pd
 
 # Network parameters
@@ -61,7 +62,7 @@ def handle_serial_packet(data, ack_queue):
             save_energy(pkt, na_pkt)
             # We now build the neighbors DB
             save_neighbors(pkt, na_pkt)
-            return
+            # return
         # case sdn_protocols.SDN_PROTO_NC_ROUTE:
         #     # rt_pkt = process_nc_route_packet(pkt.payload, pkt.tlen-SDN_IPH_LEN)
         #     ack_queue.put(pkt)
@@ -76,10 +77,12 @@ def handle_serial_packet(data, ack_queue):
             save_pdr(pkt, data_pkt)
             # We now build the delay DB
             save_delay(pkt, data_pkt)
-            return
+            # return
         case _:
             print("sdn IP packet type not found")
             return
+    # Everytime we received a valid packet, we update the features table
+    save_features()
 
 
 def process_serial_packet(data):
@@ -369,29 +372,29 @@ def save_delay(pkt, data_pkt):
     Database.update_one(NODES_INFO, filter, update, True, None)
 
 
-def process_nc_route_packet(data, length):
-    print("Processing NC route packet")
-    # We first check the integrity of the HEADER of the sdn IP packet
-    if(sdn_ip_checksum(data, length) != 0xffff):
-        print("bad checksum")
-        return
-    # Parse NC route packet
-    pkt = NC_Routing_Packet.unpack(data, length)
-    print(repr(pkt))
-    # If the reported length in the sdn IP header doesnot match the packet size,
-    # then we drop the packet.
-    if(len(data) < (pkt.payload_len+SDN_NCH_LEN)):
-        print("packet shorter than reported in NC route header")
-        return
-    # sdn IP packet succeed
-    print("succeed unpacking NC route packet")
-    return pkt
+# def process_nc_route_packet(data, length):
+#     print("Processing NC route packet")
+#     # We first check the integrity of the HEADER of the sdn IP packet
+#     if(sdn_ip_checksum(data, length) != 0xffff):
+#         print("bad checksum")
+#         return
+#     # Parse NC route packet
+#     pkt = NC_Routing_Packet.unpack(data, length)
+#     print(repr(pkt))
+#     # If the reported length in the sdn IP header doesnot match the packet size,
+#     # then we drop the packet.
+#     if(len(data) < (pkt.payload_len+SDN_NCH_LEN)):
+#         print("packet shorter than reported in NC route header")
+#         return
+#     # sdn IP packet succeed
+#     print("succeed unpacking NC route packet")
+#     return pkt
 
 
-def process_nc_ack(addr, pkt):
-    pkt = NC_ACK_Packet.unpack(pkt.payload, addr)
-    print("ack received: ", pkt.ack, " from ", pkt.addrStr)
-    return pkt
+# def process_nc_ack(addr, pkt):
+#     pkt = NC_ACK_Packet.unpack(pkt.payload, addr)
+#     print("ack received: ", pkt.ack, " from ", pkt.addrStr)
+#     return pkt
 
 
 def insert_links(data):
@@ -428,3 +431,150 @@ def get_rank(addr):
         return
     else:
         return db["rank"]
+
+
+def get_last_power_consumption(node):
+    query = {
+        "$and": [
+            {"node_id": node},
+            {"energy": {"$exists": True}}
+        ]
+    }
+    db = Database.find_one(NODES_INFO, query)
+    if db is None:
+        return None
+    # get last seq in DB
+    pipeline = [
+        {"$match": {"node_id": node}},
+        {"$unwind": "$energy"},
+        {"$sort": {"energy.timestamp": -1}},
+        {"$limit": 1},
+        {'$project':
+         {
+             "_id": 1,
+             'timestamp': '$energy.timestamp',
+             'ewma_energy_normalized': '$energy.ewma_energy_normalized'
+         }
+         }
+    ]
+    db = Database.aggregate(NODES_INFO, pipeline)
+    for doc in db:
+        return doc['ewma_energy_normalized']
+
+
+def get_last_delay(node):
+    query = {
+        "$and": [
+            {"node_id": node},
+            {"delay": {"$exists": True}}
+        ]
+    }
+    db = Database.find_one(NODES_INFO, query)
+    if db is None:
+        return None
+    # get last seq in DB
+    pipeline = [
+        {"$match": {"node_id": node}},
+        {"$unwind": "$delay"},
+        {"$sort": {"delay.timestamp": -1}},
+        {"$limit": 1},
+        {'$project':
+         {
+             "_id": 1,
+             'timestamp': '$delay.timestamp',
+             'ewma_delay_normalized': '$delay.ewma_delay_normalized'
+         }
+         }
+    ]
+    db = Database.aggregate(NODES_INFO, pipeline)
+    for doc in db:
+        return doc['ewma_delay_normalized']
+
+
+def get_last_pdr(node):
+    query = {
+        "$and": [
+            {"node_id": node},
+            {"pdr": {"$exists": True}}
+        ]
+    }
+    db = Database.find_one(NODES_INFO, query)
+    if db is None:
+        return None
+    # get last seq in DB
+    pipeline = [
+        {"$match": {"node_id": node}},
+        {"$unwind": "$pdr"},
+        {"$sort": {"pdr.timestamp": -1}},
+        {"$limit": 1},
+        {'$project':
+         {
+             "_id": 1,
+             'timestamp': '$pdr.timestamp',
+             'ewma_pdr': '$pdr.ewma_pdr'
+         }
+         }
+    ]
+    db = Database.aggregate(NODES_INFO, pipeline)
+    for doc in db:
+        return doc['ewma_pdr']
+
+
+def save_features():
+    print("Inserting to features table")
+    # Get user requirements
+    alpha = 0.5
+    beta = 0.5
+    delta = 0.5
+    user_requirements = np.array([alpha, beta, delta])
+    # Get average power consumption and delay normalized
+    overall_power_consuption = 0
+    overall_delay = 0
+    overall_pdr = 0
+    energy_number_of_sensor_nodes = 0
+    delay_number_of_sensor_nodes = 0
+    pdr_number_of_sensor_nodes = 0
+    # We first loop through all sensor nodes
+    nodes = Database.find(NODES_INFO, {})
+    for node in nodes:
+        # Get the energy consumption for this particular sensor node
+        energy = get_last_power_consumption(node["node_id"])
+        # Get the delay normalized
+        delay = get_last_delay(node["node_id"])
+        # Get the last pdr
+        pdr = get_last_pdr(node["node_id"])
+        if energy is not None:
+            energy_number_of_sensor_nodes += 1
+            overall_power_consuption += energy
+        if delay is not None:
+            delay_number_of_sensor_nodes += 1
+            overall_delay += delay
+        if pdr is not None:
+            pdr_number_of_sensor_nodes += 1
+            overall_pdr += pdr
+    if(energy_number_of_sensor_nodes > 0):
+        wsn_energy_normalized = overall_power_consuption/energy_number_of_sensor_nodes
+    else:
+        wsn_energy_normalized = None
+    if(delay_number_of_sensor_nodes > 0):
+        wsn_delay_normalized = overall_delay/delay_number_of_sensor_nodes
+    else:
+        wsn_delay_normalized = None
+    if(pdr_number_of_sensor_nodes > 0):
+        wsn_reliability_normalized = overall_pdr/pdr_number_of_sensor_nodes
+    else:
+        wsn_reliability_normalized = None
+    # Save data
+    data = {
+        "timestamp": current_time,
+        "user_requirements": user_requirements.tolist(),
+        "wsn_energy_normalized": wsn_energy_normalized,
+        "wsn_delay_normalized": wsn_delay_normalized,
+        "wsn_reliability_normalized": wsn_reliability_normalized
+        # "routing_paths": routing_paths,
+        # "tsch_schedules": tsch_schedules,
+        # "rssi_neighbors": rssi_neighbors,
+        # "etx_neighbors": etx_neighbors,
+        # "calculation_optimization_eq": calculation_optimization_eqÎ
+    }
+    Database.insert(FEATURES, data)
