@@ -265,26 +265,10 @@ def save_pdr(pkt, data_pkt):
         num_seq = 1
         ewma_pdr = num_seq/data_pkt.seq
     else:
-        # get last seq in DB
-        pipeline = [
-            {"$match": {"node_id": pkt.scrStr}},
-            {"$unwind": "$pdr"},
-            {"$sort": {"pdr.timestamp": -1}},
-            {"$limit": 1},
-            {'$project':
-             {
-                 "_id": 1,
-                 'timestamp': '$pdr.timestamp',
-                 'seq': '$pdr.seq',
-                 'num_seq': '$pdr.num_seq',
-                 'ewma_pdr': '$pdr.ewma_pdr'
-             }
-             }
-        ]
-        db = Database.aggregate(NODES_INFO, pipeline)
-        for doc in db:
-            pdr_n_1 = doc['ewma_pdr']
-            num_seq = doc['num_seq'] + 1
+        # get last pdr
+        last_pdr = get_last_pdr(pkt.scrStr)
+        pdr_n_1 = last_pdr['ewma_pdr']
+        num_seq = last_pdr['num_seq'] + 1
         # Compute EWMA
         pdr = num_seq/data_pkt.seq
         ewma_pdr = compute_ewma(pdr_n_1, pdr)
@@ -331,23 +315,9 @@ def save_delay(pkt, data_pkt):
     if(db is None):
         ewma_delay = sampled_delay
     else:
-        # get last seq in DB
-        pipeline = [
-            {"$match": {"node_id": pkt.scrStr}},
-            {"$unwind": "$delay"},
-            {"$sort": {"delay.timestamp": -1}},
-            {"$limit": 1},
-            {'$project':
-             {
-                 "_id": 1,
-                 'timestamp': '$delay.timestamp',
-                 'ewma_delay': '$delay.ewma_delay'
-             }
-             }
-        ]
-        db = Database.aggregate(NODES_INFO, pipeline)
-        for doc in db:
-            delay_n_1 = doc['ewma_delay']
+        # get last delay
+        last_delay = get_last_delay(pkt.scrStr)
+        delay_n_1 = last_delay["ewma_delay"]
         # Compute EWMA
         ewma_delay = compute_ewma(delay_n_1, sampled_delay)
     # Let's normalized the delay packet
@@ -453,13 +423,14 @@ def get_last_power_consumption(node):
          {
              "_id": 1,
              'timestamp': '$energy.timestamp',
+             'ewma_energy': '$energy.ewma_energy',
              'ewma_energy_normalized': '$energy.ewma_energy_normalized'
          }
          }
     ]
     db = Database.aggregate(NODES_INFO, pipeline)
     for doc in db:
-        return doc['ewma_energy_normalized']
+        return doc
 
 
 def get_last_delay(node):
@@ -471,7 +442,7 @@ def get_last_delay(node):
     }
     db = Database.find_one(NODES_INFO, query)
     if db is None:
-        return None
+        return
     # get last seq in DB
     pipeline = [
         {"$match": {"node_id": node}},
@@ -482,13 +453,15 @@ def get_last_delay(node):
          {
              "_id": 1,
              'timestamp': '$delay.timestamp',
+             'sampled_delay': '$delay.sampled_delay',
+             'ewma_delay': '$delay.ewma_delay',
              'ewma_delay_normalized': '$delay.ewma_delay_normalized'
          }
          }
     ]
     db = Database.aggregate(NODES_INFO, pipeline)
     for doc in db:
-        return doc['ewma_delay_normalized']
+        return doc
 
 
 def get_last_pdr(node):
@@ -511,13 +484,15 @@ def get_last_pdr(node):
          {
              "_id": 1,
              'timestamp': '$pdr.timestamp',
+             'seq': '$pdr.seq',
+             "num_seq": '$pdr.num_seq',
              'ewma_pdr': '$pdr.ewma_pdr'
          }
          }
     ]
     db = Database.aggregate(NODES_INFO, pipeline)
     for doc in db:
-        return doc['ewma_pdr']
+        return doc
 
 
 def save_features():
@@ -527,7 +502,7 @@ def save_features():
     beta = 0.5
     delta = 0.5
     user_requirements = np.array([alpha, beta, delta])
-    # Get average power consumption and delay normalized
+    # Get average power consumption, delay, and pdr normalized
     overall_power_consuption = 0
     overall_delay = 0
     overall_pdr = 0
@@ -545,13 +520,13 @@ def save_features():
         pdr = get_last_pdr(node["node_id"])
         if energy is not None:
             energy_number_of_sensor_nodes += 1
-            overall_power_consuption += energy
+            overall_power_consuption += energy["ewma_energy_normalized"]
         if delay is not None:
             delay_number_of_sensor_nodes += 1
-            overall_delay += delay
+            overall_delay += delay["ewma_delay_normalized"]
         if pdr is not None:
             pdr_number_of_sensor_nodes += 1
-            overall_pdr += pdr
+            overall_pdr += pdr["ewma_pdr"]
     if(energy_number_of_sensor_nodes > 0):
         wsn_energy_normalized = overall_power_consuption/energy_number_of_sensor_nodes
     else:
