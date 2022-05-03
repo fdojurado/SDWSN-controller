@@ -602,17 +602,20 @@ def save_features():
         wsn_reliability_normalized = overall_pdr/pdr_number_of_sensor_nodes
     else:
         wsn_reliability_normalized = None
+    # Flatten RSSI and ETX matrices
+    rssi_neighbors = nbr_rssi_matrix.flatten().tolist()
+    etx_neighbors = nbr_etx_matrix.flatten().tolist()
     # Save data
     data = {
         "timestamp": current_time,
         "user_requirements": user_requirements.tolist(),
         "wsn_energy_normalized": wsn_energy_normalized,
         "wsn_delay_normalized": wsn_delay_normalized,
-        "wsn_reliability_normalized": wsn_reliability_normalized
+        "wsn_reliability_normalized": wsn_reliability_normalized,
         # "routing_paths": routing_paths,
         # "tsch_schedules": tsch_schedules,
-        # "rssi_neighbors": rssi_neighbors,
-        # "etx_neighbors": etx_neighbors,
+        "rssi_neighbors": rssi_neighbors,
+        "etx_neighbors": etx_neighbors
         # "calculation_optimization_eq": calculation_optimization_eqÎ
     }
     Database.insert(FEATURES, data)
