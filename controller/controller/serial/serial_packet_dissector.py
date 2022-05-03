@@ -537,16 +537,18 @@ def get_last_nbr(node):
     return db
 
 
-def get_total_number_sensors():
+def get_last_index_wsn():
     nbr_array = np.array(Database.distinct(NODES_INFO, "neighbors.dst"))
     nodes = np.append(nbr_array, Database.distinct(NODES_INFO, "node_id"))
-    unique = np.unique(nodes)
-    return unique.size
+    sort = np.sort(nodes)
+    last = sort[-1]
+    index, zero = last.split('.')
+    return int(index)
 
 
 def save_features():
-    # Total number of sensor nodes
-    N = get_total_number_sensors()
+    # Get last index of sensor
+    N = get_last_index_wsn()+1
     # Neighbor matrix
     nbr_rssi_matrix = np.zeros(shape=(N, N))
     nbr_etx_matrix = np.zeros(shape=(N, N))
@@ -583,9 +585,11 @@ def save_features():
             pdr_number_of_sensor_nodes += 1
             overall_pdr += pdr["ewma_pdr"]
         if nbr is not None:
-            print("last neighbors of node "+node["node_id"]+" are:")
-            for node in nbr:
-                print(node)
+            for nbr_node in nbr:
+                source, zero = node["node_id"].split('.')
+                dst, zero = nbr_node["dst"].split('.')
+                nbr_rssi_matrix[int(source)][int(dst)] = int(nbr_node["rssi"])
+                nbr_etx_matrix[int(source)][int(dst)] = int(nbr_node["etx"])
     if(energy_number_of_sensor_nodes > 0):
         wsn_energy_normalized = overall_power_consuption/energy_number_of_sensor_nodes
     else:
