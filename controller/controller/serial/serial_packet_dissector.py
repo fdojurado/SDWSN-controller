@@ -605,6 +605,12 @@ def save_features():
     # Flatten RSSI and ETX matrices
     rssi_neighbors = nbr_rssi_matrix.flatten().tolist()
     etx_neighbors = nbr_etx_matrix.flatten().tolist()
+    # Calculation of the optimization equation
+    if(wsn_energy_normalized is not None and wsn_delay_normalized is not None and wsn_reliability_normalized is not None):
+        calculation_optimization_eq = alpha*wsn_energy_normalized + \
+            beta*wsn_delay_normalized-delta*wsn_reliability_normalized
+    else:
+        calculation_optimization_eq = None
     # Save data
     data = {
         "timestamp": current_time,
@@ -615,7 +621,7 @@ def save_features():
         # "routing_paths": routing_paths,
         # "tsch_schedules": tsch_schedules,
         "rssi_neighbors": rssi_neighbors,
-        "etx_neighbors": etx_neighbors
-        # "calculation_optimization_eq": calculation_optimization_eqÎ
+        "etx_neighbors": etx_neighbors,
+        "calculation_optimization_eq": calculation_optimization_eq
     }
     Database.insert(FEATURES, data)
