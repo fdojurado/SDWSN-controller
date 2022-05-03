@@ -135,7 +135,7 @@ class Schedule:
         for node in self.list_nodes:
             if node.rx:
                 for rx in node.rx:
-                    if (rx.source == addr):
+                    if (rx.source == str(addr)):
                         return rx.channeloffset, rx.timeoffset
         return None, None
 

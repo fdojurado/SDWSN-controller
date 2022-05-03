@@ -130,7 +130,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
         if(time.time() > timeout):
             # put a job
             G = load_wsn_links("rssi")
-            # routing_input_queue.put(G)
+            routing_input_queue.put(G)
             timeout = time.time() + int(interval)
         # look for incoming request from routing
         if not routing_output_queue.empty():

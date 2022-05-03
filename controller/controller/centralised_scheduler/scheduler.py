@@ -30,8 +30,10 @@ class Scheduler(mp.Process):
                     if(len(p) >= 2):
                         # print("try to add uc for ", p)
                         for i in range(len(p)-1):
-                            node = p[i]
-                            neighbor = p[i+1]
+                            node = p[i+1]
+                            node = str(node)+".0"
+                            neighbor = p[i]
+                            neighbor = str(neighbor)+".0"
                             # print("rx ", str(node), "tx: ", str(neighbor))
                             timeslot = randrange(0,
                                                  self.schedule.slotframe_size-1)
