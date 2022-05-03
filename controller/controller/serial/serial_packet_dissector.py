@@ -30,6 +30,9 @@ SLOTFRAME_SIZE = NUM_SLOTS * SLOT_DURATION  # Size of the dataplane slotframe
 
 current_time = 0
 
+nbr_rssi_matrix = np.array([])
+nbr_etx_matrix = np.array([])
+
 
 def handle_serial_packet(data, ack_queue):
     global current_time
@@ -547,6 +550,8 @@ def get_last_index_wsn():
 
 
 def save_features():
+    global nbr_rssi_matrix
+    global nbr_etx_matrix
     # Get last index of sensor
     N = get_last_index_wsn()+1
     # Neighbor matrix
@@ -625,3 +630,13 @@ def save_features():
         "calculation_optimization_eq": calculation_optimization_eq
     }
     Database.insert(FEATURES, data)
+
+
+def get_nbr_rssi_matrix():
+    global nbr_rssi_matrix
+    return nbr_rssi_matrix
+
+
+def get_nbr_etx_matrix():
+    global nbr_rssi_matrix
+    return nbr_etx_matrix

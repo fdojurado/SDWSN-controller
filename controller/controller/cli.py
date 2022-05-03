@@ -96,7 +96,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     """ Start the serial interface in background (as a daemon) """
     sp = SerialBus(ServerConfig.from_json_file(config, fit),
                    verbose, serial_input_queue, serial_output_queue)
-    """ Start the centralised scheduler in background (as a daemon) """
+    """ Start the centralized scheduler in background (as a daemon) """
     sc = Scheduler(ServerConfig.from_json_file(config),
                    verbose, schedule_input_queue, schedule_output_queue, nc_input_queue)
     """ Let's start the plotting (animation) in background (as a daemon) """
@@ -129,8 +129,8 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
         # Run the routing protocol?
         if(time.time() > timeout):
             # put a job
-            df, G = load_data("links", 'scr', 'dst', 'rssi')
-            routing_input_queue.put(G)
+            G = load_wsn_links("rssi")
+            # routing_input_queue.put(G)
             timeout = time.time() + int(interval)
         # look for incoming request from routing
         if not routing_output_queue.empty():

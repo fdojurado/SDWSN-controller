@@ -9,6 +9,7 @@ import multiprocessing as mp
 from operator import attrgetter
 from controller.routing.routes import Routes
 from controller.database.database import Database
+from controller.serial.serial_packet_dissector import *
 import networkx as nx
 import pandas as pd
 import json
@@ -83,16 +84,31 @@ def save_routes(rts):
     rts.save_routes_db()
 
 
-def load_data(collection, source, target, attribute):
-    db = Database.find_one(collection, {}, None)
-    df = pd.DataFrame()
-    Graph = nx.Graph()
-    if(db is None):
-        return df, Graph
-    df = pd.DataFrame(list(Database.find(collection, {})))
-    Graph = nx.from_pandas_edgelist(
-        df, source=source, target=target, edge_attr=attribute)
-    return df, Graph
+def load_wsn_links(type):
+    match type:
+        case "rssi":
+            matrix = get_nbr_rssi_matrix()
+        case "etx":
+            matrix = get_nbr_etx_matrix()
+    if(matrix.size <= 1):
+        return
+    G = nx.from_numpy_matrix(matrix, create_using=nx.DiGraph)
+    if(nx.is_empty(G) == False):
+        print("matrix")
+        print(matrix)
+        print(G.edges.data())
+    # print("nbr_rssi_matrix.size")
+    # print(nbr_rssi_matrix.size)
+    # nbr_rssi_matrix
+    # db = Database.find_one(collection, {}, None)
+    # df = pd.DataFrame()
+    # Graph = nx.Graph()
+    # if(db is None):
+    #     return df, Graph
+    # df = pd.DataFrame(list(Database.find(collection, {})))
+    # Graph = nx.from_pandas_edgelist(
+    #     df, source=source, target=target, edge_attr=attribute)
+    # return df, Graph
 
 
 class Routing(mp.Process):
