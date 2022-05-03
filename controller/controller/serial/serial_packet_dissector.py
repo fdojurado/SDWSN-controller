@@ -495,8 +495,61 @@ def get_last_pdr(node):
         return doc
 
 
+def get_last_nbr_timestamp(node):
+    pipeline = [
+        {"$match": {"node_id": node}},
+        {"$unwind": "$neighbors"},
+        {"$group": {"_id": None, "timestamp": {"$max": "$neighbors.timestamp"}}}
+    ]
+    db = Database.aggregate(NODES_INFO, pipeline)
+    for doc in db:
+        return doc["timestamp"]
+
+
+def get_last_nbr(node):
+    query = {
+        "$and": [
+            {"node_id": node},
+            {"neighbors": {"$exists": True}}
+        ]
+    }
+    db = Database.find_one(NODES_INFO, query)
+    if db is None:
+        return None
+    # We first need to get the last timestamp of neighbors of the given node
+    timestamp = get_last_nbr_timestamp(node)
+    # get last links
+    pipeline = [
+        {"$match": {"node_id": node}},
+        {"$unwind": "$neighbors"},
+        {"$match": {"neighbors.timestamp": timestamp}},
+        {'$project':
+         {
+             "_id": 1,
+             'timestamp': '$neighbors.timestamp',
+             'dst': '$neighbors.dst',
+             'rssi': '$neighbors.rssi',
+             'etx': '$neighbors.etx'
+         }
+         }
+    ]
+    db = Database.aggregate(NODES_INFO, pipeline)
+    return db
+
+
+def get_total_number_sensors():
+    nbr_array = np.array(Database.distinct(NODES_INFO, "neighbors.dst"))
+    nodes = np.append(nbr_array, Database.distinct(NODES_INFO, "node_id"))
+    unique = np.unique(nodes)
+    return unique.size
+
+
 def save_features():
-    print("Inserting to features table")
+    # Total number of sensor nodes
+    N = get_total_number_sensors()
+    # Neighbor matrix
+    nbr_rssi_matrix = np.zeros(shape=(N, N))
+    nbr_etx_matrix = np.zeros(shape=(N, N))
     # Get user requirements
     alpha = 0.5
     beta = 0.5
@@ -518,6 +571,8 @@ def save_features():
         delay = get_last_delay(node["node_id"])
         # Get the last pdr
         pdr = get_last_pdr(node["node_id"])
+        # Get last neighbors
+        nbr = get_last_nbr(node["node_id"])
         if energy is not None:
             energy_number_of_sensor_nodes += 1
             overall_power_consuption += energy["ewma_energy_normalized"]
@@ -527,6 +582,10 @@ def save_features():
         if pdr is not None:
             pdr_number_of_sensor_nodes += 1
             overall_pdr += pdr["ewma_pdr"]
+        if nbr is not None:
+            print("last neighbors of node "+node["node_id"]+" are:")
+            for node in nbr:
+                print(node)
     if(energy_number_of_sensor_nodes > 0):
         wsn_energy_normalized = overall_power_consuption/energy_number_of_sensor_nodes
     else:

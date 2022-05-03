@@ -83,6 +83,10 @@ class Database(object):
         return Database.DATABASE[collection].delete_one(query)
 
     @staticmethod
+    def distinct(collection, query):
+        return Database.DATABASE[collection].distinct(query)
+
+    @staticmethod
     def print_documents(collection):
         for document in Database.DATABASE[collection].find_one({}):
             print(document)
