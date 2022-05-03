@@ -4,7 +4,7 @@ import pymongo
 PACKETS = "packets"
 NODES_INFO = "nodes_info"
 FEATURES = "features"
-ROUTES = "routes"
+ROUTING_PATHS = "routing_paths"
 SCHEDULES = "schedules"
 
 class Database(object):

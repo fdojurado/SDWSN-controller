@@ -187,3 +187,10 @@ class Routing(mp.Process):
                 routes_matrix[p[0]][p[1]] = 1
         print("routing matrix")
         print(routes_matrix)
+        # Save in DB
+        current_time = datetime.now().timestamp() * 1000.0
+        data = {
+            "timestamp": current_time,
+            "routes": routes_matrix.flatten().tolist()
+        }
+        Database.insert(ROUTING_PATHS, data)
