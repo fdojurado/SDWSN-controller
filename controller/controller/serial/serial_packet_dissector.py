@@ -370,21 +370,21 @@ def save_delay(pkt, data_pkt):
 #     return pkt
 
 
-def insert_links(data):
-    links = {
-        'time': data['time'],
-        'scr': data['scr'],
-        'dst': data['dst'],
-        'rssi': data['rssi'],
-    }
-    # load the collection to pandas frame
-    db = Database.find_one("links", {}, None)
-    if(db is None):
-        Database.insert("links", links)
-    else:
-        # It first checks if the links already exists in the collection.
-        # If it does, it update with the current values, otherwise it creates it.
-        Database.push_links("links", links)
+# def insert_links(data):
+#     links = {
+#         'time': data['time'],
+#         'scr': data['scr'],
+#         'dst': data['dst'],
+#         'rssi': data['rssi'],
+#     }
+#     # load the collection to pandas frame
+#     db = Database.find_one("links", {}, None)
+#     if(db is None):
+#         Database.insert("links", links)
+#     else:
+#         # It first checks if the links already exists in the collection.
+#         # If it does, it update with the current values, otherwise it creates it.
+#         Database.push_links("links", links)
 
 
 def compute_ewma(old_data, new_data):

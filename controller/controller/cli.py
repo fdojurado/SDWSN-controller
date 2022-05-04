@@ -69,8 +69,8 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     signal.signal(signal.SIGTERM, exit_process)
     """ Define Queues """
     # TSCH scheduler Queues
-    schedule_input_queue = mp.Queue()
-    schedule_output_queue = mp.Queue()
+    scheduler_input_queue = mp.Queue()
+    scheduler_output_queue = mp.Queue()
     # Serial Queues
     serial_input_queue = mp.Queue()
     serial_output_queue = mp.Queue()
@@ -98,7 +98,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
                    verbose, serial_input_queue, serial_output_queue)
     """ Start the centralized scheduler in background (as a daemon) """
     sc = Scheduler(ServerConfig.from_json_file(config),
-                   verbose, schedule_input_queue, schedule_output_queue, nc_input_queue)
+                   verbose, scheduler_input_queue, scheduler_output_queue, nc_input_queue)
     """ Let's start the plotting (animation) in background (as a daemon) """
     if plot:
         ntwk_plot = SubplotAnimation()
@@ -134,16 +134,13 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
             timeout = time.time() + int(interval)
         # look for incoming request from routing
         if not routing_output_queue.empty():
-            path = routing_output_queue.get()
-            # rts = compute_routes_from_path(path)
-            # save_routes(rts)
-            # Compute schedules
-            schedule_input_queue.put(path)
-            # We now trigger NC
-            rts = compute_routes_from_path(path)
-            save_routes(rts)
-            nc_input_queue.put(routes_toJSON())
-            # Now, we put them in the Queue
-            # for node in nodes:
-            #     nc_input_queue.put(node)
-            # nc_input_queue.put(path)
+            path, routes_json = routing_output_queue.get()
+            # Compute Schedule Advertisement (SA) packet
+            scheduler_input_queue.put(path)
+        # look for incoming request from scheduler
+        if not scheduler_output_queue.empty():
+            schedule_job = scheduler_output_queue.get()
+            # Send the SA packet
+            nc_input_queue.put(schedule_job)
+            # We now send Routes Advertisement (RA) packet
+            nc_input_queue.put(routes_json)

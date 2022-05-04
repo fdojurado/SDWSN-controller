@@ -30,6 +30,8 @@ class Scheduler(mp.Process):
                     if(len(p) >= 2):
                         # print("try to add uc for ", p)
                         for i in range(len(p)-1):
+                            # TODO: find a way to avoid forcing the last addr of
+                            # sensor nodes to 0.
                             node = p[i+1]
                             node = str(node)+".0"
                             neighbor = p[i]
@@ -53,8 +55,4 @@ class Scheduler(mp.Process):
                             p[0], cell_type.UC_RX, channeloffset, timeslot)
                 self.schedule.print_schedule()
                 # Let's build the message in json format
-                self.nc_job_queue.put(self.schedule.schedule_toJSON())
-                # job = {"type": 0, "payload": self.schedule.schedule}
-                # json_dump = json.dumps(job)
-                # print(json_dump)
-                # self.nc_job_queue.put(json_dump)
+                self.output_queue.put(self.schedule.schedule_toJSON())

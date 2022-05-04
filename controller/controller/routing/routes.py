@@ -14,7 +14,7 @@ class Routes:
         self.time = datetime.now().timestamp() * 1000.0
 
     def add_route(self, scr, dst, via):
-        # Let's firts check if the route is already in the dataframe
+        # Let's first check if the route is already in the dataframe
         if ((self.routes['scr'] == scr) & (self.routes['dst'] == dst) & (self.routes['via'] == via)).any():
             return
         else:

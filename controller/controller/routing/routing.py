@@ -20,73 +20,6 @@ from controller.network_config.network_config import *
 routes_matrix = np.array([])
 
 
-def routes_toJSON():
-    # Build the routing job in a JSON format to be shared with the NC class
-    # Hop limit sets the maximum of hops to bc this message. 255 means all.
-    # {
-    #   "job_type": "Routing",
-    #   "routes":[
-    #               {
-    #                   "scr": row['scr'],
-    #                   "dst": row['dst'],
-    #                   "via": row['via']
-    #                },
-    #               {
-    #                   "scr": row['scr'],
-    #                   "dst": row['dst'],
-    #                   "via": row['via']
-    #                }
-    #       ],
-    #   "hop_limit": "255"
-    # }
-    json_message_format = '{"job_type": ' + \
-        str(job_type.ROUTING)+', "routes":[]}'
-    # parsing JSON string:
-    json_message = json.loads(json_message_format)
-    df = FWD_TABLE.fwd_get_table()
-    for index, row in df.iterrows():
-        data = {"scr": row['scr'], "dst": row['dst'], "via": row['via']}
-        json_message["routes"].append(data)
-    # TODO: We need to look for the rank values of all route sources and
-    # set the hop limit to the highest rank among the source address.
-    json_message["hop_limit"] = 255
-    json_dump = json.dumps(json_message, indent=4, sort_keys=True)
-    print(json_dump)
-    return json_dump
-
-
-def compute_routes_from_path(path):
-    """ Save routes in the 'src'-'dst' 'via' format.
-    Return: the connected graph of the given routing algo. """
-    rts = Routes()
-    for u, p in path.items():
-        if(u != 1):
-            if(len(p) >= 2):
-                # We set the route from the controller to nodes
-                # for i in range(len(p)-1):
-                #     node = p[i]
-                #     neighbor = p[i+1]
-                #     # Check if we can form a subset
-                #     if(not (len(p)-2-i) < 1):
-                #         subset = p[-(len(p)-2-i):]
-                #         for j in range(len(subset)):
-                #             rts.add_route(
-                #                 node, subset[j], neighbor)
-                # Now we add the routes from node to controller
-                # Keep in mind that we only need the neighbor to controller.
-                # We don't need to know the routes to every node in the path to the controller.
-                # reverse = p[::-1]
-                node = p[0]
-                neighbor = p[1]
-                rts.add_route(str(node)+".0", "1.1", str(neighbor)+".0")
-    return rts
-
-
-def save_routes(rts):
-    rts.save_historical_routes_db()
-    rts.save_routes_db()
-
-
 def load_wsn_links(type):
     G = nx.DiGraph()
     match type:
@@ -113,6 +46,7 @@ class Routing(mp.Process):
         self.output_queue = output_queue
         self.routing_alg_queue = routing_alg_queue
         self.interval = int(config.routing.time)
+        self.routes = Routes()
         self.verbose = verbose
 
     def set_algorithm(self, alg):
@@ -133,6 +67,7 @@ class Routing(mp.Process):
                     # Now that we are sure it is a connected graph,
                     # we now run the selected routing algorithm
                     if(G.has_node(1)):  # Maybe use "1.0" instead
+                        self.routes.clear_routes()
                         # Check if the routing algorithm has changed
                         if not self.routing_alg_queue.empty():
                             self.alg = self.routing_alg_queue.get()
@@ -148,7 +83,9 @@ class Routing(mp.Process):
                                 print("running default alg.")
                         # Let's put the path in matrix format
                         self.build_routes_matrix(path)
-                        self.output_queue.put(path)
+                        # Prepare for sending to the WSN
+                        routes_json = self.routes_toJSON()
+                        self.output_queue.put((path, routes_json))
 
     def dijkstra(self, G):
         # We want to compute the SP from all nodes to the controller
@@ -161,20 +98,22 @@ class Routing(mp.Process):
                     print("dijkstra path")
                     print(node_path)
                     path[node] = node_path
+                    # TODO: find a way to avoid forcing the last addr of
+                    # sensor nodes to 0.
+                    self.routes.add_route(
+                        str(node)+".0", "1.1", str(node_path[1])+".0")
+                    self.routes.print_routes()
                 except nx.NetworkXNoPath:
                     print("path not found")
-        print("total path")
-        print(path)
-        # length, path = nx.single_source_dijkstra(G, 1, None, None, "weight")
-        # print("dijkstra path")
+        # print("total path")
         # print(path)
-        # Let's put the path in the queue
         return path
 
     def mst(self, G):
         # We want to compute the MST of the current connected network
         # We call the edges "path"
-        mst = nx.minimum_spanning_tree(G, algorithm="kruskal", weight="weight")
+        mst = nx.minimum_spanning_tree(
+            G, algorithm="kruskal", weight="weight")
         return self.dijkstra(mst)
 
     def build_routes_matrix(self, path):
@@ -194,3 +133,37 @@ class Routing(mp.Process):
             "routes": routes_matrix.flatten().tolist()
         }
         Database.insert(ROUTING_PATHS, data)
+
+    def routes_toJSON(self):
+        # Build the routing job in a JSON format to be shared with the NC class
+        # Hop limit sets the maximum of hops to bc this message. 255 means all.
+        # {
+        #   "job_type": "Routing",
+        #   "routes":[
+        #               {
+        #                   "scr": row['scr'],
+        #                   "dst": row['dst'],
+        #                   "via": row['via']
+        #                },
+        #               {
+        #                   "scr": row['scr'],
+        #                   "dst": row['dst'],
+        #                   "via": row['via']
+        #                }
+        #       ],
+        #   "hop_limit": "255"
+        # }
+        json_message_format = '{"job_type": ' + \
+            str(job_type.ROUTING)+', "routes":[]}'
+        # parsing JSON string:
+        json_message = json.loads(json_message_format)
+        self.routes.print_routes()
+        for index, row in self.routes.routes.iterrows():
+            data = {"scr": row['scr'], "dst": row['dst'], "via": row['via']}
+            json_message["routes"].append(data)
+        # TODO: We need to look for the rank values of all route sources and
+        # set the hop limit to the highest rank among the source address.
+        json_message["hop_limit"] = 255
+        json_dump = json.dumps(json_message, indent=4, sort_keys=True)
+        print(json_dump)
+        return json_dump
