@@ -15,18 +15,16 @@ import pandas as pd
 import json
 from controller.forwarding_table.forwarding_table import FWD_TABLE
 from controller.network_config.network_config import *
-
-
-routes_matrix = np.array([])
+from controller import globals
 
 
 def load_wsn_links(type):
     G = nx.DiGraph()
     match type:
         case "rssi":
-            matrix = get_nbr_rssi_matrix()*-1
+            matrix = globals.nbr_rssi_matrix*-1
         case "etx":
-            matrix = get_nbr_etx_matrix()
+            matrix = globals.nbr_etx_matrix
     if(matrix.size <= 1):
         return G
     G = nx.from_numpy_matrix(matrix, create_using=nx.DiGraph)
@@ -82,10 +80,11 @@ class Routing(mp.Process):
                             case _:
                                 print("running default alg.")
                         # Let's put the path in matrix format
-                        self.build_routes_matrix(path)
+                        routes_matrix = self.build_routes_matrix(path)
                         # Prepare for sending to the WSN
                         routes_json = self.routes_toJSON()
-                        self.output_queue.put((path, routes_json))
+                        self.output_queue.put(
+                            (path, routes_json, routes_matrix))
 
     def dijkstra(self, G):
         # We want to compute the SP from all nodes to the controller
@@ -117,7 +116,6 @@ class Routing(mp.Process):
         return self.dijkstra(mst)
 
     def build_routes_matrix(self, path):
-        global routes_matrix
         # Get last index of sensor
         N = get_last_index_wsn()+1
         routes_matrix = np.zeros(shape=(N, N))
@@ -133,6 +131,7 @@ class Routing(mp.Process):
             "routes": routes_matrix.flatten().tolist()
         }
         Database.insert(ROUTING_PATHS, data)
+        return routes_matrix
 
     def routes_toJSON(self):
         # Build the routing job in a JSON format to be shared with the NC class

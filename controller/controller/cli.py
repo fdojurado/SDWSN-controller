@@ -33,7 +33,7 @@ import networkx.algorithms.isomorphism as iso
 import random
 import pandas as pd
 # from networkx.drawing.nx_agraph import graphviz_layout
-
+from controller import globals
 # device topics
 serial_topic = "controller/serial"  # publishing topic
 
@@ -67,6 +67,8 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     # Register signals.
     signal.signal(signal.SIGQUIT, exit_process)
     signal.signal(signal.SIGTERM, exit_process)
+    """ Initialize the global variables """
+    globals.globals_initialize()
     """ Define Queues """
     # TSCH scheduler Queues
     scheduler_input_queue = mp.Queue()
@@ -134,7 +136,9 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
             timeout = time.time() + int(interval)
         # look for incoming request from routing
         if not routing_output_queue.empty():
-            path, routes_json = routing_output_queue.get()
+            path, routes_json, routes_matrix = routing_output_queue.get()
+            # Set routes matrix to the global scope
+            globals.routes_matrix = routes_matrix
             # Compute Schedule Advertisement (SA) packet
             scheduler_input_queue.put(path)
         # look for incoming request from scheduler

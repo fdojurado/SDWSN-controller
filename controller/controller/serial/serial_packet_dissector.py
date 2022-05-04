@@ -5,6 +5,7 @@ from controller.database.database import *
 from controller.packet.packet import *
 import numpy as np
 import pandas as pd
+from controller import globals
 
 # Network parameters
 H_MAX = 10  # max number of hops
@@ -29,9 +30,6 @@ R_MAX = 3   # Maximum number of retransmissions
 SLOTFRAME_SIZE = NUM_SLOTS * SLOT_DURATION  # Size of the dataplane slotframe
 
 current_time = 0
-
-nbr_rssi_matrix = np.array([])
-nbr_etx_matrix = np.array([])
 
 
 def handle_serial_packet(data, ack_queue):
@@ -550,13 +548,11 @@ def get_last_index_wsn():
 
 
 def save_features():
-    global nbr_rssi_matrix
-    global nbr_etx_matrix
     # Get last index of sensor
     N = get_last_index_wsn()+1
     # Neighbor matrix
-    nbr_rssi_matrix = np.zeros(shape=(N, N))
-    nbr_etx_matrix = np.zeros(shape=(N, N))
+    globals.nbr_rssi_matrix = np.zeros(shape=(N, N))
+    globals.nbr_etx_matrix = np.zeros(shape=(N, N))
     # Get user requirements
     alpha = 0.5
     beta = 0.5
@@ -593,8 +589,10 @@ def save_features():
             for nbr_node in nbr:
                 source, zero = node["node_id"].split('.')
                 dst, zero = nbr_node["dst"].split('.')
-                nbr_rssi_matrix[int(source)][int(dst)] = int(nbr_node["rssi"])
-                nbr_etx_matrix[int(source)][int(dst)] = int(nbr_node["etx"])
+                globals.nbr_rssi_matrix[int(source)][int(
+                    dst)] = int(nbr_node["rssi"])
+                globals.nbr_etx_matrix[int(source)][int(
+                    dst)] = int(nbr_node["etx"])
     if(energy_number_of_sensor_nodes > 0):
         wsn_energy_normalized = overall_power_consuption/energy_number_of_sensor_nodes
     else:
@@ -608,14 +606,17 @@ def save_features():
     else:
         wsn_reliability_normalized = None
     # Flatten RSSI and ETX matrices
-    rssi_neighbors = nbr_rssi_matrix.flatten().tolist()
-    etx_neighbors = nbr_etx_matrix.flatten().tolist()
+    rssi_neighbors = globals.nbr_rssi_matrix.flatten().tolist()
+    etx_neighbors = globals.nbr_etx_matrix.flatten().tolist()
     # Calculation of the optimization equation
     if(wsn_energy_normalized is not None and wsn_delay_normalized is not None and wsn_reliability_normalized is not None):
         calculation_optimization_eq = alpha*wsn_energy_normalized + \
             beta*wsn_delay_normalized-delta*wsn_reliability_normalized
     else:
         calculation_optimization_eq = None
+    # We now get the latest running routing path from the ROUTING_PATHS collection
+    print("global routes matrix")
+    print(globals.routes_matrix)
     # Save data
     data = {
         "timestamp": current_time,
@@ -630,13 +631,3 @@ def save_features():
         "calculation_optimization_eq": calculation_optimization_eq
     }
     Database.insert(FEATURES, data)
-
-
-def get_nbr_rssi_matrix():
-    global nbr_rssi_matrix
-    return nbr_rssi_matrix
-
-
-def get_nbr_etx_matrix():
-    global nbr_rssi_matrix
-    return nbr_etx_matrix
