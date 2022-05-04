@@ -54,5 +54,15 @@ class Scheduler(mp.Process):
                         self.schedule.add_uc(
                             p[0], cell_type.UC_RX, channeloffset, timeslot)
                 self.schedule.print_schedule()
+                # Save the slotframe size in SLOTFRAME_LEN collection
+                self.save_slotframe_len()
                 # Let's build the message in json format
                 self.output_queue.put(self.schedule.schedule_toJSON())
+
+    def save_slotframe_len(self):
+        current_time = datetime.now().timestamp() * 1000.0
+        data = {
+            "timestamp": current_time,
+            "slotframe_len": self.schedule.slotframe_size,
+        }
+        Database.insert(SLOTFRAME_LEN, data)

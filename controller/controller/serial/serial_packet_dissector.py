@@ -404,6 +404,16 @@ def get_rank(addr):
         return db["rank"]
 
 
+def get_last_slotframe_len():
+    db = Database.find_one(SLOTFRAME_LEN, {})
+    if db is None:
+        return None
+    # get last seq in DB
+    db = Database.find(SLOTFRAME_LEN, {}).sort("_id", -1).limit(1)
+    for doc in db:
+        return doc["slotframe_len"]
+
+
 def get_last_power_consumption(node):
     query = {
         "$and": [
@@ -619,6 +629,12 @@ def save_features():
         routing_paths = None
     else:
         routing_paths = globals.routes_matrix.flatten().tolist()
+    # Get the slotframe size
+    last = get_last_slotframe_len()
+    if(last is None):
+        slotframe_len = None
+    else:
+        slotframe_len = last
     # Save data
     data = {
         "timestamp": current_time,
@@ -627,6 +643,7 @@ def save_features():
         "wsn_delay_normalized": wsn_delay_normalized,
         "wsn_reliability_normalized": wsn_reliability_normalized,
         "routing_paths": routing_paths,
+        "slotframe_len": slotframe_len,
         # "tsch_schedules": tsch_schedules,
         "rssi_neighbors": rssi_neighbors,
         "etx_neighbors": etx_neighbors,

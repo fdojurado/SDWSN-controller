@@ -4,6 +4,7 @@ import pymongo
 PACKETS = "packets"
 NODES_INFO = "nodes_info"
 FEATURES = "features"
+SLOTFRAME_LEN = "slotframe_len"
 ROUTING_PATHS = "routing_paths"
 SCHEDULES = "schedules"
 
