@@ -2,6 +2,7 @@ import multiprocessing as mp
 from controller.centralised_scheduler.schedule import *
 from random import randrange
 import json
+from controller import globals
 
 # This is a simple scheduler which puts a tx and rx uc link for each edge in the current routing protocol.
 # Rx for relay nodes are assigned randomly
@@ -56,6 +57,8 @@ class Scheduler(mp.Process):
                 self.schedule.print_schedule()
                 # Save the slotframe size in SLOTFRAME_LEN collection
                 self.save_slotframe_len()
+                # Put the schedules in link_schedules_matrix
+                self.build_link_schedules_matrix()
                 # Let's build the message in json format
                 self.output_queue.put(self.schedule.schedule_toJSON())
 
@@ -66,3 +69,6 @@ class Scheduler(mp.Process):
             "slotframe_len": self.schedule.slotframe_size,
         }
         Database.insert(SLOTFRAME_LEN, data)
+
+    def build_link_schedules_matrix(self):
+        print("building link schedules matrix")
