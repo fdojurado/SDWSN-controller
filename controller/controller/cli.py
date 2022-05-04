@@ -148,3 +148,5 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
             nc_input_queue.put(schedule_job)
             # We now send Routes Advertisement (RA) packet
             nc_input_queue.put(routes_json)
+            # Trigger save features, so the coming data gets label correctly
+            save_features()

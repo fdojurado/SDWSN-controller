@@ -615,8 +615,10 @@ def save_features():
     else:
         calculation_optimization_eq = None
     # We now get the latest running routing path from the ROUTING_PATHS collection
-    print("global routes matrix")
-    print(globals.routes_matrix)
+    if(globals.routes_matrix.size == 0):
+        routing_paths = None
+    else:
+        routing_paths = globals.routes_matrix.flatten().tolist()
     # Save data
     data = {
         "timestamp": current_time,
@@ -624,7 +626,7 @@ def save_features():
         "wsn_energy_normalized": wsn_energy_normalized,
         "wsn_delay_normalized": wsn_delay_normalized,
         "wsn_reliability_normalized": wsn_reliability_normalized,
-        # "routing_paths": routing_paths,
+        "routing_paths": routing_paths,
         # "tsch_schedules": tsch_schedules,
         "rssi_neighbors": rssi_neighbors,
         "etx_neighbors": etx_neighbors,
