@@ -101,9 +101,9 @@ class Routing(mp.Process):
                     # sensor nodes to 0.
                     self.routes.add_route(
                         str(node)+".0", "1.1", str(node_path[1])+".0")
-                    self.routes.print_routes()
                 except nx.NetworkXNoPath:
                     print("path not found")
+        self.routes.print_routes()
         # print("total path")
         # print(path)
         return path
@@ -157,12 +157,14 @@ class Routing(mp.Process):
         # parsing JSON string:
         json_message = json.loads(json_message_format)
         self.routes.print_routes()
+        hop_limit = 0
         for index, row in self.routes.routes.iterrows():
             data = {"scr": row['scr'], "dst": row['dst'], "via": row['via']}
             json_message["routes"].append(data)
-        # TODO: We need to look for the rank values of all route sources and
-        # set the hop limit to the highest rank among the source address.
-        json_message["hop_limit"] = 255
+            rank = get_rank(row['scr'])
+            if (rank > hop_limit):
+                hop_limit = rank
+        json_message["hop_limit"] = hop_limit
         json_dump = json.dumps(json_message, indent=4, sort_keys=True)
         print(json_dump)
         return json_dump

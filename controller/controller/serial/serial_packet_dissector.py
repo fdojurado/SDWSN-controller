@@ -391,6 +391,8 @@ def compute_ewma(old_data, new_data):
 
 
 def get_rank(addr):
+    if(addr == "1.0"):
+        return 0
     query = {
         "$and": [
             {"node_id": addr},
