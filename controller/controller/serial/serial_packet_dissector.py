@@ -642,9 +642,15 @@ def save_features():
         tsch_schedules = None
     else:
         tsch_schedules = globals.link_schedules_matrices
+    # Elapse time since the last RA and SA packet sent
+    if globals.elapse_time == 0:
+        elapsetime = None
+    else:
+        elapsetime = current_time - globals.elapse_time
     # Save data
     data = {
         "timestamp": current_time,
+        "elapsetime": elapsetime,
         "user_requirements": user_requirements.tolist(),
         "wsn_energy_normalized": wsn_energy_normalized,
         "wsn_delay_normalized": wsn_delay_normalized,

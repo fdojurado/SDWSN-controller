@@ -5,8 +5,9 @@ import numpy as np
 
 def globals_initialize():
     print("initializing globals")
-    global routes_matrix, nbr_rssi_matrix, nbr_etx_matrix, link_schedules_matrices
+    global routes_matrix, nbr_rssi_matrix, nbr_etx_matrix, link_schedules_matrices, elapse_time
     routes_matrix = np.array([])
     nbr_rssi_matrix = np.array([])
     nbr_etx_matrix = np.array([])
     link_schedules_matrices = []
+    elapse_time = 0

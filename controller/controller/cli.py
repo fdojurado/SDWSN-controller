@@ -150,5 +150,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
             nc_input_queue.put(schedule_job)
             # We now send Routes Advertisement (RA) packet
             nc_input_queue.put(routes_json)
+            # reset the elapse time of the current RA and SA configuration
+            globals.elapse_time = datetime.now().timestamp() * 1000.0
             # Trigger save features, so the coming data gets label correctly
             save_features()
