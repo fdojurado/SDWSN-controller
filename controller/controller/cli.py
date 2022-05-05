@@ -143,7 +143,9 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
             scheduler_input_queue.put(path)
         # look for incoming request from scheduler
         if not scheduler_output_queue.empty():
-            schedule_job = scheduler_output_queue.get()
+            schedule_job, link_schedules_matrices = scheduler_output_queue.get()
+            # Set link_schedules_matrices to the global scope
+            globals.link_schedules_matrices = link_schedules_matrices
             # Send the SA packet
             nc_input_queue.put(schedule_job)
             # We now send Routes Advertisement (RA) packet

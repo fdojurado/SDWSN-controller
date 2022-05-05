@@ -635,6 +635,11 @@ def save_features():
         slotframe_len = None
     else:
         slotframe_len = last
+    # Get the tsch schedules for this round
+    if not globals.link_schedules_matrices:
+        tsch_schedules = None
+    else:
+        tsch_schedules = globals.link_schedules_matrices
     # Save data
     data = {
         "timestamp": current_time,
@@ -644,7 +649,7 @@ def save_features():
         "wsn_reliability_normalized": wsn_reliability_normalized,
         "routing_paths": routing_paths,
         "slotframe_len": slotframe_len,
-        # "tsch_schedules": tsch_schedules,
+        "tsch_schedules": tsch_schedules,
         "rssi_neighbors": rssi_neighbors,
         "etx_neighbors": etx_neighbors,
         "calculation_optimization_eq": calculation_optimization_eq

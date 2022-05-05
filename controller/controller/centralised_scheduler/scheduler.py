@@ -58,9 +58,10 @@ class Scheduler(mp.Process):
                 # Save the slotframe size in SLOTFRAME_LEN collection
                 self.save_slotframe_len()
                 # Put the schedules in link_schedules_matrices
-                self.build_link_schedules_matrix()
+                link_schedules_matrix = self.build_link_schedules_matrix()
                 # Let's build the message in json format
-                self.output_queue.put(self.schedule.schedule_toJSON())
+                self.output_queue.put(
+                    (self.schedule.schedule_toJSON(), link_schedules_matrix))
 
     def save_slotframe_len(self):
         current_time = datetime.now().timestamp() * 1000.0
@@ -75,7 +76,7 @@ class Scheduler(mp.Process):
         # Get last index of sensor
         N = get_last_index_wsn()+1
         # This is an array of schedule matrices
-        globals.link_schedules_matrix = [None] * N
+        link_schedules_matrix = [None] * N
         # We now loop through the entire arrray and fill it with the schedule information
         for node in self.schedule.list_nodes:
             # Construct the schedule matrix
@@ -90,7 +91,8 @@ class Scheduler(mp.Process):
                 #       str(tx_cell.timeoffset)+" ch "+str(tx_cell.channeloffset))
                 schedule[tx_cell.channeloffset][tx_cell.timeoffset] = -1
             addr = node.node.split(".")
-            globals.link_schedules_matrix[int(
+            link_schedules_matrix[int(
                 addr[0])] = schedule.flatten().tolist()
         print("link_schedules_matrix")
-        print(globals.link_schedules_matrix)
+        print(link_schedules_matrix)
+        return link_schedules_matrix
