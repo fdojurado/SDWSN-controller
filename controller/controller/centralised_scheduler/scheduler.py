@@ -95,4 +95,11 @@ class Scheduler(mp.Process):
                 addr[0])] = schedule.flatten().tolist()
         print("link_schedules_matrix")
         print(link_schedules_matrix)
+        # Save in DB
+        current_time = datetime.now().timestamp() * 1000.0
+        data = {
+            "timestamp": current_time,
+            "schedules": link_schedules_matrix
+        }
+        Database.insert(SCHEDULES, data)
         return link_schedules_matrix
