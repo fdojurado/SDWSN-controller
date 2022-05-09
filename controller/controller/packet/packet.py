@@ -1,26 +1,27 @@
 from email.policy import strict
 import struct
 import types
+import json
 import sys
 
 # Packet sizes
 SDN_IPH_LEN = 10  # Size of layer 3 packet header */
 SDN_NDH_LEN = 6   # Size of neighbor discovery header */
-SDN_NAH_LEN = 6   # Size of neighbor advertisment packet header */
-SDN_NAPL_LEN = 6  # Size of neighbor advertisment payload size */
-SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
-SDN_NCR_LEN = 4  # Size of NC routing packet*/
+SDN_NAH_LEN = 6   # Size of neighbor advertisement packet header */
+SDN_NAPL_LEN = 6  # Size of neighbor advertisement payload size */
+# SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
+SDN_RAH_LEN = 6  # Size of RA header routing packet*/
+SDN_SAH_LEN = 6  # Size of SA header schedule packet*/
 SDN_DATA_LEN = 8  # Size of data packet */
 SDN_SERIAL_PACKETH_LEN = 6
 
 # Protocols encapsulated in sdn IP packet
 sdn_protocols = types.SimpleNamespace()
 sdn_protocols.SDN_PROTO_ND = 1
-sdn_protocols.SDN_PROTO_NA = 2              # Neighbor advertisement
-sdn_protocols.SDN_PROTO_NC_ROUTE = 3        # Network configuration for routes
-# Network configuration for schedules
-sdn_protocols.SDN_PROTO_NC_SCHEDULES = 4
-sdn_protocols.SDN_PROTO_DATA = 5            # Data packet
+sdn_protocols.SDN_PROTO_NA = 2        # Neighbor advertisement
+sdn_protocols.SDN_PROTO_RA = 3        # Routes Advertisement
+sdn_protocols.SDN_PROTO_SA = 4        # Schedule Advertisement
+sdn_protocols.SDN_PROTO_DATA = 5      # Data packet
 
 
 def chksum(sum, data, len):
@@ -106,6 +107,10 @@ class SerialPacket:
         return cls(payload, addr=addr, message_type=message_type, payload_len=payload_len,
                    reserved0=reserved0, reserved1=reserved1)
 
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__ if type(o) is not bytes else str(o),
+                          sort_keys=True, indent=4)
+
 
 class SDN_IP_Packet:
 
@@ -118,10 +123,10 @@ class SDN_IP_Packet:
         # These are two bytes long
         self.hdr_chksum = kwargs.get("hdr_chksum", 0)
         self.scr = kwargs.get("scr", 0)
-        # Direct acces to addr in x.x format
+        # Direct access to addr in x.x format
         self.scrStr = kwargs.get("scrStr", "0.0")
         self.dest = kwargs.get("dest", 0)
-        # Direct acces to addr in x.x format
+        # Direct access to addr in x.x format
         self.destStr = kwargs.get("destStr", "0.0")
         self.payload = payload
 
@@ -152,43 +157,44 @@ class SDN_IP_Packet:
                    scr=scr, scrStr=scrStr.addrStr, dest=dest, destStr=destStr.addrStr)
 
 
-class NC_Routing_Packet:
+class RA_Packet:
 
     def __init__(self, payload, **kwargs):
         self.payload_len = kwargs.get("payload_len", 0)
+        self.hop_limit = kwargs.get("hop_limit", 0)
         self.seq = kwargs.get("seq", 0)
-        self.ack = kwargs.get("ack", 0)
-        self.padding = kwargs.get("padding", 0)
         self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.payload = payload
 
     def pack(self):
         #  Let's first compute the checksum
-        data = struct.pack('!BBBBH' + str(len(self.payload)) + 's', self.payload_len, self.seq,
-                           self.ack, self.padding, self.pkt_chksum, bytes(self.payload))
-        self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_NCH_LEN)
+        data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
+                           self.hop_limit, self.seq, self.pkt_chksum, bytes(self.payload))
+        self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_RAH_LEN)
         print("computed checksum")
         print(self.pkt_chksum)
-        return struct.pack('!BBBBH' + str(len(self.payload)) + 's', self.payload_len, self.seq,
-                           self.ack, self.padding, self.pkt_chksum, bytes(self.payload))
+        return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
+                           self.hop_limit, self.seq, self.pkt_chksum, bytes(self.payload))
 
     # optional: nice string representation of packet for printing purposes
 
     def __repr__(self):
-        return "NC_Routing_Packet(payload_len={}, seq={}, ack={}, pkt_chksum={}, payload={})".format(
-            hex(self.payload_len), hex(self.seq),
-            hex(self.ack), hex(self.pkt_chksum), self.payload)
+        return "RA_Packet(payload_len={}, hop_limit={}, seq={}, pkt_chksum={}, payload={})".format(
+            hex(self.payload_len), self.hop_limit, self.seq,
+            hex(self.pkt_chksum), self.payload)
 
     @classmethod
     def unpack(cls, packed_data, length):
-        payload_len, seq, ack, padding, pkt_chksum, payload = struct.unpack(
-            '!BBBBH' + str(length-SDN_NCH_LEN) + 's', packed_data)
-        return cls(payload, payload_len=payload_len, seq=seq, ack=ack, padding=padding, pkt_chksum=pkt_chksum)
+        payload_len, hop_limit, seq, pkt_chksum, payload = struct.unpack(
+            '!BBHH' + str(length-SDN_RAH_LEN) + 's', packed_data)
+        return cls(payload, payload_len=payload_len, hop_limit=hop_limit, seq=seq, pkt_chksum=pkt_chksum)
 
 
-class NC_Routing_Payload:
+class RA_Packet_Payload:
 
     def __init__(self, payload, **kwargs):
+        self.scr = kwargs.get("scr", 0)
+        self.scr = addrConversion.to_int(self.scr).addr
         self.dst = kwargs.get("dst", 0)
         self.dst = addrConversion.to_int(self.dst).addr
         self.via = kwargs.get("via", 0)
@@ -197,10 +203,56 @@ class NC_Routing_Payload:
 
     def pack(self):
         if self.payload:
-            packed = struct.pack('>2s2s'+str(len(self.payload)) +
-                                 's', self.via, self.dst, bytes(self.payload))
+            packed = struct.pack('>2s2s2s'+str(len(self.payload)) +
+                                 's', self.scr, self.dst, self.via, bytes(self.payload))
         else:
-            packed = struct.pack('!2s2s', self.via, self.dst)
+            packed = struct.pack('!2s2s2s', self.scr, self.dst, self.via)
+        return packed
+
+
+class Cell_Packet:
+
+    def __init__(self, payload, **kwargs):
+        self.payload_len = kwargs.get("payload_len", 0)
+        self.hop_limit = kwargs.get("hop_limit", 0)
+        self.seq = kwargs.get("seq", 0)
+        self.pkt_chksum = kwargs.get("pkt_chksum", 0)
+        self.payload = payload
+
+    def pack(self):
+        #  Let's first compute the checksum
+        data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
+                           self.seq, self.pkt_chksum, bytes(self.payload))
+        self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_SAH_LEN)
+        print("computed checksum")
+        print(self.pkt_chksum)
+        return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
+                           self.seq, self.pkt_chksum, bytes(self.payload))
+
+
+class Cell_Packet_Payload:
+
+    def __init__(self, payload, **kwargs):
+        self.type = kwargs.get("type", 0)
+        self.channel = kwargs.get("channel", 0)
+        self.timeslot = kwargs.get("timeslot", 0)
+        self.padding = kwargs.get("padding", 0)
+        self.scr = kwargs.get("scr", 0)
+        self.scr = addrConversion.to_int(self.scr).addr
+        self.dst = kwargs.get("dst", 0)
+        if self.dst is not None:
+            self.dst = addrConversion.to_int(self.dst).addr
+        else:
+            self.dst = addrConversion.to_int('0.0').addr
+        self.payload = payload
+
+    def pack(self):
+        if self.payload:
+            packed = struct.pack('>bBBB2s2s'+str(len(self.payload)) +
+                                 's', self.type, self.channel, self.timeslot, self.padding, self.scr, self.dst, bytes(self.payload))
+        else:
+            packed = struct.pack('!bBBB2s2s', self.type, self.channel,
+                                 self.timeslot, self.padding, self.scr, self.dst)
         return packed
 
 
@@ -211,17 +263,20 @@ class Data_Packet:
         self.temp = kwargs.get("temp", 0)
         self.humidity = kwargs.get("humidity", 0)
         self.light = kwargs.get("light", 0)
+        self.asn_ls2b = kwargs.get("asn_ls2b", 0)
+        self.asn_ms2b = kwargs.get("asn_ms2b", 0)
+        self.asn = (self.asn_ms2b << 16) | (self.asn_ls2b)
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "DataPacketPayload(seq={}, temp={}, humidity={}, light={})".format(
-            self.seq, self.temp, self.humidity, self.light)
+        return "DataPacketPayload(seq={}, temp={}, humidity={}, light={}, asn={})".format(
+            self.seq, self.temp, self.humidity, self.light, self.asn)
 
     @classmethod
     def unpack(cls, packed_data):
-        seq, temp, humidity, light = struct.unpack(
-            '!HHHH', packed_data)
-        return cls(seq=seq, temp=temp, humidity=humidity, light=light)
+        seq, temp, humidity, light, asn_ls2b, asn_ms2b = struct.unpack(
+            '!HHHHHH', packed_data)
+        return cls(seq=seq, temp=temp, humidity=humidity, light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
 
 
 class NA_Packet:

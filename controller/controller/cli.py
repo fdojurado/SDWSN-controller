@@ -12,6 +12,7 @@ from controller.mqtt.mqtt import MQTTClient
 from controller.serial.serial import SerialBus
 from controller.database.database import Database
 from controller.config import ServerConfig, DEFAULT_CONFIG
+from controller.centralised_scheduler.scheduler import Scheduler
 # from controller.gui.gui import SDNcontrollerapp, f, animate
 from controller.message import Message
 from controller.node import Node
@@ -32,7 +33,7 @@ import networkx.algorithms.isomorphism as iso
 import random
 import pandas as pd
 # from networkx.drawing.nx_agraph import graphviz_layout
-
+from controller import globals
 # device topics
 serial_topic = "controller/serial"  # publishing topic
 
@@ -66,7 +67,12 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     # Register signals.
     signal.signal(signal.SIGQUIT, exit_process)
     signal.signal(signal.SIGTERM, exit_process)
+    """ Initialize the global variables """
+    globals.globals_initialize()
     """ Define Queues """
+    # TSCH scheduler Queues
+    scheduler_input_queue = mp.Queue()
+    scheduler_output_queue = mp.Queue()
     # Serial Queues
     serial_input_queue = mp.Queue()
     serial_output_queue = mp.Queue()
@@ -92,6 +98,9 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     """ Start the serial interface in background (as a daemon) """
     sp = SerialBus(ServerConfig.from_json_file(config, fit),
                    verbose, serial_input_queue, serial_output_queue)
+    """ Start the centralized scheduler in background (as a daemon) """
+    sc = Scheduler(ServerConfig.from_json_file(config),
+                   verbose, scheduler_input_queue, scheduler_output_queue, nc_input_queue)
     """ Let's start the plotting (animation) in background (as a daemon) """
     if plot:
         ntwk_plot = SubplotAnimation()
@@ -107,6 +116,8 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     rp.start()
     nc.daemon = True
     nc.start()
+    sc.daemon = True
+    sc.start()
     if plot:
         ntwk_plot.daemon = True
         ntwk_plot.start()
@@ -120,17 +131,26 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
         # Run the routing protocol?
         if(time.time() > timeout):
             # put a job
-            df, G = load_data("links", 'scr', 'dst', 'rssi')
+            G = load_wsn_links("rssi")
             routing_input_queue.put(G)
             timeout = time.time() + int(interval)
         # look for incoming request from routing
         if not routing_output_queue.empty():
-            path = routing_output_queue.get()
-            rts = compute_routes_from_path(path)
-            save_routes(rts)
-            # We now trigger NC
-            nodes = compute_routes_nc()
-            # Now, we put them in the Queue
-            for node in nodes:
-                nc_input_queue.put(node)
-            # nc_input_queue.put(path)
+            path, routes_json, routes_matrix = routing_output_queue.get()
+            # Set routes matrix to the global scope
+            globals.routes_matrix = routes_matrix
+            # Compute Schedule Advertisement (SA) packet
+            scheduler_input_queue.put(path)
+        # look for incoming request from scheduler
+        if not scheduler_output_queue.empty():
+            schedule_job, link_schedules_matrices = scheduler_output_queue.get()
+            # Set link_schedules_matrices to the global scope
+            globals.link_schedules_matrices = link_schedules_matrices
+            # Send the SA packet
+            nc_input_queue.put(schedule_job)
+            # We now send Routes Advertisement (RA) packet
+            nc_input_queue.put(routes_json)
+            # reset the elapse time of the current RA and SA configuration
+            globals.elapse_time = datetime.now().timestamp() * 1000.0
+            # Trigger save features, so the coming data gets label correctly
+            save_features()

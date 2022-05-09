@@ -1,6 +1,13 @@
 import pymongo
 
 
+PACKETS = "packets"
+NODES_INFO = "nodes_info"
+FEATURES = "features"
+SLOTFRAME_LEN = "slotframe_len"
+ROUTING_PATHS = "routing_paths"
+SCHEDULES = "schedules"
+
 class Database(object):
     URI = "mongodb://127.0.0.1:27017"
     DATABASE = None
@@ -77,6 +84,10 @@ class Database(object):
     @staticmethod
     def delete_one(collection, query):
         return Database.DATABASE[collection].delete_one(query)
+
+    @staticmethod
+    def distinct(collection, query):
+        return Database.DATABASE[collection].distinct(query)
 
     @staticmethod
     def print_documents(collection):

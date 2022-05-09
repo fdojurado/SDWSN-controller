@@ -9,52 +9,31 @@ import multiprocessing as mp
 from operator import attrgetter
 from controller.routing.routes import Routes
 from controller.database.database import Database
+from controller.serial.serial_packet_dissector import *
 import networkx as nx
 import pandas as pd
+import json
+from controller.forwarding_table.forwarding_table import FWD_TABLE
+from controller.network_config.network_config import *
+from controller import globals
 
 
-def compute_routes_from_path(path):
-    """ Save routes in the 'src'-'dst' 'via' format.
-    Return: the connected graph of the given routing algo. """
-    rts = Routes()
-    for u, p in path.items():
-        if(u != '1.0'):
-            if(len(p) >= 2):
-                # We set the route from the controller to nodes
-                for i in range(len(p)-1):
-                    node = p[i]
-                    neigbour = p[i+1]
-                    # Check if we can form a subset
-                    if(not (len(p)-2-i) < 1):
-                        subset = p[-(len(p)-2-i):]
-                        for j in range(len(subset)):
-                            rts.add_route(
-                                node, subset[j], neigbour)
-                # Now we add the routes from node to controller
-                # Keep in mind that we only need the neighbour to controller.
-                # We dont need to know the routes to every node in the path to the controller.
-                reverse = p[::-1]
-                node = reverse[0]
-                neigbour = reverse[1]
-                rts.add_route(node, "1.1", neigbour)
-    return rts
-
-
-def save_routes(rts):
-    rts.save_historical_routes_db()
-    rts.save_routes_db()
-
-
-def load_data(collection, source, target, attribute):
-    db = Database.find_one(collection, {}, None)
-    df = pd.DataFrame()
-    Graph = nx.Graph()
-    if(db is None):
-        return df, Graph
-    df = pd.DataFrame(list(Database.find(collection, {})))
-    Graph = nx.from_pandas_edgelist(
-        df, source=source, target=target, edge_attr=attribute)
-    return df, Graph
+def load_wsn_links(type):
+    G = nx.DiGraph()
+    match type:
+        case "rssi":
+            matrix = globals.nbr_rssi_matrix*-1
+        case "etx":
+            matrix = globals.nbr_etx_matrix
+    if(matrix.size <= 1):
+        return G
+    G = nx.from_numpy_matrix(matrix, create_using=nx.DiGraph)
+    print("matrix")
+    print(matrix)
+    print(G.edges.data())
+    G.remove_nodes_from(list(nx.isolates(G)))
+    print(G.nodes)
+    return G
 
 
 class Routing(mp.Process):
@@ -65,6 +44,7 @@ class Routing(mp.Process):
         self.output_queue = output_queue
         self.routing_alg_queue = routing_alg_queue
         self.interval = int(config.routing.time)
+        self.routes = Routes()
         self.verbose = verbose
 
     def set_algorithm(self, alg):
@@ -78,37 +58,113 @@ class Routing(mp.Process):
                 G = self.input_queue.get()
                 # We first make sure the G is not empty
                 if(nx.is_empty(G) == False):
-                    for node1, node2, data in G.edges(data=True):
-                        nx.set_edge_attributes(
-                            G, {(node1, node2): {'rssi': data['rssi']*-1}})
-                    if(nx.is_connected(G)):
-                        # Now that we are sure it is a connected graph,
-                        # we now run the selected routing algorithm
-                        if(G.has_node("1.0")):
-                            # Check if the routing algorithm has changed
-                            if not self.routing_alg_queue.empty():
-                                self.alg = self.routing_alg_queue.get()
-                                print("algorithm changed to ", self.alg)
-                            match self.alg:
-                                case "dijkstra":
-                                    print("running dijkstra")
-                                    self.dijkstra(G)
-                                case "mst":
-                                    print("running MST")
-                                    self.mst(G)
-                                case _:
-                                    print("running default alg.")
+                    # for node1, node2, data in G.edges(data=True):
+                    #     nx.set_edge_attributes(
+                    #         G, {(node1, node2): {'rssi': data['rssi']*-1}})
+                    # if(nx.is_connected(G)): # Not implemented for direct graph
+                    # Now that we are sure it is a connected graph,
+                    # we now run the selected routing algorithm
+                    if(G.has_node(1)):  # Maybe use "1.0" instead
+                        self.routes.clear_routes()
+                        # Check if the routing algorithm has changed
+                        if not self.routing_alg_queue.empty():
+                            self.alg = self.routing_alg_queue.get()
+                            print("algorithm changed to ", self.alg)
+                        match self.alg:
+                            case "dijkstra":
+                                print("running dijkstra")
+                                path = self.dijkstra(G)
+                            case "mst":
+                                print("running MST")
+                                path = self.mst(G)
+                            case _:
+                                print("running default alg.")
+                        # Let's put the path in matrix format
+                        routes_matrix = self.build_routes_matrix(path)
+                        # Prepare for sending to the WSN
+                        routes_json = self.routes_toJSON()
+                        self.output_queue.put(
+                            (path, routes_json, routes_matrix))
 
     def dijkstra(self, G):
-        # We want to compute the SP from controller to all nodes
-        length, path = nx.single_source_dijkstra(G, "1.0", None, None, "rssi")
-        print("dijkstra path")
-        print(path)
-        # Let's put the path in the queue
-        self.output_queue.put(path)
+        # We want to compute the SP from all nodes to the controller
+        path = {}
+        for node in list(G.nodes):
+            if node != 1 and node != 0:
+                print("sp from node "+str(node))
+                try:
+                    node_path = nx.dijkstra_path(G, node, 1, weight='weight')
+                    print("dijkstra path")
+                    print(node_path)
+                    path[node] = node_path
+                    # TODO: find a way to avoid forcing the last addr of
+                    # sensor nodes to 0.
+                    self.routes.add_route(
+                        str(node)+".0", "1.1", str(node_path[1])+".0")
+                except nx.NetworkXNoPath:
+                    print("path not found")
+        self.routes.print_routes()
+        # print("total path")
+        # print(path)
+        return path
 
     def mst(self, G):
         # We want to compute the MST of the current connected network
         # We call the edges "path"
-        mst = nx.minimum_spanning_tree(G, algorithm="kruskal", weight="rssi")
-        self.dijkstra(mst)
+        mst = nx.minimum_spanning_tree(
+            G, algorithm="kruskal", weight="weight")
+        return self.dijkstra(mst)
+
+    def build_routes_matrix(self, path):
+        # Get last index of sensor
+        N = get_last_index_wsn()+1
+        routes_matrix = np.zeros(shape=(N, N))
+        for u, p in path.items():
+            if(len(p) >= 2):
+                routes_matrix[p[0]][p[1]] = 1
+        print("routing matrix")
+        print(routes_matrix)
+        # Save in DB
+        current_time = datetime.now().timestamp() * 1000.0
+        data = {
+            "timestamp": current_time,
+            "routes": routes_matrix.flatten().tolist()
+        }
+        Database.insert(ROUTING_PATHS, data)
+        return routes_matrix
+
+    def routes_toJSON(self):
+        # Build the routing job in a JSON format to be shared with the NC class
+        # Hop limit sets the maximum of hops to bc this message. 255 means all.
+        # {
+        #   "job_type": "Routing",
+        #   "routes":[
+        #               {
+        #                   "scr": row['scr'],
+        #                   "dst": row['dst'],
+        #                   "via": row['via']
+        #                },
+        #               {
+        #                   "scr": row['scr'],
+        #                   "dst": row['dst'],
+        #                   "via": row['via']
+        #                }
+        #       ],
+        #   "hop_limit": "255"
+        # }
+        json_message_format = '{"job_type": ' + \
+            str(job_type.ROUTING)+', "routes":[]}'
+        # parsing JSON string:
+        json_message = json.loads(json_message_format)
+        self.routes.print_routes()
+        hop_limit = 0
+        for index, row in self.routes.routes.iterrows():
+            data = {"scr": row['scr'], "dst": row['dst'], "via": row['via']}
+            json_message["routes"].append(data)
+            rank = get_rank(row['scr'])
+            if (rank > hop_limit):
+                hop_limit = rank
+        json_message["hop_limit"] = hop_limit
+        json_dump = json.dumps(json_message, indent=4, sort_keys=True)
+        print(json_dump)
+        return json_dump

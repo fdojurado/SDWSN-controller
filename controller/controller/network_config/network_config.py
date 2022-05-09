@@ -1,20 +1,31 @@
 from logging import exception
 from controller.forwarding_table.forwarding_table import FWD_TABLE
-from controller.routing.routing import *
+# from controller.routing.routing import *
 from controller.database.database import Database
 from controller.network_config.queue import Queue
 from controller.serial.serial_packet_dissector import *
-from controller.packet.packet import SerialPacket, NC_Routing_Packet
+from controller.packet.packet import SerialPacket
 import multiprocessing as mp
 import networkx as nx
+from time import sleep
 import pandas as pd
 import queue  # or Queue in Python 2
 # Generate random number for ack
 from random import randrange
+import json
 
 
 """ TODO: Set the maximum routes per node (e.g., 10). 
 Remove old routes with the new ones"""
+
+
+# job types for the NC
+job_type = types.SimpleNamespace()
+job_type.TSCH = 0
+job_type.ROUTING = 1
+
+schedule_sequence = 0
+routes_sequence = 0
 
 
 def routes_to_deploy(node, routes):
@@ -85,37 +96,40 @@ class NetworkConfig(mp.Process):
     def ack_nc(self):
         print('Processing NC ack')
 
-    def routes_packet(self, routes):
+    def process_json_routes_packets(self, routes):
         # Let's loop into routes
         payload = []
-        for index, route in routes.iterrows():
-            dst = route['dst']
-            via = route['via']
-            route_pkt = NC_Routing_Payload(dst=dst, via=via, payload=payload)
-            route_packed = route_pkt.pack()
-            payload = route_packed
+        for rt in routes['routes']:
+            route_pkt = RA_Packet_Payload(
+                dst=rt['dst'], scr=rt['scr'], via=rt['via'], payload=payload)
+            routed_packed = route_pkt.pack()
+            payload = routed_packed
         return payload
 
-    def build_packet(self, node, df):
-        payload_len = df.shape[0]*4
-        # Build packet data
-        dataPacked = self.routes_packet(df)
-        print("data packed")
-        print(dataPacked)
-        # Build NC routing packet
-        rt_pkt = NC_Routing_Packet(
-            dataPacked, payload_len=payload_len, seq=randrange(250))
-        rt_packed = rt_pkt.pack()
-        print(repr(rt_pkt))
-        print(rt_packed)
+    def build_routes_packet(self, data):
+        global routes_sequence
+        routes_sequence += 1
+        print("building routing packet")
+        # Build routes payload
+        payloadPacked = self.process_json_routes_packets(data)
+        print("payload packed")
+        print(payloadPacked)
+        payload_len = len(payloadPacked)
+        # Build RA packet
+        ra_pkt = RA_Packet(
+            payloadPacked, payload_len=payload_len, hop_limit=data['hop_limit'], seq=routes_sequence)
+        ra_packed = ra_pkt.pack()
+        print(repr(ra_pkt))
+        print(ra_packed)
         # Build sdn IP packet
-        vap = 0x23  # 0x2a: version 2, header length 10
+        # 0x23: version 2, protocol RA = 3
+        vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_RA
         # length of the entire packet
-        length = payload_len+SDN_NCH_LEN+SDN_IPH_LEN
+        length = payload_len+SDN_RAH_LEN+SDN_IPH_LEN
         ttl = 0x40  # 0x40: Time to live
         scr = 0x0101  # Controller is sending
-        dest = int(float(node))
-        sdn_ip_pkt = SDN_IP_Packet(rt_packed,
+        dest = int(float(0))
+        sdn_ip_pkt = SDN_IP_Packet(ra_packed,
                                    vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
         sdn_ip_packed = sdn_ip_pkt.pack()
         print(repr(sdn_ip_pkt))
@@ -125,21 +139,58 @@ class NetworkConfig(mp.Process):
                            reserved0=0, reserved1=0)
         packedData = pkt.pack()
         print(repr(pkt))
-        return rt_pkt, sdn_ip_pkt, packedData
-
-    def read_routes(self, node):
-        df = FWD_TABLE.fwd_get_table()
-        df = df[df['scr'] == node]
-        if(df.empty):
-            return df
-        df = df[(df['deployed'] == 0)]
-        return df
+        return packedData
 
     def set_route_flag(self, node, df):
         print("setting routes flag")
         for index, route in df.iterrows():
             FWD_TABLE.fwd_set_deployed_flag(
                 node, route["dst"], route["via"], 1)
+
+    def process_json_schedule_packets(self, schedules):
+        # Let's loop into routes
+        payload = []
+        for cell in schedules['cells']:
+            cell_pkt = Cell_Packet_Payload(type=int(cell['type']), channel=int(cell['channel']), timeslot=int(cell['timeslot']),
+                                           scr=cell['addr'], dst=cell['dest'], payload=payload)
+            cell_packed = cell_pkt.pack()
+            payload = cell_packed
+        return payload
+
+    def build_schedule_packet(self, data):
+        global schedule_sequence
+        schedule_sequence += 1
+        print("building schedule packet")
+        # Build schedules payload
+        payloadPacked = self.process_json_schedule_packets(data)
+        print("payload packed")
+        print(payloadPacked)
+        payload_len = len(payloadPacked)
+        # Build schedule packet header
+        cell_pkt = Cell_Packet(
+            payloadPacked, payload_len=payload_len, hop_limit=data['hop_limit'], seq=schedule_sequence)
+        cell_packed = cell_pkt.pack()
+        # print(repr(rt_pkt))
+        print(cell_packed)
+        # Build sdn IP packet
+        # 0x24: version 2, protocol SA = 4
+        vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_SA
+        # length of the entire packet
+        length = payload_len+SDN_SAH_LEN+SDN_IPH_LEN
+        ttl = 0x32  # 0x40: Time to live
+        scr = 0x0101  # Controller is sending
+        dest = int(float(0))
+        sdn_ip_pkt = SDN_IP_Packet(cell_packed,
+                                   vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
+        sdn_ip_packed = sdn_ip_pkt.pack()
+        print(repr(sdn_ip_pkt))
+        # Build serial packet
+        pkt = SerialPacket(sdn_ip_packed, addr=0,
+                           message_type=2, payload_len=length,
+                           reserved0=0, reserved1=0)
+        packedData = pkt.pack()
+        print(repr(pkt))
+        return packedData
 
     def run(self):
         while True:
@@ -149,38 +200,19 @@ class NetworkConfig(mp.Process):
                 node = self.input_queue.get()
                 print("there is a new job")
                 print(node)
+                data = json.loads(node)
+                match(data['job_type']):
+                    case job_type.TSCH:
+                        print("Schedule job type")
+                        packedData = self.build_schedule_packet(data)
+                    case job_type.ROUTING:
+                        print("routing job type")
+                        packedData = self.build_routes_packet(data)
+                    case _:
+                        print("unknown job type")
+                        return None
                 # read routes from node
-                df = self.read_routes(node)
-                if(not df.empty):
-                    print("routes to deploy for node ", node)
-                    print(df)
-                    # build the packet
-                    rt_pkt, sdn_ip_pkt, packetData = self.build_packet(
-                        node, df)
-                    # print("Sending NC packet to node ", node)
-                    # set retransmission
-                    rtx = 0
-                    # Send NC packet
-                    self.serial_input_queue.put(packetData)
-                    while True:
-                        try:
-                            pkt = self.ack_queue.get(block=True, timeout=7)
-                            rcv_rt_pkt = process_nc_route_packet(
-                                pkt.payload, pkt.tlen-SDN_IPH_LEN)
-                            if ((rcv_rt_pkt.ack == rt_pkt.seq+1) and (pkt.scrStr == node)):
-                                print("correct ACK received from ",
-                                      pkt.scrStr)
-                                # set the routes deployed flag
-                                self.set_route_flag(node, df)
-                                break
-                        except queue.Empty:
-                            print("ACK not received from ", node, " rtx ", rtx)
-                            # We stop sending the current NC packet if
-                            # we reached the max RTX or we received ACK
-                            if(rtx >= 7):
-                                print("ACK never received from ",
-                                      node, " rtx ", rtx)
-                                break
-                            # We resend the packet if retransmission < 7
-                            rtx = rtx + 1
-                            self.serial_input_queue.put(packetData)
+                print("sending NC packet")
+                # Send NC packet
+                self.serial_input_queue.put(packedData)
+            sleep(0.5)

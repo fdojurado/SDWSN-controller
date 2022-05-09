@@ -17,12 +17,16 @@
         "host": "localhost",
         "port": 60001
     },
+    "tsch": {
+        "slotframe_size": 17,
+        "num_of_channels": 4
+    },
     "iotlab": {
         "host": "127.0.0.1",
         "port": 2001
     },
     "routing":{
-        "time": "10",
+        "time": "120",
         "algorithm": "dijkstra"
     },
     "vad": {
