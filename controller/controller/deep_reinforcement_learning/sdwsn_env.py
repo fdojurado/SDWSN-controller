@@ -66,7 +66,7 @@ class sdwsnEnv(gym.Env):
         scr, dst = np.where(action_matrix == 1.0)
         return scr[0], dst[0]
 
-    def get_tsch_rx_link(self, a, pos):
+    def get_tsch_link(self, a, pos):
         # get the corresponding node ID
         pos = pos - self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
         relative_pos = a - pos
@@ -92,7 +92,7 @@ class sdwsnEnv(gym.Env):
         # We now get the indices
         ch, ts = np.where(coordinates_matrix == 1.0)
         # print("ts: "+str(ts)+" ch: "+str(ch))
-        return ts[0], ch[0]
+        return node_id, ts[0], ch[0]
 
     def parser_action(self, a):
         pos = self.num_nodes * self.num_nodes - 1
@@ -110,12 +110,15 @@ class sdwsnEnv(gym.Env):
             return
         pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
         if a <= pos:
-            ts, ch = self.get_tsch_rx_link(a, pos)
-            print("Adding a Rx link at ts "+str(ts)+" ch "+str(ch))
+            node, ts, ch = self.get_tsch_link(a, pos)
+            print("Adding a Rx link to node " + str(node) +
+                  " at ts "+str(ts)+" ch "+str(ch))
             return
         pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
         if a <= pos:
-            print("Adding a Tx link")
+            node, ts, ch = self.get_tsch_link(a, pos)
+            print("Adding a Tx link to node " + str(node) +
+                  " at ts "+str(ts)+" ch "+str(ch))
             return
         pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
         if a <= pos:
