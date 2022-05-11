@@ -23,8 +23,8 @@ class sdwsnEnv(gym.Env):
         # -- 5) change channeloffset of a specific node (size: 1 * num_nodes)
         # 6) add a new RX link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size )
         # 7) add a new Tx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # 8) remove a Tx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # 9) remove a Rx link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
+        # 8) remove a Rx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
+        # 9) remove a Tx link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
         # Total number of actions = num_nodes * num_nodes + 1 + 1 + 4 * num_nodes * num_channel_offsets x slotframe_size
         # Total = 2 + num_nodes (num_nodes + 4 * num_channel_offsets x slotframe_size)
         n_actions = 2 + self.num_nodes * \
@@ -49,18 +49,47 @@ class sdwsnEnv(gym.Env):
 
     def step(self, action):
         print("Performing action "+str(action))
+        self.parser_action(action)
         observation = np.empty(shape=(self.n_observations,)).astype(np.float32)
         reward = 1
         done = False
         info = {}
         return observation, reward, done, info
 
+    def parser_action(self, a):
+        pos = self.num_nodes * self.num_nodes - 1
+        if a <= pos:
+            print("Changing parent")
+            return
+        pos += 1
+        if a <= pos:
+            print("Increasing slotframe length")
+            return
+        pos += 1
+        if a <= pos:
+            print("Decreasing slotframe length")
+            return
+        pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
+        if a <= pos:
+            print("Adding a Rx link")
+            return
+        pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
+        if a <= pos:
+            print("Adding a Tx link")
+            return
+        pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
+        if a <= pos:
+            print("Removing a Rx link")
+            return
+        print("Removing a Tx link")
+        return
+
     def reset(self):
         """
         Important: the observation must be a numpy array
         :return: (np.array)
         """
-        observation = np.empty(shape=(self.n_observations,)).astype(np.float32)
+        observation = np.empty(self.n_observations).astype(np.float32)
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):
