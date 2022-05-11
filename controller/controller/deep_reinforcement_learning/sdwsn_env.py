@@ -10,24 +10,26 @@ class sdwsnEnv(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, num_nodes, max_channel_offsets, max_slotframe_size):
+    def __init__(self, num_nodes, max_channel_offsets, slotframe_sizes):
         super(sdwsnEnv, self).__init__()
         self.num_nodes = num_nodes
         self.max_channel_offsets = max_channel_offsets
-        self.max_slotframe_size = max_slotframe_size
+        self.slotframe_sizes = slotframe_sizes
+        self.max_slotframe_size = max(slotframe_sizes)
         # We define the number of actions
         # 1) change parent node of a specific node (size: 1 * num_nodes * num_nodes)
-        # 2) increase the length of the slotframe
-        # 3) decrease the length of the slotframe
+        # 2) slotframe size one
+        # 3) slotframe size two
+        # 4) slotframe size three
         # -- 4) change timeoffset of a specific node (size: 1 * num_nodes)
         # -- 5) change channeloffset of a specific node (size: 1 * num_nodes)
-        # 6) add a new RX link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size )
-        # 7) add a new Tx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # 8) remove a Rx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # 9) remove a Tx link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # Total number of actions = num_nodes * num_nodes + 1 + 1 + 4 * num_nodes * num_channel_offsets x slotframe_size
-        # Total = 2 + num_nodes (num_nodes + 4 * num_channel_offsets x slotframe_size)
-        n_actions = 2 + self.num_nodes * \
+        # 5) add a new RX link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size )
+        # 6) add a new Tx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
+        # 7) remove a Rx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
+        # 8) remove a Tx link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
+        # Total number of actions = num_nodes * num_nodes + 1 + 1 + 1 + 4 * num_nodes * num_channel_offsets x slotframe_size
+        # Total = 3 + num_nodes (num_nodes + 4 * num_channel_offsets x slotframe_size)
+        n_actions = 3 + self.num_nodes * \
             (self.num_nodes + 4 * self.max_channel_offsets * self.max_slotframe_size)
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
@@ -102,11 +104,15 @@ class sdwsnEnv(gym.Env):
             return
         pos += 1
         if a <= pos:
-            print("Increasing slotframe length")
+            print("slotframe size one")
             return
         pos += 1
         if a <= pos:
-            print("Decreasing slotframe length")
+            print("slotframe size two")
+            return
+        pos += 1
+        if a <= pos:
+            print("slotframe size three")
             return
         pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
         if a <= pos:
