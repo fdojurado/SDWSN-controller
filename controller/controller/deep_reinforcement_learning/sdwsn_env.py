@@ -50,16 +50,55 @@ class sdwsnEnv(gym.Env):
     def step(self, action):
         print("Performing action "+str(action))
         self.parser_action(action)
-        observation = np.empty(shape=(self.n_observations,)).astype(np.float32)
+        observation = np.zeros(self.n_observations).astype(np.float32)
         reward = 1
         done = False
         info = {}
         return observation, reward, done, info
 
+    def get_route_link(self, a):
+        action = np.zeros(self.num_nodes*self.num_nodes)
+        # set the corresponding action
+        action[a] = 1
+        # We now reshape the vector to a NxN matrix
+        action_matrix = action.reshape(self.num_nodes, self.num_nodes)
+        # We now get the indices
+        scr, dst = np.where(action_matrix == 1.0)
+        return scr[0], dst[0]
+
+    def get_tsch_rx_link(self, a, pos):
+        # get the corresponding node ID
+        pos = pos - self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
+        relative_pos = a - pos
+        # print("relative_pos")
+        # print(relative_pos)
+        node_id = relative_pos // (self.max_channel_offsets *
+                                   self.max_slotframe_size)
+        # print("sensor node "+str(node_id))
+        # get the corresponding ts and ch
+        # get relative position to the current max ch and slot size
+        relative_pos_tsch = relative_pos % (
+            self.max_channel_offsets * self.max_slotframe_size)
+        # print("relative_pos_tsch")
+        # print(relative_pos_tsch)
+        coordinates = np.zeros(self.max_channel_offsets *
+                               self.max_slotframe_size)
+        coordinates[relative_pos_tsch] = 1
+        # We now reshape the vector to a NxN matrix
+        coordinates_matrix = coordinates.reshape(
+            self.max_channel_offsets, self.max_slotframe_size)
+        # print("coordinates matrix")
+        # print(coordinates_matrix)
+        # We now get the indices
+        ch, ts = np.where(coordinates_matrix == 1.0)
+        # print("ts: "+str(ts)+" ch: "+str(ch))
+        return ts[0], ch[0]
+
     def parser_action(self, a):
         pos = self.num_nodes * self.num_nodes - 1
         if a <= pos:
-            print("Changing parent")
+            scr, dst = self.get_route_link(a)
+            print("adding link "+"("+str(scr)+","+str(dst)+")")
             return
         pos += 1
         if a <= pos:
@@ -71,7 +110,8 @@ class sdwsnEnv(gym.Env):
             return
         pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
         if a <= pos:
-            print("Adding a Rx link")
+            ts, ch = self.get_tsch_rx_link(a, pos)
+            print("Adding a Rx link at ts "+str(ts)+" ch "+str(ch))
             return
         pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
         if a <= pos:
@@ -89,7 +129,7 @@ class sdwsnEnv(gym.Env):
         Important: the observation must be a numpy array
         :return: (np.array)
         """
-        observation = np.empty(self.n_observations).astype(np.float32)
+        observation = np.zeros(self.n_observations).astype(np.float32)
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):
