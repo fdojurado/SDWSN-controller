@@ -122,9 +122,13 @@ class sdwsnEnv(gym.Env):
             return
         pos += self.num_nodes * self.max_channel_offsets * self.max_slotframe_size
         if a <= pos:
-            print("Removing a Rx link")
+            node, ts, ch = self.get_tsch_link(a, pos)
+            print("Removing a Rx link to node " + str(node) +
+                  " at ts "+str(ts)+" ch "+str(ch))
             return
-        print("Removing a Tx link")
+        node, ts, ch = self.get_tsch_link(a, pos)
+        print("Removing a Tx link to node " + str(node) +
+              " at ts "+str(ts)+" ch "+str(ch))
         return
 
     def reset(self):
