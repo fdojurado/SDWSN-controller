@@ -13,6 +13,7 @@ from controller.serial.serial import SerialBus
 from controller.database.database import Database
 from controller.config import ServerConfig, DEFAULT_CONFIG
 from controller.centralised_scheduler.scheduler import Scheduler
+from controller.deep_reinforcement_learning.sdwsn_rl import SDWSN_RL
 # from controller.gui.gui import SDNcontrollerapp, f, animate
 from controller.message import Message
 from controller.node import Node
@@ -43,7 +44,7 @@ SERVER = {'serial-controller': SerialBus}
 Database.initialise()
 
 
-def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None):
+def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, fit=None):
     """The main function run by the CLI command.
 
     Args:
@@ -89,8 +90,12 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
     # rp stands for routing process
     # We need to consider that the computation of the new routing alg.
     # can be change at run time
-    rp = Routing(ServerConfig.from_json_file(config), verbose, "dijkstra",
-                 routing_input_queue, routing_output_queue, routing_alg_queue)
+    if rl:
+        rp = SDWSN_RL(ServerConfig.from_json_file(config), verbose,
+                      routing_input_queue, routing_output_queue)
+    else:
+        rp = Routing(ServerConfig.from_json_file(config), verbose, "dijkstra",
+                     routing_input_queue, routing_output_queue, routing_alg_queue)
     """ Start the NC interface in background (as a daemon) """
     # nc stands for network configuration
     nc = NetworkConfig(verbose, nc_input_queue,
@@ -122,7 +127,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, fit=None)
         ntwk_plot.daemon = True
         ntwk_plot.start()
     interval = ServerConfig.from_json_file(config).routing.time
-    timeout = time.time()+int(interval)
+    timeout = time.time()+int(60.0)
     while True:
         # look for incoming request from the serial interface
         if not serial_output_queue.empty():

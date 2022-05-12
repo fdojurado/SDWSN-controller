@@ -19,7 +19,7 @@
     },
     "tsch": {
         "slotframe_size": 17,
-        "num_of_channels": 4
+        "num_of_channels": 3
     },
     "iotlab": {
         "host": "127.0.0.1",
