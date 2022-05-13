@@ -1,6 +1,10 @@
 """ This is the implemantion of the Software-Defined Wireless Sensor Network
 environment """
-
+from controller.serial.serial_packet_dissector import *
+from controller.routing.routes import Routes
+import random
+from scipy import rand
+import networkx as nx
 import gym
 from gym import spaces
 import numpy as np
@@ -16,6 +20,8 @@ class sdwsnEnv(gym.Env):
         self.max_channel_offsets = max_channel_offsets
         self.slotframe_sizes = slotframe_sizes
         self.max_slotframe_size = max(slotframe_sizes)
+        # Keep track of the running routes
+        self.routes = Routes()
         # We define the number of actions
         # 1) change parent node of a specific node (size: 1 * num_nodes * num_nodes)
         # 2) slotframe size one
@@ -137,11 +143,113 @@ class sdwsnEnv(gym.Env):
               " at ts "+str(ts)+" ch "+str(ch))
         return
 
+    def dijkstra(self, G):
+        # We want to compute the SP from all nodes to the controller
+        path = {}
+        for node in list(G.nodes):
+            if node != 1 and node != 0:
+                print("sp from node "+str(node))
+                try:
+                    node_path = nx.dijkstra_path(G, node, 1, weight='weight')
+                    print("dijkstra path")
+                    print(node_path)
+                    path[node] = node_path
+                    # TODO: find a way to avoid forcing the last addr of
+                    # sensor nodes to 0.
+                    self.routes.add_route(
+                        str(node)+".0", "1.1", str(node_path[1])+".0")
+                except nx.NetworkXNoPath:
+                    print("path not found")
+        self.routes.print_routes()
+        print("total path")
+        print(path)
+        return path
+
+    def mst(self, G):
+        # We want to compute the MST of the current connected network
+        # We call the edges "path"
+        mst = nx.minimum_spanning_tree(
+            G, algorithm="kruskal", weight="weight")
+        return self.dijkstra(mst)
+
+    def compute_algo(self, G, alg):
+        # We first make sure the G is not empty
+        if(nx.is_empty(G) == False):
+            if(G.has_node(1)):  # Maybe use "1.0" instead
+                print("graph has the controller")
+                self.routes.clear_routes()
+                match alg:
+                    case "dijkstra":
+                        print("running dijkstra")
+                        path = self.dijkstra(G)
+                    case "mst":
+                        print("running MST")
+                        path = self.mst(G)
+        else:
+            print("not able to compute routing, graph empty")
+        return path
+
+    def get_network_links(self):
+        # Get last index of sensor
+        N = get_last_index_wsn()+1
+        # Neighbor matrix
+        nbr_rssi_matrix = np.zeros(shape=(N, N))
+        # We first loop through all sensor nodes
+        nodes = Database.find(NODES_INFO, {})
+        # nbr_etx_matrix = np.array([])
+        for node in nodes:
+            # Get last neighbors
+            nbr = get_last_nbr(node["node_id"])
+            if nbr is not None:
+                for nbr_node in nbr:
+                    source, _ = node["node_id"].split('.')
+                    dst, _ = nbr_node["dst"].split('.')
+                    nbr_rssi_matrix[int(source)][int(
+                        dst)] = int(nbr_node["rssi"])
+                    # nbr_etx_matrix[int(source)][int(
+                    #     dst)] = int(nbr_node["etx"])
+        matrix = nbr_rssi_matrix * -1
+        G = nx.from_numpy_matrix(matrix, create_using=nx.DiGraph)
+        G.remove_nodes_from(list(nx.isolates(G)))
+        return G
+
+    def build_routes_matrix(self, path):
+        # Get last index of sensor
+        N = get_last_index_wsn()+1
+        routes_matrix = np.zeros(shape=(N, N))
+        for u, p in path.items():
+            if(len(p) >= 2):
+                routes_matrix[p[0]][p[1]] = 1
+        print("routing matrix")
+        print(routes_matrix)
+        # Save in DB
+        current_time = datetime.now().timestamp() * 1000.0
+        data = {
+            "timestamp": current_time,
+            "routes": routes_matrix.flatten().tolist()
+        }
+        Database.insert(ROUTING_PATHS, data)
+        return routes_matrix
+
     def reset(self):
         """
         Important: the observation must be a numpy array
         :return: (np.array)
         """
+        # The reset sets the routing and scheduling of the network
+        # We support to initial states: shortest path and MST
+        protocol = ["dijkstra", "mst"]
+        # We get the network link, use to calculate the routing
+        G = self.get_network_links()
+        print("Current G")
+        print(G.edges)
+        print(G.nodes)
+        protocol = random.choice(protocol)
+        # Run the chosen algorithm with the current links
+        path = self.compute_algo(G, protocol)
+        # We now build and save the routing matrix
+        self.build_routes_matrix(path)
+
         observation = np.zeros(self.n_observations).astype(np.float32)
         return observation  # reward, done, info can't be included
 
