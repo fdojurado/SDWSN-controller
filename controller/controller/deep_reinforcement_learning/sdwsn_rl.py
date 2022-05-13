@@ -87,7 +87,7 @@ class SDWSN_RL(mp.Process):
         self.verbose = verbose
         self.first_time_run = 0
         self.max_channel_offsets = config.tsch.num_of_channels
-        self.slotframe_sizes = [13, 17, 41]
+        self.max_slotframe_size = 100
 
     def configure_env(self):
         print("configuring the environment")
@@ -95,7 +95,8 @@ class SDWSN_RL(mp.Process):
         # 13, 17 and 41 are coprime with the other slotframes
         # Get last index of sensor
         N = get_last_index_wsn()+1
-        self.env = sdwsnEnv(N, self.max_channel_offsets, self.slotframe_sizes)
+        self.env = sdwsnEnv(N, self.max_channel_offsets,
+                            self.max_slotframe_size)
         print('Number of states: {}'.format(self.env.observation_space))
         print('Number of actions: {}'.format(self.env.action_space))
         self.model = DQN('MlpPolicy', self.env, verbose=2)
@@ -115,4 +116,3 @@ class SDWSN_RL(mp.Process):
                         # Train the agent
                         self.model.learn(total_timesteps=int(
                             2), callback=self.callback)
-                    

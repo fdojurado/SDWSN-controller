@@ -2,6 +2,7 @@
 environment """
 from controller.serial.serial_packet_dissector import *
 from controller.routing.routes import Routes
+from controller.centralised_scheduler.schedule import *
 import random
 from scipy import rand
 import networkx as nx
@@ -14,28 +15,29 @@ class sdwsnEnv(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, num_nodes, max_channel_offsets, slotframe_sizes):
+    def __init__(self, num_nodes, max_channel_offsets, max_slotframe_size):
         super(sdwsnEnv, self).__init__()
         self.num_nodes = num_nodes
         self.max_channel_offsets = max_channel_offsets
-        self.slotframe_sizes = slotframe_sizes
-        self.max_slotframe_size = max(slotframe_sizes)
+        self.max_slotframe_size = max_slotframe_size
         # Keep track of the running routes
         self.routes = Routes()
+        # Keep track of schedules
+        self.schedule = Schedule(
+            self.max_slotframe_size, max_channel_offsets)
         # We define the number of actions
         # 1) change parent node of a specific node (size: 1 * num_nodes * num_nodes)
-        # 2) slotframe size one
-        # 3) slotframe size two
-        # 4) slotframe size three
+        # 2) Increase slotframe size
+        # 3) Decrease slotframe size
         # -- 4) change timeoffset of a specific node (size: 1 * num_nodes)
         # -- 5) change channeloffset of a specific node (size: 1 * num_nodes)
-        # 5) add a new RX link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size )
-        # 6) add a new Tx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # 7) remove a Rx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # 8) remove a Tx link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # Total number of actions = num_nodes * num_nodes + 1 + 1 + 1 + 4 * num_nodes * num_channel_offsets x slotframe_size
-        # Total = 3 + num_nodes (num_nodes + 4 * num_channel_offsets x slotframe_size)
-        n_actions = 3 + self.num_nodes * \
+        # 4) add a new RX link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size )
+        # 5) add a new Tx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
+        # 6) remove a Rx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
+        # 7) remove a Tx link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
+        # Total number of actions = num_nodes * num_nodes + 1 + 1 + 4 * num_nodes * num_channel_offsets x slotframe_size
+        # Total = 2 + num_nodes (num_nodes + 4 * num_channel_offsets x slotframe_size)
+        n_actions = 2 + self.num_nodes * \
             (self.num_nodes + 4 * self.max_channel_offsets * self.max_slotframe_size)
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
@@ -143,6 +145,8 @@ class sdwsnEnv(gym.Env):
               " at ts "+str(ts)+" ch "+str(ch))
         return
 
+    """ The below functions are used by the env.reset() to establish the initial states """
+
     def dijkstra(self, G):
         # We want to compute the SP from all nodes to the controller
         path = {}
@@ -169,7 +173,7 @@ class sdwsnEnv(gym.Env):
         # We want to compute the MST of the current connected network
         # We call the edges "path"
         mst = nx.minimum_spanning_tree(
-            G, algorithm="kruskal", weight="weight")
+            G.to_undirected(), algorithm="kruskal", weight="weight")
         return self.dijkstra(mst)
 
     def compute_algo(self, G, alg):
@@ -217,7 +221,7 @@ class sdwsnEnv(gym.Env):
         # Get last index of sensor
         N = get_last_index_wsn()+1
         routes_matrix = np.zeros(shape=(N, N))
-        for u, p in path.items():
+        for _, p in path.items():
             if(len(p) >= 2):
                 routes_matrix[p[0]][p[1]] = 1
         print("routing matrix")
@@ -231,24 +235,116 @@ class sdwsnEnv(gym.Env):
         Database.insert(ROUTING_PATHS, data)
         return routes_matrix
 
+    def build_link_schedules_matrix(self):
+        print("building link schedules matrix")
+        # Get last index of sensor
+        N = get_last_index_wsn()+1
+        # This is an array of schedule matrices
+        link_schedules_matrix = [None] * N
+        # We now loop through the entire arrray and fill it with the schedule information
+        for node in self.schedule.list_nodes:
+            # Construct the schedule matrix
+            schedule = np.zeros(
+                shape=(self.schedule.num_channel_offsets, self.schedule.slotframe_size))
+            for rx_cell in node.rx:
+                # print("node is listening in ts " +
+                #       str(rx_cell.timeoffset)+" ch "+str(rx_cell.channeloffset))
+                schedule[rx_cell.channeloffset][rx_cell.timeoffset] = 1
+            for tx_cell in node.tx:
+                # print("node is transmitting in ts " +
+                #       str(tx_cell.timeoffset)+" ch "+str(tx_cell.channeloffset))
+                schedule[tx_cell.channeloffset][tx_cell.timeoffset] = -1
+            addr = node.node.split(".")
+            link_schedules_matrix[int(
+                addr[0])] = schedule.flatten().tolist()
+        print("link_schedules_matrix")
+        print(link_schedules_matrix)
+        # Save in DB
+        current_time = datetime.now().timestamp() * 1000.0
+        data = {
+            "timestamp": current_time,
+            "schedules": link_schedules_matrix
+        }
+        Database.insert(SCHEDULES, data)
+        return link_schedules_matrix
+
+    def save_slotframe_len(self, slotframe_size):
+        current_time = datetime.now().timestamp() * 1000.0
+        data = {
+            "timestamp": current_time,
+            "slotframe_len": slotframe_size,
+        }
+        Database.insert(SLOTFRAME_LEN, data)
+
+    def compute_schedule_for_routing(self, path, slotframe_size):
+        self.schedule.clear_schedule()
+        for _, p in path.items():
+            if(len(p) >= 2):
+                # print("try to add uc for ", p)
+                for i in range(len(p)-1):
+                    # TODO: find a way to avoid forcing the last addr of
+                    # sensor nodes to 0.
+                    node = p[i+1]
+                    node = str(node)+".0"
+                    neighbor = p[i]
+                    neighbor = str(neighbor)+".0"
+                    # print("rx ", str(node), "tx: ", str(neighbor))
+                    timeslot = random.randrange(0,
+                                                slotframe_size-1)
+                    channeloffset = random.randrange(0,
+                                                     self.schedule.num_channel_offsets-1)
+                    self.schedule.add_uc(
+                        str(node), cell_type.UC_RX, channeloffset, timeslot)
+                    self.schedule.add_uc(
+                        str(neighbor), cell_type.UC_TX, destination=node)
+
+            else:
+                # print("add an uc rx for node ", p[0])
+                timeslot = random.randrange(0, slotframe_size-1)
+                channeloffset = random.randrange(0,
+                                                 self.schedule.num_channel_offsets-1)
+                self.schedule.add_uc(
+                    p[0], cell_type.UC_RX, channeloffset, timeslot)
+        self.schedule.print_schedule()
+
     def reset(self):
         """
         Important: the observation must be a numpy array
         :return: (np.array)
         """
-        # The reset sets the routing and scheduling of the network
+        # The reset sets the routing and scheduling
         # We support to initial states: shortest path and MST
         protocol = ["dijkstra", "mst"]
-        # We get the network link, use to calculate the routing
+        # We get the network links, we use them to calculate the routing
         G = self.get_network_links()
         print("Current G")
         print(G.edges)
         print(G.nodes)
+        # We randomly pick any of the two protocols
         protocol = random.choice(protocol)
         # Run the chosen algorithm with the current links
         path = self.compute_algo(G, protocol)
         # We now build and save the routing matrix
         self.build_routes_matrix(path)
+        # We randomly pick a slotframe size between 10, 17 or 31
+        slotframe_sizes = [10, 17, 31]
+        slotframe_size = random.choice(slotframe_sizes)
+        # We now set the TSCH schedules for the current routing
+        self.compute_schedule_for_routing(path, slotframe_size)
+        # We now save the slotframe size in the SLOTFRAME_LEN collection
+        self.save_slotframe_len(slotframe_size)
+        # We now save the TSCH schedules
+        self.build_link_schedules_matrix()
+        # Let's prepare the schedule information in the json format
+        schedules_json = self.schedule.schedule_toJSON()
+        # Let's prepare the routing information in the json format
+        routes_json = self.routes.routes_toJSON()
+        # Send jobs to the Network configuration process
+        # which will automatically reconfigure the network given the job req.
+        print("job1")
+        print(schedules_json)
+        print("job2")
+        print(routes_json)
 
         observation = np.zeros(self.n_observations).astype(np.float32)
         return observation  # reward, done, info can't be included

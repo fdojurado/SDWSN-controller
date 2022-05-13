@@ -4,6 +4,7 @@
 import pandas as pd
 from controller.database.database import Database
 from controller.forwarding_table.forwarding_table import FWD_TABLE
+from controller.network_config.network_config import *
 from datetime import datetime
 
 
@@ -53,3 +54,39 @@ class Routes:
         self.time = datetime.now().timestamp() * 1000.0
         for index, row in self.routes.iterrows():
             FWD_TABLE.fwd_add_entry(row['scr'], row['dst'], row['via'], 0)
+
+    def routes_toJSON(self):
+        # Build the routing job in a JSON format to be shared with the NC class
+        # Hop limit sets the maximum of hops to bc this message. 255 means all.
+        # {
+        #   "job_type": "Routing",
+        #   "routes":[
+        #               {
+        #                   "scr": row['scr'],
+        #                   "dst": row['dst'],
+        #                   "via": row['via']
+        #                },
+        #               {
+        #                   "scr": row['scr'],
+        #                   "dst": row['dst'],
+        #                   "via": row['via']
+        #                }
+        #       ],
+        #   "hop_limit": "255"
+        # }
+        json_message_format = '{"job_type": ' + \
+            str(job_type.ROUTING)+', "routes":[]}'
+        # parsing JSON string:
+        json_message = json.loads(json_message_format)
+        self.print_routes()
+        # hop_limit = 0
+        for _, row in self.routes.iterrows():
+            data = {"scr": row['scr'], "dst": row['dst'], "via": row['via']}
+            json_message["routes"].append(data)
+            # rank = get_rank(row['scr'])
+            # if (rank > hop_limit):
+            #     hop_limit = rank
+        json_message["hop_limit"] = "255"
+        json_dump = json.dumps(json_message, indent=4, sort_keys=True)
+        print(json_dump)
+        return json_dump

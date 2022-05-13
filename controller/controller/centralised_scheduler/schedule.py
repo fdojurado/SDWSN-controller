@@ -205,7 +205,7 @@ class Schedule:
             str(job_type.TSCH)+', "cells":[]}'
         # parsing JSON string:
         json_message = json.loads(json_message_format)
-        hop_limit = 0
+        # hop_limit = 0
         rows, cols = (self.num_channel_offsets, self.slotframe_size)
         for i in range(rows):
             for j in range(cols):
@@ -216,10 +216,10 @@ class Schedule:
                         data = {"channel": channel, "timeslot": timeslot, "addr": elem.source, "type": elem.type,
                                 "dest": elem.destination}
                         json_message["cells"].append(data)
-                        rank = get_rank(elem.source)
-                        if (rank > hop_limit):
-                            hop_limit = rank
-        json_message["hop_limit"] = hop_limit
+                        # rank = get_rank(elem.source)
+                        # if (rank > hop_limit):
+                        #     hop_limit = rank
+        json_message["hop_limit"] = "255"
         json_dump = json.dumps(json_message, indent=4, sort_keys=True)
         print(json_dump)
         return json_dump
