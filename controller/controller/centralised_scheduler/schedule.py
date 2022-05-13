@@ -219,7 +219,7 @@ class Schedule:
                         # rank = get_rank(elem.source)
                         # if (rank > hop_limit):
                         #     hop_limit = rank
-        json_message["hop_limit"] = "255"
+        json_message["hop_limit"] = 255
         json_dump = json.dumps(json_message, indent=4, sort_keys=True)
         print(json_dump)
         return json_dump

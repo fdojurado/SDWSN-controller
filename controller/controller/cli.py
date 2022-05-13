@@ -92,7 +92,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
     # can be change at run time
     if rl:
         rp = SDWSN_RL(ServerConfig.from_json_file(config), verbose,
-                      routing_input_queue, routing_output_queue)
+                      routing_input_queue, routing_output_queue, nc_input_queue)
     else:
         rp = Routing(ServerConfig.from_json_file(config), verbose, "dijkstra",
                      routing_input_queue, routing_output_queue, routing_alg_queue)

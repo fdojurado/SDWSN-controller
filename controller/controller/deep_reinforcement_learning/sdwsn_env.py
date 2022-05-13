@@ -15,8 +15,9 @@ class sdwsnEnv(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, num_nodes, max_channel_offsets, max_slotframe_size):
+    def __init__(self, num_nodes, max_channel_offsets, max_slotframe_size, nc_job_queue):
         super(sdwsnEnv, self).__init__()
+        self.nc_job_queue = nc_job_queue
         self.num_nodes = num_nodes
         self.max_channel_offsets = max_channel_offsets
         self.max_slotframe_size = max_slotframe_size
@@ -345,6 +346,10 @@ class sdwsnEnv(gym.Env):
         print(schedules_json)
         print("job2")
         print(routes_json)
+        self.nc_job_queue.put(schedules_json)
+        self.nc_job_queue.put(routes_json)
+        # Trigger save features, so the coming data gets label correctly
+        # save_features()
 
         observation = np.zeros(self.n_observations).astype(np.float32)
         return observation  # reward, done, info can't be included
