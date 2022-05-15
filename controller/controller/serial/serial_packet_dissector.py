@@ -45,6 +45,10 @@ def handle_serial_packet(data, ack_queue):
         return
     # Let's first save the packet
     save_serial_packet(serial_pkt)
+    # Check if this is a serial ACK packet
+    if serial_pkt.message_type == serial_protocol.ACK:
+        ack_queue.put(serial_pkt)
+        return
     # Let's now process the sdn IP packet
     pkt = process_sdn_ip_packet(serial_pkt.payload)
     # We exit processing if empty result returned

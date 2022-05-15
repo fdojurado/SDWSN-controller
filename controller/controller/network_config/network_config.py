@@ -13,9 +13,10 @@ import queue  # or Queue in Python 2
 # Generate random number for ack
 from random import randrange
 import json
+import time
 
 
-""" TODO: Set the maximum routes per node (e.g., 10). 
+""" TODO: Set the maximum routes per node (e.g., 10).
 Remove old routes with the new ones"""
 
 
@@ -136,10 +137,10 @@ class NetworkConfig(mp.Process):
         # Control packet as payload of the serial packet
         pkt = SerialPacket(sdn_ip_packed, addr=0,
                            message_type=2, payload_len=length,
-                           reserved0=0, reserved1=0)
+                           reserved0=randrange(1, 254), reserved1=0)
         packedData = pkt.pack()
         print(repr(pkt))
-        return packedData
+        return packedData, pkt
 
     def set_route_flag(self, node, df):
         print("setting routes flag")
@@ -187,10 +188,10 @@ class NetworkConfig(mp.Process):
         # Build serial packet
         pkt = SerialPacket(sdn_ip_packed, addr=0,
                            message_type=2, payload_len=length,
-                           reserved0=0, reserved1=0)
+                           reserved0=randrange(1, 254), reserved1=0)
         packedData = pkt.pack()
         print(repr(pkt))
-        return packedData
+        return packedData, pkt
 
     def run(self):
         while True:
@@ -204,15 +205,37 @@ class NetworkConfig(mp.Process):
                 match(data['job_type']):
                     case job_type.TSCH:
                         print("Schedule job type")
-                        packedData = self.build_schedule_packet(data)
+                        packedData, serial_pkt = self.build_schedule_packet(
+                            data)
                     case job_type.ROUTING:
                         print("routing job type")
-                        packedData = self.build_routes_packet(data)
+                        packedData, serial_pkt = self.build_routes_packet(data)
                     case _:
                         print("unknown job type")
                         return None
-                # read routes from node
-                print("sending NC packet")
                 # Send NC packet
-                self.serial_input_queue.put(packedData)
+                self.send(packedData, serial_pkt)
             sleep(0.5)
+
+    def send(self, data, serial_pkt):
+        print("Sending NC")
+        # set retransmission
+        rtx = 0
+        # Send NC packet through serial interface
+        self.serial_input_queue.put(data)
+        while True:
+            try:
+                ack_pkt = self.ack_queue.get(timeout=2)
+                if (ack_pkt.reserved0 == serial_pkt.reserved0+1):
+                    print("correct ACK received")
+                    break
+            except queue.Empty:
+                print("ACK not received")
+                # We stop sending the current NC packet if
+                # we reached the max RTx or we received ACK
+                if(rtx >= 7):
+                    print("ACK never received")
+                    break
+                # We resend the packet if retransmission < 7
+                rtx = rtx + 1
+                self.serial_input_queue.put(data)

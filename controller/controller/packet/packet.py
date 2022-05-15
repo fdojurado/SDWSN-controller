@@ -15,6 +15,10 @@ SDN_SAH_LEN = 6  # Size of SA header schedule packet*/
 SDN_DATA_LEN = 8  # Size of data packet */
 SDN_SERIAL_PACKETH_LEN = 6
 
+# Message types for the serial interface
+serial_protocol = types.SimpleNamespace()
+serial_protocol.ACK = 4
+
 # Protocols encapsulated in sdn IP packet
 sdn_protocols = types.SimpleNamespace()
 sdn_protocols.SDN_PROTO_ND = 1
