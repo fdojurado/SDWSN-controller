@@ -87,7 +87,7 @@ def handle_serial_packet(data, ack_queue):
             print("sdn IP packet type not found")
             return
     # Everytime we received a valid packet, we update the features table
-    save_features()
+    # save_features()
 
 
 def process_serial_packet(data):

@@ -74,11 +74,17 @@ class sdwsnEnv(gym.Env):
         print("user req.")
         print(user_req)
         # We now get the averaged network power consumption:
-        # from the start of the deployment until the just before selecting
+        # from the start of the deployment until just before selecting
         # the next action
-        energy = self.get_network_power_consumption()
+        power = self.get_network_power_consumption()
+        print("avg. power consumption")
+        print(power)
         # We now get the averaged network delay
         delay = self.get_network_delay()
+        print("avg. delay")
+        print(delay)
+        # We now get the averaged pdr since the last network reconfiguration
+        pdr = self.get_network_pdr()
 
     def get_last_user_requirements(self):
         db = Database.find_one(USER_REQUIREMENTS, {})
@@ -189,7 +195,7 @@ class sdwsnEnv(gym.Env):
     def get_network_delay(self):
         # Get the time when the last network configuration was deployed
         timestamp = self.get_start_time()
-        # Variable to keep track of the number of energy consumption samples
+        # Variable to keep track of the number of delay samples
         delay_samples = []
         overall_delay = 0
         # We first loop through all sensor nodes
@@ -204,6 +210,86 @@ class sdwsnEnv(gym.Env):
         print("avg network delay for this cycle")
         print(overall_delay)
         return overall_delay
+
+    def get_previous_pdr_seq_rcv(self, node, timestamp):
+        query = {
+            "$and": [
+                {"node_id": node},
+                {"pdr": {"$exists": True}}
+            ]
+        }
+        db = Database.find_one(NODES_INFO, query)
+        if db is None:
+            return None
+        # Get last heard sequence after the timestamp
+        pipeline = [
+            {"$match": {"node_id": node}},
+            {"$unwind": "$pdr"},
+            {"$match": {
+                "pdr.timestamp": {
+                    "$lt": timestamp
+                }
+            }
+            },
+            {"$sort": {"pdr.timestamp": -1}},
+            {"$limit": 1},
+            {'$project':
+             {
+                 "_id": 1,
+                 'seq': '$pdr.seq'
+             }
+             }
+        ]
+        db = Database.aggregate(NODES_INFO, pipeline)
+        for doc in db:
+            return doc["seq"]
+
+    def get_last_n_pdr_samples(self, node, timestamp, pdr_samples):
+        query = {
+            "$and": [
+                {"node_id": node},
+                {"pdr": {"$exists": True}}
+            ]
+        }
+        db = Database.find_one(NODES_INFO, query)
+        if db is None:
+            return None
+        # Get last n samples after the timestamp
+        pipeline = [
+            {"$match": {"node_id": node}},
+            {"$unwind": "$pdr"},
+            {"$match": {
+                "pdr.timestamp": {
+                    "$gt": timestamp
+                }
+            }
+            },
+            {'$project':
+             {
+                 "_id": 1,
+                 'timestamp': '$pdr.timestamp',
+                 'seq': '$pdr.seq'
+             }
+             }
+        ]
+        db = Database.aggregate(NODES_INFO, pipeline)
+        for doc in db:
+            pdr_samples.append(doc["ewma_delay_normalized"])
+
+    def get_network_pdr(self):
+        # Get the time when the last network configuration was deployed
+        timestamp = self.get_start_time()
+        # Variable to keep track of the number of pdr samples
+        pdr_samples = []
+        overall_pdr = 0
+        # We first loop through all sensor nodes
+        nodes = Database.find(NODES_INFO, {})
+        for node in nodes:
+            # Get all samples from the start of the network configuration
+            self.get_last_n_pdr_samples(
+                node["node_id"], timestamp, pdr_samples)
+        print("pdr samples")
+        print(pdr_samples)
 
     """ Functions related to the step() function """
 
@@ -398,8 +484,8 @@ class sdwsnEnv(gym.Env):
             addr = node.node.split(".")
             link_schedules_matrix[int(
                 addr[0])] = schedule.flatten().tolist()
-        print("link_schedules_matrix")
-        print(link_schedules_matrix)
+        # print("link_schedules_matrix")
+        # print(link_schedules_matrix)
         # Save in DB
         current_time = datetime.now().timestamp() * 1000.0
         data = {
