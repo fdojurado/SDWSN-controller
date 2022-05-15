@@ -15,9 +15,11 @@ class sdwsnEnv(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, num_nodes, max_channel_offsets, max_slotframe_size, nc_job_queue):
+    def __init__(self, num_nodes, max_channel_offsets, max_slotframe_size,
+                 nc_job_queue, input_queue):
         super(sdwsnEnv, self).__init__()
         self.nc_job_queue = nc_job_queue
+        self.input_queue = input_queue
         self.num_nodes = num_nodes
         self.max_channel_offsets = max_channel_offsets
         self.max_slotframe_size = max_slotframe_size
@@ -42,30 +44,168 @@ class sdwsnEnv(gym.Env):
             (self.num_nodes + 4 * self.max_channel_offsets * self.max_slotframe_size)
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
-        # They will be the current user requirements, routing paths, slotframe length, tsch schedules, RSSI and ETX network links.
-        # 1) The user requirements is a vector of 1x3 Alpha, Beta, Gamma (ranges from 0 to 1)
-        # 2) The routing path is a vector of the routes_matrix of shape num_nodes x num_nodes (1 represents a path between the two nodes)
-        # 3) The slotframe length is a number (we can normalize it using the maximum length)
-        # 4) The tsch schedules is a vector containing the schedules matrix for each node of size num_channel_offsets x slotframe_size
-        # 5) The network RSSI links is a vector containing the current comm. link (size is num_nodes x num_nodes)
-        # 6) The network ETX links is a vector containing the current link quality info (size is num_nodes x num_nodes)
-        # Total number of observations = 3 + num_nodes x num_nodes + 1 + num_channel_offsets x slotframe_size x num_nodes + num_nodes x num_nodes + num_nodes x num_nodes
-        # Total = 4 + num_nodes (num_nodes + num_channel_offsets x slotframe_size + num_nodes + num_nodes)
-        # Total = 4 + num_nodes (3 * num_nodes + num_channel_offsets x slotframe_size)
-        self.n_observations = 4 + \
-            num_nodes * (3 * num_nodes + self.max_channel_offsets *
-                         self.max_slotframe_size)
+        # They will be the user requirements, energy, delay and pdr.
+        self.n_observations = 6
         self.observation_space = spaces.Box(low=0, high=1,
                                             shape=(self.n_observations, ), dtype=np.float32)
 
     def step(self, action):
         print("Performing action "+str(action))
         self.parser_action(action)
+        # We now wait for the job to complete
+        self.input_queue.get()
+        print("process reward")
         observation = np.zeros(self.n_observations).astype(np.float32)
         reward = 1
         done = False
         info = {}
         return observation, reward, done, info
+
+    """ Functions to process the observations """
+
+    def get_observations(self):
+        # 1) Get the current user requirements
+        # 2) Get the overall energy
+        # 3) Get the overall delay
+        # 4) Get the overall pdr
+        print("processing observations")
+        # We start by getting the current user requirements
+        user_req = self.get_last_user_requirements()
+        print("user req.")
+        print(user_req)
+        # We now get the averaged network power consumption:
+        # from the start of the deployment until the just before selecting
+        # the next action
+        energy = self.get_network_power_consumption()
+        # We now get the averaged network delay
+        delay = self.get_network_delay()
+
+    def get_last_user_requirements(self):
+        db = Database.find_one(USER_REQUIREMENTS, {})
+        if db is None:
+            return None
+        # get last req in DB
+        db = Database.find(USER_REQUIREMENTS, {}).sort("_id", -1).limit(1)
+        for doc in db:
+            return doc["requirements"]
+
+    def get_start_time(self):
+        # We get the last network configuration time from
+        # the time stamp in the user requirements db
+        db = Database.find_one(USER_REQUIREMENTS, {})
+        if db is None:
+            return None
+        # get last req in DB
+        db = Database.find(USER_REQUIREMENTS, {}).sort("_id", -1).limit(1)
+        for doc in db:
+            return doc["timestamp"]
+
+    def get_last_n_power_consumption_samples(self, node, timestamp, energy_samples):
+        query = {
+            "$and": [
+                {"node_id": node},
+                {"energy": {"$exists": True}}
+            ]
+        }
+        db = Database.find_one(NODES_INFO, query)
+        if db is None:
+            return None
+        # Get last n samples after the timestamp
+        pipeline = [
+            {"$match": {"node_id": node}},
+            {"$unwind": "$energy"},
+            {"$match": {
+                "energy.timestamp": {
+                    "$gt": timestamp
+                }
+            }
+            },
+            {'$project':
+             {
+                 "_id": 1,
+                 'timestamp': '$energy.timestamp',
+                 'ewma_energy': '$energy.ewma_energy',
+                 'ewma_energy_normalized': '$energy.ewma_energy_normalized'
+             }
+             }
+        ]
+        db = Database.aggregate(NODES_INFO, pipeline)
+        for doc in db:
+            energy_samples.append(doc["ewma_energy_normalized"])
+
+    def get_network_power_consumption(self):
+        # Get the time when the last network configuration was deployed
+        timestamp = self.get_start_time()
+        # Variable to keep track of the number of energy consumption samples
+        energy_samples = []
+        overall_energy = 0
+        # We first loop through all sensor nodes
+        nodes = Database.find(NODES_INFO, {})
+        for node in nodes:
+            # Get all samples from the start of the network configuration
+            self.get_last_n_power_consumption_samples(
+                node["node_id"], timestamp, energy_samples)
+        print("energy samples")
+        print(energy_samples)
+        overall_energy = sum(energy_samples)/len(energy_samples)
+        print("avg network power consumption for this cycle")
+        print(overall_energy)
+        return overall_energy
+
+    def get_last_n_delay_samples(self, node, timestamp, delay_samples):
+        query = {
+            "$and": [
+                {"node_id": node},
+                {"delay": {"$exists": True}}
+            ]
+        }
+        db = Database.find_one(NODES_INFO, query)
+        if db is None:
+            return None
+        # Get last n samples after the timestamp
+        pipeline = [
+            {"$match": {"node_id": node}},
+            {"$unwind": "$delay"},
+            {"$match": {
+                "delay.timestamp": {
+                    "$gt": timestamp
+                }
+            }
+            },
+            {'$project':
+             {
+                 "_id": 1,
+                 'timestamp': '$energy.timestamp',
+                 'sampled_delay': '$delay.sampled_delay',
+                 'ewma_delay': '$delay.ewma_delay',
+                 'ewma_delay_normalized': '$delay.ewma_delay_normalized'
+             }
+             }
+        ]
+        db = Database.aggregate(NODES_INFO, pipeline)
+        for doc in db:
+            delay_samples.append(doc["ewma_delay_normalized"])
+
+    def get_network_delay(self):
+        # Get the time when the last network configuration was deployed
+        timestamp = self.get_start_time()
+        # Variable to keep track of the number of energy consumption samples
+        delay_samples = []
+        overall_delay = 0
+        # We first loop through all sensor nodes
+        nodes = Database.find(NODES_INFO, {})
+        for node in nodes:
+            # Get all samples from the start of the network configuration
+            self.get_last_n_delay_samples(
+                node["node_id"], timestamp, delay_samples)
+        print("delay samples")
+        print(delay_samples)
+        overall_delay = sum(delay_samples)/len(delay_samples)
+        print("avg network delay for this cycle")
+        print(overall_delay)
+        return overall_delay
+
+    """ Functions related to the step() function """
 
     def get_route_link(self, a):
         action = np.zeros(self.num_nodes*self.num_nodes)
@@ -308,6 +448,15 @@ class sdwsnEnv(gym.Env):
                     p[0], cell_type.UC_RX, channeloffset, timeslot)
         self.schedule.print_schedule()
 
+    def user_requirements(self, req):
+        user_req = np.array(req)
+        current_time = datetime.now().timestamp() * 1000.0
+        data = {
+            "timestamp": current_time,
+            "requirements": user_req.flatten().tolist()
+        }
+        Database.insert(USER_REQUIREMENTS, data)
+
     def reset(self):
         """
         Important: the observation must be a numpy array
@@ -336,6 +485,14 @@ class sdwsnEnv(gym.Env):
         self.save_slotframe_len(slotframe_size)
         # We now save the TSCH schedules
         self.build_link_schedules_matrix()
+        # We now set and save the user requirements
+        balanced = [0.35, 0.3, 0.3]
+        energy = [0.5, 0.25, 0.25]
+        delay = [0.25, 0.5, 0.25]
+        reliability = [0.25, 0.25, 0.5]
+        user_req = [balanced, energy, delay, reliability]
+        select_user_req = random.choice(user_req)
+        self.user_requirements(select_user_req)
         # Let's prepare the schedule information in the json format
         schedules_json = self.schedule.schedule_toJSON()
         # Let's prepare the routing information in the json format
@@ -348,6 +505,11 @@ class sdwsnEnv(gym.Env):
         print(routes_json)
         self.nc_job_queue.put(schedules_json)
         self.nc_job_queue.put(routes_json)
+        # We now wait for the job to complete
+        self.input_queue.get()
+        print("process reward")
+        # We get the observations now
+        self.get_observations()
         # Trigger save features, so the coming data gets label correctly
         # save_features()
 

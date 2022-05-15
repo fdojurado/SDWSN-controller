@@ -7,6 +7,7 @@ FEATURES = "features"
 SLOTFRAME_LEN = "slotframe_len"
 ROUTING_PATHS = "routing_paths"
 SCHEDULES = "schedules"
+USER_REQUIREMENTS = "user_requirements"
 
 class Database(object):
     URI = "mongodb://127.0.0.1:27017"

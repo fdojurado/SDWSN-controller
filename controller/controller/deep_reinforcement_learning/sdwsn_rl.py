@@ -97,7 +97,7 @@ class SDWSN_RL(mp.Process):
         # Get last index of sensor
         N = get_last_index_wsn()+1
         self.env = sdwsnEnv(N, self.max_channel_offsets,
-                            self.max_slotframe_size, self.nc_job_queue)
+                            self.max_slotframe_size, self.nc_job_queue, self.input_queue)
         print('Number of states: {}'.format(self.env.observation_space))
         print('Number of actions: {}'.format(self.env.action_space))
         self.model = DQN('MlpPolicy', self.env, verbose=2)
@@ -108,12 +108,10 @@ class SDWSN_RL(mp.Process):
         while(1):
             # look for incoming jobs
             if not self.input_queue.empty():
-                G = self.input_queue.get()
-                # We first make sure that G is not empty
-                if(nx.is_empty(G) == False):
-                    print("time to compute reward RL")
-                    if self.first_time_run == 0:
-                        self.configure_env()
-                        # Train the agent
-                        self.model.learn(total_timesteps=int(
-                            2), callback=self.callback)
+                self.input_queue.get()
+                print("time to compute reward RL")
+                if self.first_time_run == 0:
+                    self.configure_env()
+                    # Train the agent
+                    self.model.learn(total_timesteps=int(
+                        2), callback=self.callback)
