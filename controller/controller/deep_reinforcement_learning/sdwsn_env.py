@@ -4,7 +4,7 @@ from controller.serial.serial_packet_dissector import *
 from controller.routing.routes import Routes
 from controller.centralised_scheduler.schedule import *
 import random
-from scipy import rand
+# from scipy import rand
 import networkx as nx
 import gym
 from gym import spaces
@@ -85,6 +85,8 @@ class sdwsnEnv(gym.Env):
         print(delay)
         # We now get the averaged pdr since the last network reconfiguration
         pdr = self.get_network_pdr()
+        print("avg. pdr")
+        print(pdr)
 
     def get_last_user_requirements(self):
         db = Database.find_one(USER_REQUIREMENTS, {})
@@ -254,6 +256,10 @@ class sdwsnEnv(gym.Env):
         db = Database.find_one(NODES_INFO, query)
         if db is None:
             return None
+        # Let's get the previous data packet sequence
+        last_seq = self.get_previous_pdr_seq_rcv(node, timestamp)
+        print("last sequence")
+        print(last_seq)
         # Get last n samples after the timestamp
         pipeline = [
             {"$match": {"node_id": node}},
@@ -273,8 +279,19 @@ class sdwsnEnv(gym.Env):
              }
         ]
         db = Database.aggregate(NODES_INFO, pipeline)
+        # Variable to keep track of the number rcv packets
+        num_rcv = 0
+        # Last received sequence
+        last_seq_rcv = 0
         for doc in db:
-            pdr_samples.append(doc["ewma_delay_normalized"])
+            num_rcv += 1
+            if (doc['seq'] > last_seq_rcv):
+                last_seq_rcv = doc['seq']
+        # Get the averaged pdr for this period
+        avg_pdr = num_rcv/last_seq_rcv
+        print("avg pdr")
+        print(avg_pdr)
+        pdr_samples.append(avg_pdr)
 
     def get_network_pdr(self):
         # Get the time when the last network configuration was deployed
@@ -290,6 +307,11 @@ class sdwsnEnv(gym.Env):
                 node["node_id"], timestamp, pdr_samples)
         print("pdr samples")
         print(pdr_samples)
+        # Calculate the overall network pdr
+        overall_pdr = sum(pdr_samples)/len(pdr_samples)
+        print("avg network PDR for this cycle")
+        print(overall_pdr)
+        return overall_pdr
 
     """ Functions related to the step() function """
 
