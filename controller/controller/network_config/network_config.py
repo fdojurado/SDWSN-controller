@@ -169,7 +169,7 @@ class NetworkConfig(mp.Process):
         payload_len = len(payloadPacked)
         # Build schedule packet header
         cell_pkt = Cell_Packet(
-            payloadPacked, payload_len=payload_len, hop_limit=data['hop_limit'], seq=schedule_sequence)
+            payloadPacked, payload_len=payload_len, hop_limit=data['hop_limit'], sf_len=data['sf_len'], seq=schedule_sequence)
         cell_packed = cell_pkt.pack()
         # print(repr(rt_pkt))
         print(cell_packed)

@@ -11,7 +11,7 @@ SDN_NAH_LEN = 6   # Size of neighbor advertisement packet header */
 SDN_NAPL_LEN = 6  # Size of neighbor advertisement payload size */
 # SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
 SDN_RAH_LEN = 6  # Size of RA header routing packet*/
-SDN_SAH_LEN = 6  # Size of SA header schedule packet*/
+SDN_SAH_LEN = 8  # Size of SA header schedule packet*/
 SDN_DATA_LEN = 8  # Size of data packet */
 SDN_SERIAL_PACKETH_LEN = 6
 
@@ -219,14 +219,15 @@ class Cell_Packet:
     def __init__(self, payload, **kwargs):
         self.payload_len = kwargs.get("payload_len", 0)
         self.hop_limit = kwargs.get("hop_limit", 0)
+        self.sf_len = kwargs.get("sf_len", 0)
         self.seq = kwargs.get("seq", 0)
         self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.payload = payload
 
     def pack(self):
         #  Let's first compute the checksum
-        data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
-                           self.seq, self.pkt_chksum, bytes(self.payload))
+        data = struct.pack('!BBHHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
+                           self.sf_len, self.seq, self.pkt_chksum, bytes(self.payload))
         self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_SAH_LEN)
         print("computed checksum")
         print(self.pkt_chksum)

@@ -87,6 +87,17 @@ class sdwsnEnv(gym.Env):
         pdr = self.get_network_pdr()
         print("avg. pdr")
         print(pdr)
+        # We now get the slotframe len
+        sf_len = self.get_slotframe_len()
+        print("slotframe len")
+        print(sf_len)
+        # We now get the TSCH link schedules
+        tsch_link_schedules = self.get_tsch_link_schedules()
+        print("current tsch schedules")
+        print(tsch_link_schedules)
+        # We now concatenate all observations
+        return np.concatenate((user_req, tsch_link_schedules, sf_len,
+                               power, delay, pdr), axis=0)
 
     def get_last_user_requirements(self):
         db = Database.find_one(USER_REQUIREMENTS, {})
@@ -312,6 +323,24 @@ class sdwsnEnv(gym.Env):
         print("avg network PDR for this cycle")
         print(overall_pdr)
         return overall_pdr
+
+    def get_slotframe_len(self):
+        db = Database.find_one(SLOTFRAME_LEN, {})
+        if db is None:
+            return None
+        # get last req in DB
+        db = Database.find(SLOTFRAME_LEN, {}).sort("_id", -1).limit(1)
+        for doc in db:
+            return doc["slotframe_len"]
+
+    def get_tsch_link_schedules(self):
+        db = Database.find_one(SCHEDULES, {})
+        if db is None:
+            return None
+        # get last req in DB
+        db = Database.find(SCHEDULES, {}).sort("_id", -1).limit(1)
+        for doc in db:
+            return doc["schedules"]
 
     """ Functions related to the step() function """
 
@@ -602,7 +631,7 @@ class sdwsnEnv(gym.Env):
         select_user_req = random.choice(user_req)
         self.user_requirements(select_user_req)
         # Let's prepare the schedule information in the json format
-        schedules_json = self.schedule.schedule_toJSON()
+        schedules_json = self.schedule.schedule_toJSON(slotframe_size)
         # Let's prepare the routing information in the json format
         routes_json = self.routes.routes_toJSON()
         # Send jobs to the Network configuration process
@@ -617,7 +646,9 @@ class sdwsnEnv(gym.Env):
         self.input_queue.get()
         print("process reward")
         # We get the observations now
-        self.get_observations()
+        obs = self.get_observations()
+        print("observations received")
+        print(obs)
         # Trigger save features, so the coming data gets label correctly
         # save_features()
 

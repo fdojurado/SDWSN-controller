@@ -179,10 +179,11 @@ class Schedule:
         # print("printing schedule 2")
         print(*print_schedule, sep='\n')
 
-    def schedule_toJSON(self):
+    def schedule_toJSON(self, sf_len):
         # Build the schedule in a JSON format to be shared with the NC class
         # {
         #   "job_type": "TSCH",
+        #   "sf_len": len
         #   "cells":[
         #               {
         #                   "addr": cell.source,
@@ -220,6 +221,7 @@ class Schedule:
                         # if (rank > hop_limit):
                         #     hop_limit = rank
         json_message["hop_limit"] = 255
+        json_message["sf_len"] = sf_len
         json_dump = json.dumps(json_message, indent=4, sort_keys=True)
         print(json_dump)
         return json_dump
