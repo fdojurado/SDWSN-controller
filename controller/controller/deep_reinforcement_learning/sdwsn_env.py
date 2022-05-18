@@ -646,14 +646,30 @@ class sdwsnEnv(gym.Env):
         self.user_requirements(select_user_req)
         # Let's prepare the schedule information in the json format
         schedules_json = self.schedule.schedule_toJSON(slotframe_size)
+        print("json")
+        print(json.dumps(schedules_json, indent=4, sort_keys=True))
+        # Check if the current schedule job fits in the packet size 127 B
+        while len(schedules_json['cells']) > 12:
+            print("fragmentation is required for TSCH schedule job")
+            extra_cells = schedules_json['cells'][12:]
+            del schedules_json['cells'][12:]
+            new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
+            self.nc_job_queue.put(new_job)
+            del schedules_json['cells']
+            schedules_json['cells'] = extra_cells
+            schedules_json["sf_len"] = 0
+        schedules_json = json.dumps(schedules_json, indent=4, sort_keys=True)
+        # print("new reformed schedule")
+        # print(schedules_json)
+        # print(json_dump)
         # Let's prepare the routing information in the json format
         routes_json = self.routes.routes_toJSON()
         # Send jobs to the Network configuration process
         # which will automatically reconfigure the network given the job req.
-        print("job1")
-        print(schedules_json)
-        print("job2")
-        print(routes_json)
+        # print("job1")
+        # print(schedules_json)
+        # print("job2")
+        # print(routes_json)
         self.nc_job_queue.put(schedules_json)
         self.nc_job_queue.put(routes_json)
         # We now wait for the job to complete

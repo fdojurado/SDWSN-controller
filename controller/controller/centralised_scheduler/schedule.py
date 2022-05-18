@@ -222,6 +222,6 @@ class Schedule:
                         #     hop_limit = rank
         json_message["hop_limit"] = 255
         json_message["sf_len"] = sf_len
-        json_dump = json.dumps(json_message, indent=4, sort_keys=True)
-        print(json_dump)
-        return json_dump
+        # json_dump = json.dumps(json_message, indent=4, sort_keys=True)
+        # print(json_dump)
+        return json_message
