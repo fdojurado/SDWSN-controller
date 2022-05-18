@@ -127,7 +127,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
         ntwk_plot.daemon = True
         ntwk_plot.start()
     interval = ServerConfig.from_json_file(config).routing.time
-    timeout = time.time()+int(60.0)
+    timeout = time.time()+int(120.0)
     while True:
         # look for incoming request from the serial interface
         if not serial_output_queue.empty():
