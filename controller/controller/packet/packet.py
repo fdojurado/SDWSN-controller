@@ -13,7 +13,7 @@ SDN_NAPL_LEN = 6  # Size of neighbor advertisement payload size */
 SDN_RAH_LEN = 6  # Size of RA header routing packet*/
 SDN_SAH_LEN = 8  # Size of SA header schedule packet*/
 SDN_DATA_LEN = 8  # Size of data packet */
-SDN_SERIAL_PACKETH_LEN = 6
+SDN_SERIAL_PACKETH_LEN = 8
 
 # Message types for the serial interface
 serial_protocol = types.SimpleNamespace()
@@ -89,6 +89,7 @@ class SerialPacket:
 
     def __init__(self, payload, **kwargs):
         self.addr = kwargs.get("addr", 0)
+        self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.message_type = kwargs.get("message_type", 0)
         self.payload_len = kwargs.get("payload_len", 0)
         self.reserved0 = kwargs.get("reserved0", 0)
@@ -96,19 +97,30 @@ class SerialPacket:
         self.payload = payload
 
     def pack(self):
-        return struct.pack('!HBBBB' + str(len(self.payload)) + 's', self.addr, self.message_type,
+        #  Let's first compute the checksum
+        data = struct.pack('!HHBBBB' + str(len(self.payload)) + 's', self.addr, self.pkt_chksum, self.message_type,
+                           self.payload_len, self.reserved0, self.reserved1, bytes(self.payload))
+        print("payload len")
+        print(len(self.payload))
+        print("data")
+        print(len(data))
+        self.pkt_chksum = sdn_ip_checksum(
+            data, self.payload_len+SDN_SERIAL_PACKETH_LEN)
+        print("computed checksum")
+        print(self.pkt_chksum)
+        return struct.pack('!HHBBBB' + str(len(self.payload)) + 's', self.addr, self.pkt_chksum, self.message_type,
                            self.payload_len, self.reserved0, self.reserved1, bytes(self.payload))
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "SerialPacket(addr={}, message_type={}, payload_len={}, reserved0={}, reserved1={}, payload={})".format(
-            hex(self.addr), self.message_type, self.payload_len, self.reserved0, self.reserved1, self.payload)
+        return "SerialPacket(addr={}, pkt_chksum={}, message_type={}, payload_len={}, reserved0={}, reserved1={}, payload={})".format(
+            hex(self.addr), self.pkt_chksum, self.message_type, self.payload_len, self.reserved0, self.reserved1, self.payload)
 
     @classmethod
     def unpack(cls, packed_data):
-        addr, message_type, payload_len, reserved0, reserved1, payload = struct.unpack(
-            'HBBBB' + str(len(packed_data)-SDN_SERIAL_PACKETH_LEN) + 's', packed_data)
-        return cls(payload, addr=addr, message_type=message_type, payload_len=payload_len,
+        addr, pkt_chksum, message_type, payload_len, reserved0, reserved1, payload = struct.unpack(
+            'HHBBBB' + str(len(packed_data)-SDN_SERIAL_PACKETH_LEN) + 's', packed_data)
+        return cls(payload, addr=addr, pkt_chksum=pkt_chksum, message_type=message_type, payload_len=payload_len,
                    reserved0=reserved0, reserved1=reserved1)
 
     def toJSON(self):
@@ -231,8 +243,8 @@ class Cell_Packet:
         self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_SAH_LEN)
         print("computed checksum")
         print(self.pkt_chksum)
-        return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
-                           self.seq, self.pkt_chksum, bytes(self.payload))
+        return struct.pack('!BBHHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
+                           self.sf_len, self.seq, self.pkt_chksum, bytes(self.payload))
 
 
 class Cell_Packet_Payload:

@@ -266,9 +266,12 @@ class sdwsnEnv(gym.Env):
         }
         db = Database.find_one(NODES_INFO, query)
         if db is None:
+            pdr_samples.append(0)
             return None
         # Let's get the previous data packet sequence
         last_seq = self.get_previous_pdr_seq_rcv(node, timestamp)
+        if last_seq is None:
+            last_seq = 0
         print("last sequence")
         print(last_seq)
         # Get last n samples after the timestamp
@@ -296,10 +299,19 @@ class sdwsnEnv(gym.Env):
         last_seq_rcv = 0
         for doc in db:
             num_rcv += 1
+            print("doc")
+            print(doc)
             if (doc['seq'] > last_seq_rcv):
                 last_seq_rcv = doc['seq']
+        print("last seq recv")
+        print(last_seq_rcv)
+        print("num rcv")
+        print(num_rcv)
         # Get the averaged pdr for this period
-        avg_pdr = num_rcv/last_seq_rcv
+        if last_seq_rcv != 0:
+            avg_pdr = num_rcv/(last_seq_rcv-last_seq)
+        else:
+            avg_pdr = 0
         print("avg pdr")
         print(avg_pdr)
         pdr_samples.append(avg_pdr)
@@ -313,6 +325,8 @@ class sdwsnEnv(gym.Env):
         # We first loop through all sensor nodes
         nodes = Database.find(NODES_INFO, {})
         for node in nodes:
+            print("calculating pdr for node " +
+                  str(node["node_id"])+" timestamp "+str(timestamp))
             # Get all samples from the start of the network configuration
             self.get_last_n_pdr_samples(
                 node["node_id"], timestamp, pdr_samples)
@@ -614,7 +628,7 @@ class sdwsnEnv(gym.Env):
         # We now build and save the routing matrix
         self.build_routes_matrix(path)
         # We randomly pick a slotframe size between 10, 17 or 31
-        slotframe_sizes = [10, 17, 31]
+        slotframe_sizes = [17, 31]
         slotframe_size = random.choice(slotframe_sizes)
         # We now set the TSCH schedules for the current routing
         self.compute_schedule_for_routing(path, slotframe_size)
