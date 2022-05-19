@@ -127,18 +127,22 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
         ntwk_plot.daemon = True
         ntwk_plot.start()
     interval = ServerConfig.from_json_file(config).routing.time
-    timeout = time.time()+int(120.0)
+    # timeout = time.time()+int(120.0)
     while True:
         # look for incoming request from the serial interface
         if not serial_output_queue.empty():
             data = serial_output_queue.get()
             handle_serial_packet(data, ack_queue)
         # Run the routing protocol?
-        if(time.time() > timeout):
-            # put a job
+        if globals.num_packets_period > 50:
             G = load_wsn_links("rssi")
             routing_input_queue.put(G)
-            timeout = time.time() + int(90)
+            globals.num_packets_period = 0
+        # if(time.time() > timeout):
+        #     # put a job
+        #     G = load_wsn_links("rssi")
+        #     routing_input_queue.put(G)
+        #     timeout = time.time() + int(90)
         # look for incoming request from routing
         if not routing_output_queue.empty():
             path, routes_json, routes_matrix = routing_output_queue.get()
@@ -159,3 +163,4 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
             globals.elapse_time = datetime.now().timestamp() * 1000.0
             # Trigger save features, so the coming data gets label correctly
             save_features()
+        sleep(0.1)

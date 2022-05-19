@@ -63,6 +63,8 @@ def handle_serial_packet(data, ack_queue):
             if na_pkt is None:
                 "bad NA packet"
                 return
+            # Add to number of pkts received during this period
+            globals.num_packets_period += 1
             # We now build the energy DB
             save_energy(pkt, na_pkt)
             # We now build the neighbors DB
@@ -78,6 +80,8 @@ def handle_serial_packet(data, ack_queue):
             if data_pkt is None:
                 "bad Data packet"
                 return
+            # Add to number of pkts received during this period
+            globals.num_packets_period += 1
             # We now build the pdr DB
             save_pdr(pkt, data_pkt)
             # We now build the delay DB
