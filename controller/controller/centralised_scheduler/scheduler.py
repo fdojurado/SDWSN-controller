@@ -62,6 +62,7 @@ class Scheduler(mp.Process):
                 # Let's build the message in json format
                 self.output_queue.put(
                     (self.schedule.schedule_toJSON(), link_schedules_matrix))
+            sleep(0.1)
 
     def save_slotframe_len(self):
         current_time = datetime.now().timestamp() * 1000.0

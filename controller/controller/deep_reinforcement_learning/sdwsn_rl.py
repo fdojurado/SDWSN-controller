@@ -1,3 +1,4 @@
+from time import sleep
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.callbacks import BaseCallback
 import multiprocessing as mp
@@ -115,3 +116,4 @@ class SDWSN_RL(mp.Process):
                     # Train the agent
                     self.model.learn(total_timesteps=int(
                         2), callback=self.callback)
+            sleep(0.1)
