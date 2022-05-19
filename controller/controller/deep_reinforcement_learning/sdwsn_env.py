@@ -1,4 +1,4 @@
-""" This is the implemantion of the Software-Defined Wireless Sensor Network
+""" This is the implementation of the Software-Defined Wireless Sensor Network
 environment """
 from controller.serial.serial_packet_dissector import *
 from controller.routing.routes import Routes
@@ -40,23 +40,56 @@ class sdwsnEnv(gym.Env):
         # 7) remove a Tx link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
         # Total number of actions = num_nodes * num_nodes + 1 + 1 + 4 * num_nodes * num_channel_offsets x slotframe_size
         # Total = 2 + num_nodes (num_nodes + 4 * num_channel_offsets x slotframe_size)
-        n_actions = 2 + self.num_nodes * \
-            (self.num_nodes + 4 * self.max_channel_offsets * self.max_slotframe_size)
+        # n_actions = 2 + self.num_nodes * \
+        #     (self.num_nodes + 4 * self.max_channel_offsets * self.max_slotframe_size)
+        n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
         # They will be the user requirements, energy, delay and pdr.
-        self.n_observations = 6
+        self.n_observations = 3 + 1 + (num_nodes-1) * \
+            max_channel_offsets * max_slotframe_size
         self.observation_space = spaces.Box(low=0, high=1,
                                             shape=(self.n_observations, ), dtype=np.float32)
 
     def step(self, action):
+        # Get the current slotframe size
+        sf_len, _ = self.get_slotframe_len()
         print("Performing action "+str(action))
-        self.parser_action(action)
+        if action == 0:
+            print("increasing slotframe size")
+            sf_len += 1
+        if action == 1:
+            sf_len -= 1
+            print("decreasing slotframe size")
+        schedules_json = self.schedule.schedule_toJSON(sf_len)
+        # Check if the current schedule job fits in the packet size 127 B
+        while len(schedules_json['cells']) > 12:
+            print("fragmentation is required for TSCH schedule job")
+            extra_cells = schedules_json['cells'][12:]
+            del schedules_json['cells'][12:]
+            new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
+            self.nc_job_queue.put(new_job)
+            del schedules_json['cells']
+            schedules_json['cells'] = extra_cells
+            schedules_json["sf_len"] = 0
+        schedules_json = json.dumps(schedules_json, indent=4, sort_keys=True)
+        # We now save the slotframe size in the SLOTFRAME_LEN collection
+        self.save_slotframe_len(sf_len)
+        self.nc_job_queue.put(schedules_json)
         # We now wait for the job to complete
         self.input_queue.get()
         print("process reward")
-        observation = np.zeros(self.n_observations).astype(np.float32)
-        reward = 1
+        # We get the observations now
+        observation = self.get_observations()
+        print(f"{len(observation)} observations received.")
+        # self.parser_action(action)
+        # We now process the reward
+        user_req = self.get_last_user_requirements()
+        power = self.get_network_power_consumption()
+        delay = self.get_network_delay()
+        pdr = self.get_network_pdr()
+        reward = -1*(user_req[0]*power+user_req[1]*delay-user_req[2]*pdr)
+        print(f'Reward {reward}')
         done = False
         info = {}
         return observation, reward, done, info
@@ -71,33 +104,35 @@ class sdwsnEnv(gym.Env):
         print("processing observations")
         # We start by getting the current user requirements
         user_req = self.get_last_user_requirements()
-        print("user req.")
-        print(user_req)
+        array_user_req = np.array(user_req)
         # We now get the averaged network power consumption:
         # from the start of the deployment until just before selecting
         # the next action
-        power = self.get_network_power_consumption()
-        print("avg. power consumption")
-        print(power)
+        # power = self.get_network_power_consumption()
+        # print("avg. power consumption")
+        # print(power)
         # We now get the averaged network delay
-        delay = self.get_network_delay()
-        print("avg. delay")
-        print(delay)
+        # delay = self.get_network_delay()
+        # print("avg. delay")
+        # print(delay)
         # We now get the averaged pdr since the last network reconfiguration
-        pdr = self.get_network_pdr()
-        print("avg. pdr")
-        print(pdr)
+        # pdr = self.get_network_pdr()
+        # print("avg. pdr")
+        # print(pdr)
         # We now get the slotframe len
-        sf_len = self.get_slotframe_len()
-        print("slotframe len")
-        print(sf_len)
+        _, sf_len = self.get_slotframe_len()
+        array_sf_len = np.array(sf_len)
         # We now get the TSCH link schedules
         tsch_link_schedules = self.get_tsch_link_schedules()
-        print("current tsch schedules")
-        print(tsch_link_schedules)
         # We now concatenate all observations
-        return np.concatenate((user_req, tsch_link_schedules, sf_len,
-                               power, delay, pdr), axis=0)
+        array_tsch_link_schedules = np.array(tsch_link_schedules)
+        array_tsch_link_schedules = np.concatenate(
+            array_tsch_link_schedules, axis=0)
+        # Append all data together
+        result = np.append(array_user_req, array_tsch_link_schedules)
+        result = np.append(result, array_sf_len)
+
+        return result
 
     def get_last_user_requirements(self):
         db = Database.find_one(USER_REQUIREMENTS, {})
@@ -345,7 +380,7 @@ class sdwsnEnv(gym.Env):
         # get last req in DB
         db = Database.find(SLOTFRAME_LEN, {}).sort("_id", -1).limit(1)
         for doc in db:
-            return doc["slotframe_len"]
+            return (doc["len"], doc['normalized_len'])
 
     def get_tsch_link_schedules(self):
         db = Database.find_one(SCHEDULES, {})
@@ -533,7 +568,7 @@ class sdwsnEnv(gym.Env):
         N = get_last_index_wsn()+1
         # This is an array of schedule matrices
         link_schedules_matrix = [None] * N
-        # We now loop through the entire arrray and fill it with the schedule information
+        # We now loop through the entire array and fill it with the schedule information
         for node in self.schedule.list_nodes:
             # Construct the schedule matrix
             schedule = np.zeros(
@@ -551,20 +586,25 @@ class sdwsnEnv(gym.Env):
                 addr[0])] = schedule.flatten().tolist()
         # print("link_schedules_matrix")
         # print(link_schedules_matrix)
+        # using list comprehension
+        # to remove None values in list
+        res = [i for i in link_schedules_matrix if i]
         # Save in DB
         current_time = datetime.now().timestamp() * 1000.0
         data = {
             "timestamp": current_time,
-            "schedules": link_schedules_matrix
+            "schedules": res
         }
         Database.insert(SCHEDULES, data)
-        return link_schedules_matrix
+        return res
 
     def save_slotframe_len(self, slotframe_size):
         current_time = datetime.now().timestamp() * 1000.0
+        normalized_sf_size = slotframe_size / self.schedule.slotframe_size
         data = {
             "timestamp": current_time,
-            "slotframe_len": slotframe_size,
+            "len": slotframe_size,
+            "normalized_len": normalized_sf_size,
         }
         Database.insert(SLOTFRAME_LEN, data)
 
@@ -676,13 +716,12 @@ class sdwsnEnv(gym.Env):
         self.input_queue.get()
         print("process reward")
         # We get the observations now
-        obs = self.get_observations()
-        print("observations received")
-        print(obs)
+        observation = self.get_observations()
+        print(f"{len(observation)} observations received.")
         # Trigger save features, so the coming data gets label correctly
         # save_features()
 
-        observation = np.zeros(self.n_observations).astype(np.float32)
+        # observation = np.zeros(self.n_observations).astype(np.float32)
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):
