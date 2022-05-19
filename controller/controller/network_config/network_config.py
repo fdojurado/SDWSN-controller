@@ -215,7 +215,7 @@ class NetworkConfig(mp.Process):
                         return None
                 # Send NC packet
                 self.send(packedData, serial_pkt)
-            sleep(0.5)
+            sleep(1)
 
     def send(self, data, serial_pkt):
         print("Sending NC")
