@@ -522,7 +522,7 @@ class sdwsnEnv(gym.Env):
 
     def get_network_links(self):
         # Get last index of sensor
-        N = get_last_index_wsn()+1
+        N = self.num_nodes
         # Neighbor matrix
         nbr_rssi_matrix = np.zeros(shape=(N, N))
         # We first loop through all sensor nodes
