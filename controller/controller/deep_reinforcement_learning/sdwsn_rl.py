@@ -81,11 +81,12 @@ class MonitorCallback(BaseCallback):
 
 
 class SDWSN_RL(mp.Process):
-    def __init__(self, config, verbose, input_queue, output_queue, nc_job_queue):
+    def __init__(self, config, verbose, input_queue, output_queue, nc_job_queue, nc_job_completion):
         mp.Process.__init__(self)
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.nc_job_queue = nc_job_queue
+        self.nc_job_completion = nc_job_completion
         self.verbose = verbose
         self.first_time_run = 0
         self.max_channel_offsets = config.tsch.num_of_channels
@@ -98,7 +99,7 @@ class SDWSN_RL(mp.Process):
         # Get last index of sensor
         N = get_last_index_wsn()+1
         self.env = sdwsnEnv(N, self.max_channel_offsets,
-                            self.max_slotframe_size, self.nc_job_queue, self.input_queue)
+                            self.max_slotframe_size, self.nc_job_queue, self.input_queue, self.nc_job_completion)
         print('Number of states: {}'.format(self.env.observation_space))
         print('Number of actions: {}'.format(self.env.action_space))
         self.model = DQN('MlpPolicy', self.env, verbose=2)

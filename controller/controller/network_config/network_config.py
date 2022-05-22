@@ -198,8 +198,8 @@ class NetworkConfig(mp.Process):
             # look for incoming jobs
             if not self.input_queue.empty():
                 self.running = True
-                node = self.input_queue.get()
-                print("there is a new job")
+                node, job_id = self.input_queue.get()
+                print(f"there is a new job id {job_id}")
                 print(node)
                 data = json.loads(node)
                 match(data['job_type']):
@@ -214,7 +214,10 @@ class NetworkConfig(mp.Process):
                         print("unknown job type")
                         return None
                 # Send NC packet
-                self.send(packedData, serial_pkt)
+                result = self.send(packedData, serial_pkt)
+                # Send notification of job completion
+                self.output_queue.put((result, job_id))
+
             # sleep(1)
 
     def send(self, data, serial_pkt):
@@ -223,11 +226,14 @@ class NetworkConfig(mp.Process):
         rtx = 0
         # Send NC packet through serial interface
         self.serial_input_queue.put(data)
+        # Result variable to see if the sending went well
+        result = 0
         while True:
             try:
                 ack_pkt = self.ack_queue.get(timeout=0.1)
                 if (ack_pkt.reserved0 == serial_pkt.reserved0+1):
                     print("correct ACK received")
+                    result = 1
                     break
             except queue.Empty:
                 print("ACK not received")
@@ -239,3 +245,4 @@ class NetworkConfig(mp.Process):
                 # We resend the packet if retransmission < 7
                 rtx = rtx + 1
                 self.serial_input_queue.put(data)
+        return result

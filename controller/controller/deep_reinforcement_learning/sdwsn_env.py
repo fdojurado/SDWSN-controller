@@ -5,6 +5,7 @@ from controller.routing.routes import Routes
 from controller.centralised_scheduler.schedule import *
 import random
 # from scipy import rand
+from random import randrange
 import networkx as nx
 import gym
 from gym import spaces
@@ -16,10 +17,11 @@ class sdwsnEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, num_nodes, max_channel_offsets, max_slotframe_size,
-                 nc_job_queue, input_queue):
+                 nc_job_queue, input_queue, job_completion):
         super(sdwsnEnv, self).__init__()
         self.nc_job_queue = nc_job_queue
         self.input_queue = input_queue
+        self.job_completion = job_completion
         self.num_nodes = num_nodes
         self.max_channel_offsets = max_channel_offsets
         self.max_slotframe_size = max_slotframe_size
@@ -68,15 +70,21 @@ class sdwsnEnv(gym.Env):
             extra_cells = schedules_json['cells'][12:]
             del schedules_json['cells'][12:]
             new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
-            self.nc_job_queue.put(new_job)
+            # set job id
+            job_id = randrange(1, 254)
+            # Send job with id and wait for reply
+            self.send_job(new_job, job_id)
             del schedules_json['cells']
             schedules_json['cells'] = extra_cells
             schedules_json["sf_len"] = 0
         schedules_json = json.dumps(schedules_json, indent=4, sort_keys=True)
         # We now save the slotframe size in the SLOTFRAME_LEN collection
         self.save_slotframe_len(sf_len)
-        self.nc_job_queue.put(schedules_json)
-        # We now wait for the job to complete
+        # set job id
+        job_id = randrange(1, 254)
+        # Send job with id and wait for reply
+        self.send_job(schedules_json, job_id)
+        # We now wait for the cycle to complete
         self.input_queue.get()
         print("process reward")
         # We get the observations now
@@ -93,6 +101,33 @@ class sdwsnEnv(gym.Env):
         done = False
         info = {}
         return observation, reward, done, info
+
+    """ Send a job to the NC process with a job node id """
+
+    def send_job(self, data, job_id):
+        # set max retries reading the queue
+        rtx = 0
+        # Send the job to the NC process
+        self.nc_job_queue.put((data, job_id))
+        # Result variable to see if the sending went well
+        result = 0
+        while True:
+            try:
+                result, job = self.job_completion.get(timeout=0.1)
+                if job == job_id and result == 1:
+                    print("job completion successful")
+                    result = 1
+                    break
+            except queue.Empty:
+                print("job not completed yet")
+                # We stop sending the current NC packet if
+                # we reached the max RTx or we received ACK
+                if(rtx >= 7):
+                    print("Job didn't complete")
+                    break
+                # We wait until max queue readings < 7
+                rtx = rtx + 1
+        return result
 
     """ Functions to process the observations """
 
@@ -694,17 +729,26 @@ class sdwsnEnv(gym.Env):
             extra_cells = schedules_json['cells'][12:]
             del schedules_json['cells'][12:]
             new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
-            self.nc_job_queue.put(new_job)
+            # set job id
+            job_id = randrange(1, 254)
+            # Send job with id and wait for reply
+            self.send_job(new_job, job_id)
             del schedules_json['cells']
             schedules_json['cells'] = extra_cells
             schedules_json["sf_len"] = 0
         schedules_json = json.dumps(schedules_json, indent=4, sort_keys=True)
         # Let's prepare the routing information in the json format
         routes_json = self.routes.routes_toJSON()
+        # set job id
+        job_id = randrange(1, 254)
         # We send the jobs but we don't need the whole cycle to complete
         # as we are not returning the reward.
-        self.nc_job_queue.put(schedules_json)
-        self.nc_job_queue.put(routes_json)
+        # Send job with id and wait for reply
+        self.send_job(schedules_json, job_id)
+        # set job id
+        job_id = randrange(1, 254)
+        # Send job with id and wait for reply
+        self.send_job(routes_json, job_id)
         # We get the observations now
         observation = self.get_observations()
         print(f"{len(observation)} observations received.")
