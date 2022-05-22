@@ -546,7 +546,7 @@ class sdwsnEnv(gym.Env):
 
     def build_routes_matrix(self, path):
         # Get last index of sensor
-        N = get_last_index_wsn()+1
+        N = self.num_nodes
         routes_matrix = np.zeros(shape=(N, N))
         for _, p in path.items():
             if(len(p) >= 2):
@@ -565,7 +565,7 @@ class sdwsnEnv(gym.Env):
     def build_link_schedules_matrix(self):
         print("building link schedules matrix")
         # Get last index of sensor
-        N = get_last_index_wsn()+1
+        N = self.num_nodes
         # This is an array of schedule matrices
         link_schedules_matrix = [None] * N
         # We now loop through the entire array and fill it with the schedule information
@@ -699,28 +699,15 @@ class sdwsnEnv(gym.Env):
             schedules_json['cells'] = extra_cells
             schedules_json["sf_len"] = 0
         schedules_json = json.dumps(schedules_json, indent=4, sort_keys=True)
-        # print("new reformed schedule")
-        # print(schedules_json)
-        # print(json_dump)
         # Let's prepare the routing information in the json format
         routes_json = self.routes.routes_toJSON()
-        # Send jobs to the Network configuration process
-        # which will automatically reconfigure the network given the job req.
-        # print("job1")
-        # print(schedules_json)
-        # print("job2")
-        # print(routes_json)
+        # We send the jobs but we don't need the whole cycle to complete
+        # as we are not returning the reward.
         self.nc_job_queue.put(schedules_json)
         self.nc_job_queue.put(routes_json)
-        # We now wait for the job to complete
-        self.input_queue.get()
-        print("process reward")
         # We get the observations now
         observation = self.get_observations()
         print(f"{len(observation)} observations received.")
-        # Trigger save features, so the coming data gets label correctly
-        # save_features()
-
         # observation = np.zeros(self.n_observations).astype(np.float32)
         return observation  # reward, done, info can't be included
 
