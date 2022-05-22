@@ -25,6 +25,11 @@ class sdwsnEnv(gym.Env):
         self.num_nodes = num_nodes
         self.max_channel_offsets = max_channel_offsets
         self.max_slotframe_size = max_slotframe_size
+        # Find the maximum value for the number of given nodes
+        all_routes = np.ones(self.num_nodes*self.num_nodes)
+        all_routes_links = np.where(all_routes.flatten() == 1)
+        all_routes_exponential = np.exp2(all_routes_links)
+        self.all_routes_sum = all_routes_exponential.sum()
         # Keep track of the running routes
         self.routes = Routes()
         # Keep track of schedules
@@ -579,7 +584,7 @@ class sdwsnEnv(gym.Env):
         G.remove_nodes_from(list(nx.isolates(G)))
         return G
 
-    def build_routes_matrix(self, path):
+    def save_routes_matrix_obs(self, path):
         # Get last index of sensor
         N = self.num_nodes
         routes_matrix = np.zeros(shape=(N, N))
@@ -588,16 +593,21 @@ class sdwsnEnv(gym.Env):
                 routes_matrix[p[0]][p[1]] = 1
         print("routing matrix")
         print(routes_matrix)
+        # Value where a routes has been established
+        link = np.where(routes_matrix.flatten() == 1)
+        exponential = np.exp2(link)
+        matrix_sum = exponential.sum()
+        normalize_value = matrix_sum/self.all_routes_sum
         # Save in DB
-        current_time = datetime.now().timestamp() * 1000.0
-        data = {
-            "timestamp": current_time,
-            "routes": routes_matrix.flatten().tolist()
-        }
-        Database.insert(ROUTING_PATHS, data)
-        return routes_matrix
+        # current_time = datetime.now().timestamp() * 1000.0
+        # data = {
+        #     "timestamp": current_time,
+        #     "routes": routes_matrix.flatten().tolist()
+        # }
+        # Database.insert(ROUTING_PATHS, data)
+        return normalize_value
 
-    def build_link_schedules_matrix(self):
+    def save_link_schedules_matrix_obs(self):
         print("building link schedules matrix")
         # Get last index of sensor
         N = self.num_nodes
@@ -625,15 +635,15 @@ class sdwsnEnv(gym.Env):
         # to remove None values in list
         res = [i for i in link_schedules_matrix if i]
         # Save in DB
-        current_time = datetime.now().timestamp() * 1000.0
-        data = {
-            "timestamp": current_time,
-            "schedules": res
-        }
-        Database.insert(SCHEDULES, data)
+        # current_time = datetime.now().timestamp() * 1000.0
+        # data = {
+        #     "timestamp": current_time,
+        #     "schedules": res
+        # }
+        # Database.insert(SCHEDULES, data)
         return res
 
-    def save_slotframe_len(self, slotframe_size):
+    def save_slotframe_len_obs(self, slotframe_size):
         current_time = datetime.now().timestamp() * 1000.0
         normalized_sf_size = slotframe_size / self.schedule.slotframe_size
         data = {
@@ -674,7 +684,7 @@ class sdwsnEnv(gym.Env):
                     p[0], cell_type.UC_RX, channeloffset, timeslot)
         self.schedule.print_schedule()
 
-    def user_requirements(self, req):
+    def save_user_requirements_obs(self, req):
         user_req = np.array(req)
         current_time = datetime.now().timestamp() * 1000.0
         data = {
@@ -700,17 +710,11 @@ class sdwsnEnv(gym.Env):
         protocol = random.choice(protocol)
         # Run the chosen algorithm with the current links
         path = self.compute_algo(G, protocol)
-        # We now build and save the routing matrix
-        self.build_routes_matrix(path)
         # We randomly pick a slotframe size between 10, 17 or 31
         slotframe_sizes = [17, 31]
         slotframe_size = random.choice(slotframe_sizes)
         # We now set the TSCH schedules for the current routing
         self.compute_schedule_for_routing(path, slotframe_size)
-        # We now save the slotframe size in the SLOTFRAME_LEN collection
-        self.save_slotframe_len(slotframe_size)
-        # We now save the TSCH schedules
-        self.build_link_schedules_matrix()
         # We now set and save the user requirements
         balanced = [0.35, 0.3, 0.3]
         energy = [0.5, 0.25, 0.25]
@@ -718,7 +722,6 @@ class sdwsnEnv(gym.Env):
         reliability = [0.25, 0.25, 0.5]
         user_req = [balanced, energy, delay, reliability]
         select_user_req = random.choice(user_req)
-        self.user_requirements(select_user_req)
         # Let's prepare the schedule information in the json format
         schedules_json = self.schedule.schedule_toJSON(slotframe_size)
         print("json")
@@ -749,6 +752,18 @@ class sdwsnEnv(gym.Env):
         job_id = randrange(1, 254)
         # Send job with id and wait for reply
         self.send_job(routes_json, job_id)
+        # We now save all the observations
+        # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
+        sample_time = datetime.now().timestamp() * 1000.0
+        # We now save the user requirements
+        user_requirements = np.array(select_user_req)
+        # self.save_user_requirements_obs(select_user_req)
+        # We now build and save the routing matrix
+        routing = self.save_routes_matrix_obs(path)
+        # We now save the TSCH schedules
+        schedule = self.save_link_schedules_matrix_obs()
+        # We now save the slotframe size in the SLOTFRAME_LEN collection
+        self.save_slotframe_len_obs(slotframe_size)
         # We get the observations now
         observation = self.get_observations()
         print(f"{len(observation)} observations received.")
