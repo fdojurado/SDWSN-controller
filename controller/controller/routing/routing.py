@@ -85,7 +85,7 @@ class Routing(mp.Process):
                         routes_json = self.routes_toJSON()
                         self.output_queue.put(
                             (path, routes_json, routes_matrix))
-            sleep(0.1)
+            # sleep(0.1)
 
     def dijkstra(self, G):
         # We want to compute the SP from all nodes to the controller

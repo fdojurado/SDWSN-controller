@@ -163,4 +163,4 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
             globals.elapse_time = datetime.now().timestamp() * 1000.0
             # Trigger save features, so the coming data gets label correctly
             save_features()
-        sleep(0.1)
+        # sleep(0.1)

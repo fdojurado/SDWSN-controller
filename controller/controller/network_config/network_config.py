@@ -215,7 +215,7 @@ class NetworkConfig(mp.Process):
                         return None
                 # Send NC packet
                 self.send(packedData, serial_pkt)
-            sleep(1)
+            # sleep(1)
 
     def send(self, data, serial_pkt):
         print("Sending NC")
@@ -225,7 +225,7 @@ class NetworkConfig(mp.Process):
         self.serial_input_queue.put(data)
         while True:
             try:
-                ack_pkt = self.ack_queue.get(timeout=2)
+                ack_pkt = self.ack_queue.get(timeout=0.1)
                 if (ack_pkt.reserved0 == serial_pkt.reserved0+1):
                     print("correct ACK received")
                     break

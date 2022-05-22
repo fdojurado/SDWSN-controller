@@ -561,10 +561,10 @@ def get_last_nbr(node):
 def get_last_index_wsn():
     nbr_array = np.array(Database.distinct(NODES_INFO, "neighbors.dst"))
     nodes = np.append(nbr_array, Database.distinct(NODES_INFO, "node_id"))
-    sort = np.sort(nodes)
+    node_list = [int(elem.split('.')[0]) for elem in nodes]
+    sort = np.sort(node_list)
     last = sort[-1]
-    index, zero = last.split('.')
-    return int(index)
+    return int(last)
 
 
 def save_features():
