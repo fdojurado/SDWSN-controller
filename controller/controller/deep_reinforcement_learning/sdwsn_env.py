@@ -53,14 +53,13 @@ class sdwsnEnv(gym.Env):
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
         # They will be the user requirements, energy, delay and pdr.
-        self.n_observations = 3 + 1 + (num_nodes-1) * \
-            max_channel_offsets * max_slotframe_size
+        self.n_observations = 5
         self.observation_space = spaces.Box(low=0, high=1,
                                             shape=(self.n_observations, ), dtype=np.float32)
 
     def step(self, action):
         # Get the current slotframe size
-        sf_len, _ = self.get_slotframe_len()
+        sf_len = self.get_current_slotframe_len()
         print("Performing action "+str(action))
         if action == 0:
             print("increasing slotframe size")
@@ -69,6 +68,8 @@ class sdwsnEnv(gym.Env):
             sf_len -= 1
             print("decreasing slotframe size")
         schedules_json = self.schedule.schedule_toJSON(sf_len)
+        # Save the time of performing the action
+        sample_time = datetime.now().timestamp() * 1000.0
         # Check if the current schedule job fits in the packet size 127 B
         while len(schedules_json['cells']) > 12:
             print("fragmentation is required for TSCH schedule job")
@@ -84,7 +85,7 @@ class sdwsnEnv(gym.Env):
             schedules_json["sf_len"] = 0
         schedules_json = json.dumps(schedules_json, indent=4, sort_keys=True)
         # We now save the slotframe size in the SLOTFRAME_LEN collection
-        self.save_slotframe_len(sf_len)
+        # self.save_slotframe_len(sf_len)
         # set job id
         job_id = randrange(1, 254)
         # Send job with id and wait for reply
@@ -92,17 +93,17 @@ class sdwsnEnv(gym.Env):
         # We now wait for the cycle to complete
         self.input_queue.get()
         print("process reward")
-        # We get the observations now
-        observation = self.get_observations()
-        print(f"{len(observation)} observations received.")
-        # self.parser_action(action)
-        # We now process the reward
-        user_req = self.get_last_user_requirements()
-        power = self.get_network_power_consumption()
-        delay = self.get_network_delay()
-        pdr = self.get_network_pdr()
-        reward = -1*(user_req[0]*power+user_req[1]*delay-user_req[2]*pdr)
+        # We now get the observations
+        alpha, beta, delta, last_ts_in_schedule, _, _ = self.get_last_observations()
+        user_requirements = np.array([alpha, beta, delta])
+        observation = np.append(user_requirements, last_ts_in_schedule)
+        observation = np.append(observation, sf_len)
+        # Calculate the reward
+        reward = self.calculate_reward(sample_time, alpha, beta, delta)
         print(f'Reward {reward}')
+        self.save_observations(
+            sample_time, alpha, beta, delta, last_ts_in_schedule, sf_len, reward)
+        # self.parser_action(action)
         done = False
         info = {}
         return observation, reward, done, info
@@ -136,6 +137,32 @@ class sdwsnEnv(gym.Env):
 
     """ Functions to process the observations """
 
+    def calculate_reward(self, init_time, alpha, beta, delta):
+        # Get the average power consumption for this cycle
+        power = self.get_network_power_consumption(init_time)
+        # Get the average delay for this cycle
+        delay = self.get_network_delay(init_time)
+        # Get the average pdr for this cycle
+        pdr = self.get_network_pdr(init_time)
+        # Calculate the reward
+        reward = -1*(alpha*power+beta*delay-delta*pdr)
+        return reward
+
+    def get_last_observations(self):
+        db = Database.find_one(OBSERVATIONS, {})
+        if db is None:
+            return None
+        # get last req in DB
+        db = Database.find(OBSERVATIONS, {}).sort("_id", -1).limit(1)
+        for doc in db:
+            alpha = doc["alpha"]
+            beta = doc["beta"]
+            delta = doc["delta"]
+            last_ts_in_schedule = doc['last_ts_in_schedule']
+            current_sf_len = doc['current_sf_len']
+            reward = doc['reward']
+            return alpha, beta, delta, last_ts_in_schedule, current_sf_len, reward
+
     def get_observations(self):
         # 1) Get the current user requirements
         # 2) Get the overall energy
@@ -160,7 +187,7 @@ class sdwsnEnv(gym.Env):
         # print("avg. pdr")
         # print(pdr)
         # We now get the slotframe len
-        _, sf_len = self.get_slotframe_len()
+        _, sf_len = self.get_current_slotframe_len()
         array_sf_len = np.array(sf_len)
         # We now get the TSCH link schedules
         tsch_link_schedules = self.get_tsch_link_schedules()
@@ -174,15 +201,6 @@ class sdwsnEnv(gym.Env):
 
         return result
 
-    def get_last_user_requirements(self):
-        db = Database.find_one(USER_REQUIREMENTS, {})
-        if db is None:
-            return None
-        # get last req in DB
-        db = Database.find(USER_REQUIREMENTS, {}).sort("_id", -1).limit(1)
-        for doc in db:
-            return doc["requirements"]
-
     def get_start_time(self):
         # We get the last network configuration time from
         # the time stamp in the user requirements db
@@ -194,7 +212,7 @@ class sdwsnEnv(gym.Env):
         for doc in db:
             return doc["timestamp"]
 
-    def get_last_n_power_consumption_samples(self, node, timestamp, energy_samples):
+    def get_avg_power_consumption(self, node, timestamp, energy_samples):
         query = {
             "$and": [
                 {"node_id": node},
@@ -224,12 +242,23 @@ class sdwsnEnv(gym.Env):
              }
         ]
         db = Database.aggregate(NODES_INFO, pipeline)
+        # Variable to keep track of the number samples
+        num_rcv = 0
+        # Sum power consumptions
+        sum_power = 0
         for doc in db:
-            energy_samples.append(doc["ewma_energy_normalized"])
+            num_rcv += 1
+            sum_power += doc["ewma_energy_normalized"]
+        # Calculate the avg power consumption
+        if num_rcv != 0:
+            avg_power = sum_power/num_rcv
+        else:
+            avg_power = 0
+        energy_samples.append(avg_power)
 
-    def get_network_power_consumption(self):
+    def get_network_power_consumption(self, init_time):
         # Get the time when the last network configuration was deployed
-        timestamp = self.get_start_time()
+        timestamp = init_time
         # Variable to keep track of the number of energy consumption samples
         energy_samples = []
         overall_energy = 0
@@ -237,7 +266,7 @@ class sdwsnEnv(gym.Env):
         nodes = Database.find(NODES_INFO, {})
         for node in nodes:
             # Get all samples from the start of the network configuration
-            self.get_last_n_power_consumption_samples(
+            self.get_avg_power_consumption(
                 node["node_id"], timestamp, energy_samples)
         print("energy samples")
         print(energy_samples)
@@ -246,7 +275,7 @@ class sdwsnEnv(gym.Env):
         print(overall_energy)
         return overall_energy
 
-    def get_last_n_delay_samples(self, node, timestamp, delay_samples):
+    def get_avg_delay(self, node, timestamp, delay_samples):
         query = {
             "$and": [
                 {"node_id": node},
@@ -276,13 +305,24 @@ class sdwsnEnv(gym.Env):
              }
              }
         ]
+        # Variable to keep track of the number samples
+        num_rcv = 0
+        # Sum of delays
+        sum_delay = 0
         db = Database.aggregate(NODES_INFO, pipeline)
         for doc in db:
-            delay_samples.append(doc["ewma_delay_normalized"])
+            num_rcv += 1
+            sum_delay += doc["ewma_delay_normalized"]
+        # Calculate the avg delay
+        if num_rcv != 0:
+            avg_delay = sum_delay/num_rcv
+        else:
+            avg_delay = 0
+        delay_samples.append(avg_delay)
 
-    def get_network_delay(self):
+    def get_network_delay(self, init_time):
         # Get the time when the last network configuration was deployed
-        timestamp = self.get_start_time()
+        timestamp = init_time
         # Variable to keep track of the number of delay samples
         delay_samples = []
         overall_delay = 0
@@ -290,7 +330,7 @@ class sdwsnEnv(gym.Env):
         nodes = Database.find(NODES_INFO, {})
         for node in nodes:
             # Get all samples from the start of the network configuration
-            self.get_last_n_delay_samples(
+            self.get_avg_delay(
                 node["node_id"], timestamp, delay_samples)
         print("delay samples")
         print(delay_samples)
@@ -332,7 +372,7 @@ class sdwsnEnv(gym.Env):
         for doc in db:
             return doc["seq"]
 
-    def get_last_n_pdr_samples(self, node, timestamp, pdr_samples):
+    def get_avg_pdr(self, node, timestamp, pdr_samples):
         query = {
             "$and": [
                 {"node_id": node},
@@ -347,8 +387,6 @@ class sdwsnEnv(gym.Env):
         last_seq = self.get_previous_pdr_seq_rcv(node, timestamp)
         if last_seq is None:
             last_seq = 0
-        print("last sequence")
-        print(last_seq)
         # Get last n samples after the timestamp
         pipeline = [
             {"$match": {"node_id": node}},
@@ -374,26 +412,18 @@ class sdwsnEnv(gym.Env):
         last_seq_rcv = 0
         for doc in db:
             num_rcv += 1
-            print("doc")
-            print(doc)
             if (doc['seq'] > last_seq_rcv):
                 last_seq_rcv = doc['seq']
-        print("last seq recv")
-        print(last_seq_rcv)
-        print("num rcv")
-        print(num_rcv)
         # Get the averaged pdr for this period
         if last_seq_rcv != 0:
             avg_pdr = num_rcv/(last_seq_rcv-last_seq)
         else:
             avg_pdr = 0
-        print("avg pdr")
-        print(avg_pdr)
         pdr_samples.append(avg_pdr)
 
-    def get_network_pdr(self):
+    def get_network_pdr(self, init_time):
         # Get the time when the last network configuration was deployed
-        timestamp = self.get_start_time()
+        timestamp = init_time
         # Variable to keep track of the number of pdr samples
         pdr_samples = []
         overall_pdr = 0
@@ -403,7 +433,7 @@ class sdwsnEnv(gym.Env):
             print("calculating pdr for node " +
                   str(node["node_id"])+" timestamp "+str(timestamp))
             # Get all samples from the start of the network configuration
-            self.get_last_n_pdr_samples(
+            self.get_avg_pdr(
                 node["node_id"], timestamp, pdr_samples)
         print("pdr samples")
         print(pdr_samples)
@@ -413,14 +443,14 @@ class sdwsnEnv(gym.Env):
         print(overall_pdr)
         return overall_pdr
 
-    def get_slotframe_len(self):
-        db = Database.find_one(SLOTFRAME_LEN, {})
+    def get_current_slotframe_len(self):
+        db = Database.find_one(OBSERVATIONS, {})
         if db is None:
             return None
         # get last req in DB
-        db = Database.find(SLOTFRAME_LEN, {}).sort("_id", -1).limit(1)
+        db = Database.find(OBSERVATIONS, {}).sort("_id", -1).limit(1)
         for doc in db:
-            return (doc["len"], doc['normalized_len'])
+            return doc["current_sf_len"]
 
     def get_tsch_link_schedules(self):
         db = Database.find_one(SCHEDULES, {})
@@ -607,12 +637,14 @@ class sdwsnEnv(gym.Env):
         # Database.insert(ROUTING_PATHS, data)
         return normalize_value
 
-    def save_link_schedules_matrix_obs(self):
+    def build_link_schedules_matrix_obs(self):
         print("building link schedules matrix")
         # Get last index of sensor
         N = self.num_nodes
         # This is an array of schedule matrices
         link_schedules_matrix = [None] * N
+        # Last timeslot offset of the current schedule
+        last_ts = 0
         # We now loop through the entire array and fill it with the schedule information
         for node in self.schedule.list_nodes:
             # Construct the schedule matrix
@@ -622,10 +654,14 @@ class sdwsnEnv(gym.Env):
                 # print("node is listening in ts " +
                 #       str(rx_cell.timeoffset)+" ch "+str(rx_cell.channeloffset))
                 schedule[rx_cell.channeloffset][rx_cell.timeoffset] = 1
+                if rx_cell.timeoffset > last_ts:
+                    last_ts = rx_cell.timeoffset
             for tx_cell in node.tx:
                 # print("node is transmitting in ts " +
                 #       str(tx_cell.timeoffset)+" ch "+str(tx_cell.channeloffset))
                 schedule[tx_cell.channeloffset][tx_cell.timeoffset] = -1
+                if tx_cell.timeoffset > last_ts:
+                    last_ts = tx_cell.timeoffset
             addr = node.node.split(".")
             link_schedules_matrix[int(
                 addr[0])] = schedule.flatten().tolist()
@@ -641,7 +677,7 @@ class sdwsnEnv(gym.Env):
         #     "schedules": res
         # }
         # Database.insert(SCHEDULES, data)
-        return res
+        return res, last_ts
 
     def save_slotframe_len_obs(self, slotframe_size):
         current_time = datetime.now().timestamp() * 1000.0
@@ -652,6 +688,18 @@ class sdwsnEnv(gym.Env):
             "normalized_len": normalized_sf_size,
         }
         Database.insert(SLOTFRAME_LEN, data)
+
+    def save_observations(self, timestamp, alpha, beta, delta, last_ts_in_schedule, current_sf_len, reward):
+        data = {
+            "timestamp": timestamp,
+            "alpha": alpha,
+            "beta": beta,
+            "delta": delta,
+            "last_ts_in_schedule": last_ts_in_schedule,
+            "current_sf_len": current_sf_len,
+            "reward": reward
+        }
+        Database.insert(OBSERVATIONS, data)
 
     def compute_schedule_for_routing(self, path, slotframe_size):
         self.schedule.clear_schedule()
@@ -759,15 +807,15 @@ class sdwsnEnv(gym.Env):
         user_requirements = np.array(select_user_req)
         # self.save_user_requirements_obs(select_user_req)
         # We now build and save the routing matrix
-        routing = self.save_routes_matrix_obs(path)
-        # We now save the TSCH schedules
-        schedule = self.save_link_schedules_matrix_obs()
-        # We now save the slotframe size in the SLOTFRAME_LEN collection
-        self.save_slotframe_len_obs(slotframe_size)
-        # We get the observations now
-        observation = self.get_observations()
-        print(f"{len(observation)} observations received.")
+        # routing = self.save_routes_matrix_obs(path)
+        # We now build the TSCH schedule matrix
+        _, last_ts = self.build_link_schedules_matrix_obs()
+        # We now save the observations with reward None
         # observation = np.zeros(self.n_observations).astype(np.float32)
+        observation = np.append(user_requirements, last_ts)
+        observation = np.append(observation, slotframe_size)
+        self.save_observations(
+            sample_time, select_user_req[0], select_user_req[1], select_user_req[2], last_ts, slotframe_size, None)
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):

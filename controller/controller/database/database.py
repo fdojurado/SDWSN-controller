@@ -8,7 +8,7 @@ SLOTFRAME_LEN = "slotframe_len"
 ROUTING_PATHS = "routing_paths"
 SCHEDULES = "schedules"
 USER_REQUIREMENTS = "user_requirements"
-RL_DATA = "rl_data"
+OBSERVATIONS = "observations"
 
 class Database(object):
     URI = "mongodb://127.0.0.1:27017"
