@@ -58,8 +58,10 @@ class sdwsnEnv(gym.Env):
                                             shape=(self.n_observations, ), dtype=np.float32)
 
     def step(self, action):
+        # We now get the last observations
+        alpha, beta, delta, last_ts_in_schedule, current_sf_len, _ = self.get_last_observations()
         # Get the current slotframe size
-        sf_len = self.get_current_slotframe_len()
+        sf_len = current_sf_len
         print("Performing action "+str(action))
         if action == 0:
             print("increasing slotframe size")
@@ -93,8 +95,7 @@ class sdwsnEnv(gym.Env):
         # We now wait for the cycle to complete
         self.input_queue.get()
         print("process reward")
-        # We now get the observations
-        alpha, beta, delta, last_ts_in_schedule, _, _ = self.get_last_observations()
+        # Build observations
         user_requirements = np.array([alpha, beta, delta])
         observation = np.append(user_requirements, last_ts_in_schedule)
         observation = np.append(observation, sf_len)
@@ -430,8 +431,6 @@ class sdwsnEnv(gym.Env):
         # We first loop through all sensor nodes
         nodes = Database.find(NODES_INFO, {})
         for node in nodes:
-            print("calculating pdr for node " +
-                  str(node["node_id"])+" timestamp "+str(timestamp))
             # Get all samples from the start of the network configuration
             self.get_avg_pdr(
                 node["node_id"], timestamp, pdr_samples)
@@ -442,15 +441,6 @@ class sdwsnEnv(gym.Env):
         print("avg network PDR for this cycle")
         print(overall_pdr)
         return overall_pdr
-
-    def get_current_slotframe_len(self):
-        db = Database.find_one(OBSERVATIONS, {})
-        if db is None:
-            return None
-        # get last req in DB
-        db = Database.find(OBSERVATIONS, {}).sort("_id", -1).limit(1)
-        for doc in db:
-            return doc["current_sf_len"]
 
     def get_tsch_link_schedules(self):
         db = Database.find_one(SCHEDULES, {})
