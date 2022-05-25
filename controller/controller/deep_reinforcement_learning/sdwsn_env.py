@@ -11,6 +11,11 @@ import gym
 from gym import spaces
 import numpy as np
 
+# These are the size of other schedules in orchestra
+eb_size = 397
+common_size = 31
+control_plane_size = 27
+
 
 class sdwsnEnv(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
@@ -65,9 +70,9 @@ class sdwsnEnv(gym.Env):
         print("Performing action "+str(action))
         if action == 0:
             print("increasing slotframe size")
-            sf_len += 1
+            sf_len = self.next_coprime(sf_len)
         if action == 1:
-            sf_len -= 1
+            sf_len = self.previous_coprime(sf_len)
             print("decreasing slotframe size")
         schedules_json = self.schedule.schedule_toJSON(sf_len)
         # Save the time of performing the action
@@ -108,6 +113,47 @@ class sdwsnEnv(gym.Env):
         done = False
         info = {}
         return observation, reward, done, info
+
+    """ Coprime checks methods """
+
+    def gcd(self, p, q):
+        # Create the gcd of two positive integers.
+        while q != 0:
+            p, q = q, p % q
+        return p
+
+    def is_coprime(self, x, y):
+        return self.gcd(x, y) == 1
+
+    def compare_coprime(self, num):
+        sf_sizes = [eb_size, common_size, control_plane_size]
+        result = 0
+        for sf_size in sf_sizes:
+            is_coprime = self.is_coprime(num, sf_size)
+            result += is_coprime
+
+        if result == 3:
+            return 1
+        else:
+            return 0
+
+    def next_coprime(self, num):
+        is_coprime = 0
+        while not is_coprime:
+            num += 1
+            # Check if num is coprime with all other sf sizes
+            is_coprime = self.compare_coprime(num)
+        print(f'next coprime found {num}')
+        return num
+
+    def previous_coprime(self, num):
+        is_coprime = 0
+        while not is_coprime:
+            num -= 1
+            # Check if num is coprime with all other sf sizes
+            is_coprime = self.compare_coprime(num)
+        print(f'previous coprime found {num}')
+        return num
 
     """ Send a job to the NC process with a job node id """
 
@@ -251,10 +297,10 @@ class sdwsnEnv(gym.Env):
             num_rcv += 1
             sum_power += doc["ewma_energy_normalized"]
         # Calculate the avg power consumption
-        if num_rcv != 0:
+        if num_rcv > 0:
             avg_power = sum_power/num_rcv
         else:
-            avg_power = 0
+            avg_power = 1
         energy_samples.append(avg_power)
 
     def get_network_power_consumption(self, init_time):
@@ -315,10 +361,10 @@ class sdwsnEnv(gym.Env):
             num_rcv += 1
             sum_delay += doc["ewma_delay_normalized"]
         # Calculate the avg delay
-        if num_rcv != 0:
+        if num_rcv > 0:
             avg_delay = sum_delay/num_rcv
         else:
-            avg_delay = 0
+            avg_delay = 1
         delay_samples.append(avg_delay)
 
     def get_network_delay(self, init_time):
@@ -416,7 +462,7 @@ class sdwsnEnv(gym.Env):
             if (doc['seq'] > last_seq_rcv):
                 last_seq_rcv = doc['seq']
         # Get the averaged pdr for this period
-        if last_seq_rcv != 0:
+        if last_seq_rcv > 0:
             avg_pdr = num_rcv/(last_seq_rcv-last_seq)
         else:
             avg_pdr = 0
@@ -749,7 +795,7 @@ class sdwsnEnv(gym.Env):
         # Run the chosen algorithm with the current links
         path = self.compute_algo(G, protocol)
         # We randomly pick a slotframe size between 10, 17 or 31
-        slotframe_sizes = [17, 31]
+        slotframe_sizes = [19, 23]
         slotframe_size = random.choice(slotframe_sizes)
         # We now set the TSCH schedules for the current routing
         self.compute_schedule_for_routing(path, slotframe_size)
@@ -790,6 +836,8 @@ class sdwsnEnv(gym.Env):
         job_id = randrange(1, 254)
         # Send job with id and wait for reply
         self.send_job(routes_json, job_id)
+        # Wait for the network to settle
+        sleep(0.5)
         # We now save all the observations
         # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
         sample_time = datetime.now().timestamp() * 1000.0

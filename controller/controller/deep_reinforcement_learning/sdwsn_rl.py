@@ -116,5 +116,5 @@ class SDWSN_RL(mp.Process):
                     self.configure_env()
                     # Train the agent
                     self.model.learn(total_timesteps=int(
-                        2), callback=self.callback)
+                        100), callback=self.callback)
             # sleep(0.1)

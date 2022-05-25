@@ -19,7 +19,7 @@ I_LPM = 0.545  # mA
 I_RX = 20  # mA
 # Constants for energy normalization
 # ENERGY_SAMPLE_DURATION = 10  # seconds
-PMIN = VOLTAGE * I_LPM * 1e3  # Value in micro
+PMIN = 0  # Value in micro
 PMAX = VOLTAGE * I_RX * 1.2 * 1e3  # Value in micro
 MIN_TX = PMAX/3  # Max energy for the last node in the network
 # Constants for packet delay calculation
