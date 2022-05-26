@@ -359,7 +359,7 @@ class sdwsnEnv(gym.Env):
             {'$project':
              {
                  "_id": 1,
-                 'timestamp': '$energy.timestamp',
+                 'timestamp': '$delay.timestamp',
                  'sampled_delay': '$delay.sampled_delay',
                  'ewma_delay': '$delay.ewma_delay',
                  'ewma_delay_normalized': '$delay.ewma_delay_normalized'
@@ -761,30 +761,50 @@ class sdwsnEnv(gym.Env):
         for _, p in path.items():
             if(len(p) >= 2):
                 # print("try to add uc for ", p)
+                # Let's process this path in reverse
+                p.reverse()
                 for i in range(len(p)-1):
                     # TODO: find a way to avoid forcing the last addr of
                     # sensor nodes to 0.
-                    node = p[i+1]
-                    node = str(node)+".0"
-                    neighbor = p[i]
-                    neighbor = str(neighbor)+".0"
-                    # print("rx ", str(node), "tx: ", str(neighbor))
                     timeslot = random.randrange(0,
                                                 slotframe_size-1)
                     channeloffset = random.randrange(0,
                                                      self.schedule.num_channel_offsets-1)
-                    self.schedule.add_uc(
-                        str(node), cell_type.UC_RX, channeloffset, timeslot)
-                    self.schedule.add_uc(
-                        str(neighbor), cell_type.UC_TX, destination=node)
-
-            else:
-                # print("add an uc rx for node ", p[0])
-                timeslot = random.randrange(0, slotframe_size-1)
-                channeloffset = random.randrange(0,
-                                                 self.schedule.num_channel_offsets-1)
-                self.schedule.add_uc(
-                    p[0], cell_type.UC_RX, channeloffset, timeslot)
+                    # Rx node
+                    rx_node = p[i]
+                    rx_node = str(rx_node)+".0"
+                    # Tx node
+                    tx_node = p[i+1]
+                    tx_node = str(tx_node)+".0"
+                    # Assign Rx link first
+                    # In this first approach, we only want to schedule one Rx per node
+                    ch, ts = self.schedule.get_rx_coordinates(rx_node)
+                    if ch is None or ts is None:
+                        ch = channeloffset
+                        ts = timeslot
+                        print(f'Rx link for node {rx_node} Not found (selecting ts={ts} ch={ch})')
+                        # Let's first check whether this timeslot is already in use
+                        while(not self.schedule.timeslot_empty(rx_node, ts)):
+                            ts = random.randrange(0,
+                                                  slotframe_size-1)
+                            print(f"ts {ts} already in use, we now try ts={ts}")
+                        # We are now sure that the ts is available, then we reserve it
+                        self.schedule.add_uc(
+                            rx_node, cell_type.UC_RX, ch, ts)
+                    # Assign Tx link
+                    if self.schedule.timeslot_empty(tx_node, ts):
+                        print(f"Tx link schedule in node {tx_node} ({tx_node}-{rx_node}) at ts={ts}, ch={ch}")
+                        self.schedule.add_uc(
+                            tx_node, cell_type.UC_TX, ch, ts, rx_node)
+                    else:
+                        print(f"ts already in use ({tx_node}-{rx_node}) at ts={ts}, ch={ch}")
+            # else:
+            #     # print("add an uc rx for node ", p[0])
+            #     timeslot = random.randrange(0, slotframe_size-1)
+            #     channeloffset = random.randrange(0,
+            #                                      self.schedule.num_channel_offsets-1)
+            #     self.schedule.add_uc(
+            #         p[0], cell_type.UC_RX, channeloffset, timeslot)
         self.schedule.print_schedule()
 
     def save_user_requirements_obs(self, req):
@@ -824,7 +844,8 @@ class sdwsnEnv(gym.Env):
         delay = [0.25, 0.5, 0.25]
         reliability = [0.25, 0.25, 0.5]
         user_req = [balanced, energy, delay, reliability]
-        select_user_req = random.choice(user_req)
+        select_user_req = energy
+        # select_user_req = random.choice(user_req)
         # Let's prepare the schedule information in the json format
         schedules_json = self.schedule.schedule_toJSON(slotframe_size)
         print("json")

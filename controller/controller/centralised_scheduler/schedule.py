@@ -27,7 +27,7 @@ class Cell:
                           sort_keys=True, indent=4)
 
 
-class Create_Node:
+class Node:
     def __init__(self, node):
         self.node = node
         self.rx = []
@@ -63,11 +63,11 @@ class Create_Node:
         return 0
 
     def timeslot_empty(self, timeoffset):
-        if not self.rx:
+        if self.rx:
             for rx in self.rx:
                 if(timeoffset == rx.timeoffset):
                     return 0
-        if not self.tx:
+        if self.tx:
             for tx in self.tx:
                 if(timeoffset == tx.timeoffset):
                     return 0
@@ -80,7 +80,7 @@ class Create_Node:
             return 1
 
     def __repr__(self):
-        return "Create_Node(Node={}, rx={}, tx={})".format(
+        return "Node(Node={}, rx={}, tx={})".format(
             self.node, self.rx, self.tx)
 
 
@@ -95,7 +95,7 @@ class Schedule:
         # print("adding uc link node: ", node, " destination: ", destination, "type: ", type,
         #   " channeloffset: ", channeloffset, " timeoffset: ", timeoffset)
         if(not self.list_nodes):
-            sensor = Create_Node(node)
+            sensor = Node(node)
             self.list_nodes.append(sensor)
             # print("creating new sensor")
         else:
@@ -107,16 +107,16 @@ class Schedule:
                 else:
                     sensor = None
             if (sensor is None):
-                sensor = Create_Node(node)
+                sensor = Node(node)
                 self.list_nodes.append(sensor)
         # print("list of nodes: ", self.list_nodes)
         if(type == cell_type.UC_RX):
             # Check if the node already has a rx link
-            if(not sensor.has_rx()):
-                # print("adding rx uc at channeloffset ",
-                #   channeloffset, " timeoffset ", timeoffset)
-                rx_cell = sensor.add_rx_cell(channeloffset, timeoffset)
-                self.schedule[channeloffset][timeoffset].append(rx_cell)
+            # if(not sensor.has_rx()):
+            # print("adding rx uc at channeloffset ",
+            #   channeloffset, " timeoffset ", timeoffset)
+            rx_cell = sensor.add_rx_cell(channeloffset, timeoffset)
+            self.schedule[channeloffset][timeoffset].append(rx_cell)
         if(type == cell_type.UC_TX and destination is not None):
             channeloffset, timeoffset = self.get_rx_coordinates(
                 destination)
@@ -129,6 +129,13 @@ class Schedule:
                     self.schedule[channeloffset][timeoffset].append(tx_cell)
 
         # self.print_schedule()
+
+    def timeslot_empty(self, node, timeslot):
+        for elem in self.list_nodes:
+            if elem.node == node:
+                return elem.timeslot_empty(timeslot)
+        # If this is not found, then it is empty
+        return 1
 
     def get_rx_coordinates(self, addr):
         # Get the time and channel offset from the given addr.
