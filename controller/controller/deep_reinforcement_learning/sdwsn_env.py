@@ -184,13 +184,25 @@ class sdwsnEnv(gym.Env):
 
     """ Functions to process the observations """
 
+    def get_sensor_nodes_in_order(self):
+        db = Database.find(NODES_INFO, {}).sort("node_id").collation(
+            Collation(locale="en_US", numericOrdering=True))
+        nodes = []
+        if db is None:
+            return None
+        for node in db:
+            nodes.append(node["node_id"])
+        return nodes
+
     def calculate_reward(self, init_time, alpha, beta, delta):
+        # Get the sensor nodes to loop in ascending order
+        nodes = self.get_sensor_nodes_in_order()
         # Get the average power consumption for this cycle
-        power = self.get_network_power_consumption(init_time)
+        power = self.get_network_power_consumption(init_time, nodes)
         # Get the average delay for this cycle
-        delay = self.get_network_delay(init_time)
+        delay = self.get_network_delay(init_time, nodes)
         # Get the average pdr for this cycle
-        pdr = self.get_network_pdr(init_time)
+        pdr = self.get_network_pdr(init_time, nodes)
         # Calculate the reward
         reward = -1*(alpha*power+beta*delay-delta*pdr)
         return reward
@@ -294,6 +306,8 @@ class sdwsnEnv(gym.Env):
         # Sum power consumptions
         sum_power = 0
         for doc in db:
+            print("doc")
+            print(doc)
             num_rcv += 1
             sum_power += doc["ewma_energy_normalized"]
         # Calculate the avg power consumption
@@ -303,18 +317,18 @@ class sdwsnEnv(gym.Env):
             avg_power = 1
         energy_samples.append(avg_power)
 
-    def get_network_power_consumption(self, init_time):
+    def get_network_power_consumption(self, init_time, nodes):
         # Get the time when the last network configuration was deployed
         timestamp = init_time
         # Variable to keep track of the number of energy consumption samples
         energy_samples = []
         overall_energy = 0
         # We first loop through all sensor nodes
-        nodes = Database.find(NODES_INFO, {})
         for node in nodes:
+            print(f"printing energy for node {node}")
             # Get all samples from the start of the network configuration
             self.get_avg_power_consumption(
-                node["node_id"], timestamp, energy_samples)
+                node, timestamp, energy_samples)
         print("energy samples")
         print(energy_samples)
         overall_energy = sum(energy_samples)/len(energy_samples)
@@ -358,6 +372,8 @@ class sdwsnEnv(gym.Env):
         sum_delay = 0
         db = Database.aggregate(NODES_INFO, pipeline)
         for doc in db:
+            print("doc")
+            print(doc)
             num_rcv += 1
             sum_delay += doc["ewma_delay_normalized"]
         # Calculate the avg delay
@@ -367,18 +383,18 @@ class sdwsnEnv(gym.Env):
             avg_delay = 1
         delay_samples.append(avg_delay)
 
-    def get_network_delay(self, init_time):
+    def get_network_delay(self, init_time, nodes):
         # Get the time when the last network configuration was deployed
         timestamp = init_time
         # Variable to keep track of the number of delay samples
         delay_samples = []
         overall_delay = 0
         # We first loop through all sensor nodes
-        nodes = Database.find(NODES_INFO, {})
         for node in nodes:
+            print(f"printing delay for node {node}")
             # Get all samples from the start of the network configuration
             self.get_avg_delay(
-                node["node_id"], timestamp, delay_samples)
+                node, timestamp, delay_samples)
         print("delay samples")
         print(delay_samples)
         overall_delay = sum(delay_samples)/len(delay_samples)
@@ -458,9 +474,12 @@ class sdwsnEnv(gym.Env):
         # Last received sequence
         last_seq_rcv = 0
         for doc in db:
+            print("doc")
+            print(doc)
             num_rcv += 1
             if (doc['seq'] > last_seq_rcv):
                 last_seq_rcv = doc['seq']
+        print(f"last sequence received {last_seq_rcv} previous seq {last_seq}")
         # Get the averaged pdr for this period
         if last_seq_rcv > 0:
             avg_pdr = num_rcv/(last_seq_rcv-last_seq)
@@ -468,18 +487,18 @@ class sdwsnEnv(gym.Env):
             avg_pdr = 0
         pdr_samples.append(avg_pdr)
 
-    def get_network_pdr(self, init_time):
+    def get_network_pdr(self, init_time, nodes):
         # Get the time when the last network configuration was deployed
         timestamp = init_time
         # Variable to keep track of the number of pdr samples
         pdr_samples = []
         overall_pdr = 0
         # We first loop through all sensor nodes
-        nodes = Database.find(NODES_INFO, {})
         for node in nodes:
+            print(f"printing pdr for node {node}")
             # Get all samples from the start of the network configuration
             self.get_avg_pdr(
-                node["node_id"], timestamp, pdr_samples)
+                node, timestamp, pdr_samples)
         print("pdr samples")
         print(pdr_samples)
         # Calculate the overall network pdr

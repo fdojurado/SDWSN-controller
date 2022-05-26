@@ -1,4 +1,5 @@
 import pymongo
+from pymongo.collation import Collation
 
 
 PACKETS = "packets"
