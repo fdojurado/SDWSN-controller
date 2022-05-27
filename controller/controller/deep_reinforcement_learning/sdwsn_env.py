@@ -271,7 +271,7 @@ class sdwsnEnv(gym.Env):
         for doc in db:
             return doc["timestamp"]
 
-    def get_avg_power_consumption(self, node, timestamp, energy_samples):
+    def get_last_power_consumption(self, node, timestamp, energy_samples):
         query = {
             "$and": [
                 {"node_id": node},
@@ -285,37 +285,26 @@ class sdwsnEnv(gym.Env):
         pipeline = [
             {"$match": {"node_id": node}},
             {"$unwind": "$energy"},
-            {"$match": {
-                "energy.timestamp": {
-                    "$gt": timestamp
-                }
-            }
-            },
+            {"$sort": {"energy.timestamp": -1}},
+            {"$limit": 1},
             {'$project':
              {
                  "_id": 1,
                  'timestamp': '$energy.timestamp',
                  'ewma_energy': '$energy.ewma_energy',
-                 'ewma_energy_normalized': '$energy.ewma_energy_normalized'
+                 #  'ewma_energy_normalized': '$energy.ewma_energy_normalized'
              }
              }
         ]
         db = Database.aggregate(NODES_INFO, pipeline)
-        # Variable to keep track of the number samples
-        num_rcv = 0
-        # Sum power consumptions
-        sum_power = 0
+
         for doc in db:
-            print("doc")
-            print(doc)
-            num_rcv += 1
-            sum_power += doc["ewma_energy_normalized"]
-        # Calculate the avg power consumption
-        if num_rcv > 0:
-            avg_power = sum_power/num_rcv
-        else:
-            avg_power = 1
-        energy_samples.append(avg_power)
+            energy = doc['ewma_energy']
+            print("last energy sample")
+            print(energy)
+            energy_samples.append(energy)
+            break
+        return
 
     def get_network_power_consumption(self, init_time, nodes):
         # Get the time when the last network configuration was deployed
@@ -327,7 +316,7 @@ class sdwsnEnv(gym.Env):
         for node in nodes:
             print(f"printing energy for node {node}")
             # Get all samples from the start of the network configuration
-            self.get_avg_power_consumption(
+            self.get_last_power_consumption(
                 node, timestamp, energy_samples)
         print("energy samples")
         print(energy_samples)
@@ -372,10 +361,11 @@ class sdwsnEnv(gym.Env):
         sum_delay = 0
         db = Database.aggregate(NODES_INFO, pipeline)
         for doc in db:
-            print("doc")
-            print(doc)
+            delay = doc["sampled_delay"]
+            print("sample delay")
+            print(delay)
             num_rcv += 1
-            sum_delay += doc["ewma_delay_normalized"]
+            sum_delay += delay
         # Calculate the avg delay
         if num_rcv > 0:
             avg_delay = sum_delay/num_rcv
@@ -447,9 +437,9 @@ class sdwsnEnv(gym.Env):
             pdr_samples.append(0)
             return None
         # Let's get the previous data packet sequence
-        last_seq = self.get_previous_pdr_seq_rcv(node, timestamp)
-        if last_seq is None:
-            last_seq = 0
+        # last_seq = self.get_previous_pdr_seq_rcv(node, timestamp)
+        # if last_seq is None:
+        #     last_seq = 0
         # Get last n samples after the timestamp
         pipeline = [
             {"$match": {"node_id": node}},
@@ -474,15 +464,16 @@ class sdwsnEnv(gym.Env):
         # Last received sequence
         last_seq_rcv = 0
         for doc in db:
-            print("doc")
-            print(doc)
+            seq = doc['seq']
+            print("seq sample")
+            print(seq)
             num_rcv += 1
-            if (doc['seq'] > last_seq_rcv):
-                last_seq_rcv = doc['seq']
-        print(f"last sequence received {last_seq_rcv} previous seq {last_seq}")
+            if (seq > last_seq_rcv):
+                last_seq_rcv = seq
+        print(f"last sequence received {last_seq_rcv}")
         # Get the averaged pdr for this period
         if last_seq_rcv > 0:
-            avg_pdr = num_rcv/(last_seq_rcv-last_seq)
+            avg_pdr = num_rcv/(last_seq_rcv)
         else:
             avg_pdr = 0
         pdr_samples.append(avg_pdr)
