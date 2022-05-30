@@ -36,8 +36,8 @@ def handle_serial_packet(data, ack_queue):
     global current_time
     # Get Unix timestamp from a datetime object
     current_time = datetime.now().timestamp() * 1000.0
-    print("serial packet received")
-    print(data)
+    # print("serial packet received")
+    # print(data)
     # Let's parse serial packet
     serial_pkt = process_serial_packet(data)
     if serial_pkt is None:
@@ -58,7 +58,7 @@ def handle_serial_packet(data, ack_queue):
     protocol = pkt.vap & b
     match protocol:
         case sdn_protocols.SDN_PROTO_NA:
-            print("Processing NA packet")
+            # print("Processing NA packet")
             na_pkt = process_na_packet(pkt)
             if na_pkt is None:
                 "bad NA packet"
@@ -75,7 +75,7 @@ def handle_serial_packet(data, ack_queue):
         #     ack_queue.put(pkt)
         #     return
         case sdn_protocols.SDN_PROTO_DATA:
-            print("Processing data packet")
+            # print("Processing data packet")
             data_pkt = process_data_packet(pkt)
             if data_pkt is None:
                 "bad Data packet"
@@ -96,16 +96,16 @@ def handle_serial_packet(data, ack_queue):
 
 def process_serial_packet(data):
     # Parse sdn IP packet
-    print("processing serial packet")
+    # print("processing serial packet")
     pkt = SerialPacket.unpack(data)
-    print(repr(pkt))
+    # print(repr(pkt))
     # If the reported payload length in the serial header doesnot match the packet size,
     # then we drop the packet.
     if(len(pkt.payload) < pkt.payload_len):
         print("packet shorter than reported in serial header")
         return None
     # serial packet succeed
-    print("succeed unpacking serial packet")
+    # print("succeed unpacking serial packet")
     return pkt
 
 
@@ -123,9 +123,9 @@ def process_data_packet(pkt):
         return
     # Process data packet header
     pkt = Data_Packet.unpack(pkt.payload)
-    print(repr(pkt))
+    # print(repr(pkt))
     # sdn IP packet succeed
-    print("succeed unpacking sdn data packet")
+    # print("succeed unpacking sdn data packet")
     return pkt
 
 
@@ -135,16 +135,16 @@ def process_sdn_ip_packet(data):
         print("bad checksum")
         return
     # Parse sdn IP packet
-    print("processing IP packet")
+    # print("processing IP packet")
     pkt = SDN_IP_Packet.unpack(data)
-    print(repr(pkt))
+    # print(repr(pkt))
     # If the reported length in the sdn IP header doesnot match the packet size,
     # then we drop the packet.
     if(len(data) < pkt.tlen):
         print("packet shorter than reported in IP header")
         return
     # sdn IP packet succeed
-    print("succeed unpacking sdn IP packet")
+    # print("succeed unpacking sdn IP packet")
     return pkt
 
 
@@ -168,10 +168,10 @@ def sdn_ip_checksum(msg, len):
     result = 0
     if(sum == 0):
         result = 0xffff
-        print("return chksum ", result)
+        # print("return chksum ", result)
     else:
         result = struct.pack(">i", sum)
-        print("return chksum ", result)
+        # print("return chksum ", result)
     return result
 
 
@@ -183,14 +183,14 @@ def process_na_packet(pkt):
         return
     # Parse sdn NA packet
     pkt = NA_Packet.unpack(pkt.payload, length)
-    print(repr(pkt))
+    # print(repr(pkt))
     # If the reported payload length in the sdn NA header does not match the packet size,
     # then we drop the packet.
     if(len(pkt.payload) < pkt.payload_len):
         print("NA packet shorter than reported in the header")
         return
     # sdn IP packet succeed
-    print("succeed unpacking SDN NA packet")
+    # print("succeed unpacking SDN NA packet")
     return pkt
 
 

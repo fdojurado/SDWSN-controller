@@ -39,10 +39,10 @@ def routes_to_deploy(node, routes):
             {"routes.via": route["via"]},
         ]}
         db = Database.find_one("nodes", query, None)
-        print("printing db for route")
-        print(route)
-        print("printing db for route2")
-        print(db)
+        # print("printing db for route")
+        # print(route)
+        # print("printing db for route2")
+        # print(db)
         if(db is None):
             data = {
                 "scr": route["scr"],
@@ -110,18 +110,18 @@ class NetworkConfig(mp.Process):
     def build_routes_packet(self, data):
         global routes_sequence
         routes_sequence += 1
-        print("building routing packet")
+        # print("building routing packet")
         # Build routes payload
         payloadPacked = self.process_json_routes_packets(data)
-        print("payload packed")
-        print(payloadPacked)
+        # print("payload packed")
+        # print(payloadPacked)
         payload_len = len(payloadPacked)
         # Build RA packet
         ra_pkt = RA_Packet(
             payloadPacked, payload_len=payload_len, hop_limit=data['hop_limit'], seq=routes_sequence)
         ra_packed = ra_pkt.pack()
-        print(repr(ra_pkt))
-        print(ra_packed)
+        # print(repr(ra_pkt))
+        # print(ra_packed)
         # Build sdn IP packet
         # 0x23: version 2, protocol RA = 3
         vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_RA
@@ -133,13 +133,13 @@ class NetworkConfig(mp.Process):
         sdn_ip_pkt = SDN_IP_Packet(ra_packed,
                                    vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
         sdn_ip_packed = sdn_ip_pkt.pack()
-        print(repr(sdn_ip_pkt))
+        # print(repr(sdn_ip_pkt))
         # Control packet as payload of the serial packet
         pkt = SerialPacket(sdn_ip_packed, addr=0, pkt_chksum=0,
                            message_type=2, payload_len=length,
                            reserved0=randrange(1, 254), reserved1=0)
         packedData = pkt.pack()
-        print(repr(pkt))
+        # print(repr(pkt))
         return packedData, pkt
 
     def set_route_flag(self, node, df):
@@ -161,18 +161,18 @@ class NetworkConfig(mp.Process):
     def build_schedule_packet(self, data):
         global schedule_sequence
         schedule_sequence += 1
-        print("building schedule packet")
+        # print("building schedule packet")
         # Build schedules payload
         payloadPacked = self.process_json_schedule_packets(data)
-        print("payload packed")
-        print(payloadPacked)
+        # print("payload packed")
+        # print(payloadPacked)
         payload_len = len(payloadPacked)
         # Build schedule packet header
         cell_pkt = Cell_Packet(
             payloadPacked, payload_len=payload_len, hop_limit=data['hop_limit'], sf_len=data['sf_len'], seq=schedule_sequence)
         cell_packed = cell_pkt.pack()
         # print(repr(rt_pkt))
-        print(cell_packed)
+        # print(cell_packed)
         # Build sdn IP packet
         # 0x24: version 2, protocol SA = 4
         vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_SA
@@ -184,13 +184,13 @@ class NetworkConfig(mp.Process):
         sdn_ip_pkt = SDN_IP_Packet(cell_packed,
                                    vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
         sdn_ip_packed = sdn_ip_pkt.pack()
-        print(repr(sdn_ip_pkt))
+        # print(repr(sdn_ip_pkt))
         # Build serial packet
         pkt = SerialPacket(sdn_ip_packed, addr=0, pkt_chksum=0,
                            message_type=2, payload_len=length,
                            reserved0=randrange(1, 254), reserved1=0)
         packedData = pkt.pack()
-        print(repr(pkt))
+        # print(repr(pkt))
         return packedData, pkt
 
     def run(self):

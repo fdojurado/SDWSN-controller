@@ -185,9 +185,9 @@ class SerialBus(mp.Process):
         while(1):
             # look for incoming  request
             if not self.input_queue.empty():
-                print("incoming queue request")
+                # print("incoming queue request")
                 data = self.input_queue.get()
-                print(data)
+                # print(data)
                 # send serial packet
                 self.send(data)
             try:

@@ -134,7 +134,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
             data = serial_output_queue.get()
             handle_serial_packet(data, ack_queue)
         # Run the routing protocol?
-        if globals.num_packets_period > 50:
+        if globals.num_packets_period > 150:
             G = load_wsn_links("rssi")
             routing_input_queue.put(G)
             globals.num_packets_period = 0

@@ -274,7 +274,7 @@ class sdwsnEnv(gym.Env):
     """ Power consumption processing methods """
 
     def power_compute_wam_weight(self, node):
-        print(f'computing WAM of node {node}')
+        # print(f'computing WAM of node {node}')
         # We assume that the wight depends on the rank of
         # the node and the number of NBRs
         # Let's first get the rank of the sensor node
@@ -290,7 +290,7 @@ class sdwsnEnv(gym.Env):
         N = get_number_of_sensors()
         # Calculate the weight
         weight = 0.9 * (node_rank/last_rank) + 0.1 * (num_nbr/N)
-        print(f'computing WAM of node {node} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
+        # print(f'computing WAM of node {node} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
         return weight
 
     def power_weighted_arithmetic_mean(self, power_samples):
@@ -300,18 +300,18 @@ class sdwsnEnv(gym.Env):
             node = elem[0]
             power = elem[1]
             all_power_samples.append(power)
-            print(f'Finding the WAM of {node} with power {power}')
+            # print(f'Finding the WAM of {node} with power {power}')
             weight = self.power_compute_wam_weight(node)
             weights.append(weight)
         print(f'power all weights {weights}')
         weights_np = np.array(weights)
         sum_weights = weights_np.sum()
-        print(f'sum of weights {sum_weights}')
+        # print(f'sum of weights {sum_weights}')
         normalized_weights = weights_np/sum_weights
         print(f'normalized weights {normalized_weights}')
         all_power = np.array(all_power_samples)
         all_power_transpose = np.transpose(all_power)
-        print(f'transpose all power {all_power_transpose}')
+        # print(f'transpose all power {all_power_transpose}')
         # WAM
         wam = np.dot(normalized_weights, all_power_transpose)
         # Overall network mean
@@ -348,8 +348,8 @@ class sdwsnEnv(gym.Env):
 
         for doc in db:
             energy = doc['ewma_energy']
-            print("last energy sample")
-            print(energy)
+            # print("last energy sample")
+            # print(energy)
             power_samples.append((node, energy))
             break
         return
@@ -365,7 +365,7 @@ class sdwsnEnv(gym.Env):
         power_samples = []
         # We first loop through all sensor nodes
         for node in nodes:
-            print(f"printing power for node {node}")
+            # print(f"printing power for node {node}")
             # Get all samples from the start of the network configuration
             self.get_last_power_consumption(
                 node, timestamp, power_samples)
@@ -382,7 +382,7 @@ class sdwsnEnv(gym.Env):
     """ Delay processing methods """
 
     def delay_compute_wam_weight(self, node):
-        print(f'computing delay WAM of node {node}')
+        # print(f'computing delay WAM of node {node}')
         # We assume that the wight depends on the rank
         # Let's get the rank of the sensor node
         node_rank = get_rank(node)
@@ -391,7 +391,7 @@ class sdwsnEnv(gym.Env):
         last_rank = db['rank']
         # Calculate the weight
         weight = 1 - node_rank/(last_rank+1)
-        print(f'computing WAM of node {node} rank {node_rank} weight {weight}')
+        # print(f'computing WAM of node {node} rank {node_rank} weight {weight}')
         return weight
 
     def delay_weighted_arithmetic_mean(self, delay_samples):
@@ -401,18 +401,18 @@ class sdwsnEnv(gym.Env):
             node = elem[0]
             delay = elem[1]
             all_delay_samples.append(delay)
-            print(f'Finding the WAM of {node} with delay {delay}')
+            # print(f'Finding the WAM of {node} with delay {delay}')
             weight = self.delay_compute_wam_weight(node)
             weights.append(weight)
         print(f'delay all weights {weights}')
         weights_np = np.array(weights)
         sum_weights = weights_np.sum()
-        print(f'sum of weights {sum_weights}')
+        # print(f'sum of weights {sum_weights}')
         normalized_weights = weights_np/sum_weights
         print(f'normalized weights {normalized_weights}')
         all_delay = np.array(all_delay_samples)
         all_delay_transpose = np.transpose(all_delay)
-        print(f'transpose all delay {all_delay_transpose}')
+        # print(f'transpose all delay {all_delay_transpose}')
         # WAM
         wam = np.dot(normalized_weights, all_delay_transpose)
         # Overall network mean
@@ -457,8 +457,8 @@ class sdwsnEnv(gym.Env):
 
         for doc in db:
             delay = doc["sampled_delay"]
-            print("sample delay")
-            print(delay)
+            # print("sample delay")
+            # print(delay)
             num_rcv += 1
             sum_delay += delay
 
@@ -481,7 +481,7 @@ class sdwsnEnv(gym.Env):
         delay_samples = []
         # We first loop through all sensor nodes
         for node in nodes:
-            print(f"printing delay for node {node}")
+            # print(f"printing delay for node {node}")
             # Get all samples from the start of the network configuration
             self.get_avg_delay(
                 node, timestamp, delay_samples)
@@ -498,7 +498,7 @@ class sdwsnEnv(gym.Env):
     """ PDR processing methods """
 
     def pdr_compute_wam_weight(self, node):
-        print(f'computing WAM of node {node}')
+        # print(f'computing WAM of node {node}')
         # We assume that the wight depends on the rank of
         # the node and the number of NBRs
         # Let's first get the rank of the sensor node
@@ -514,7 +514,7 @@ class sdwsnEnv(gym.Env):
         N = get_number_of_sensors()
         # Calculate the weight
         weight = 0.9 * (node_rank/last_rank) + 0.1 * (num_nbr/N)
-        print(f'computing pdr WAM of node {node} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
+        # print(f'computing pdr WAM of node {node} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
         return weight
 
     def pdr_weighted_arithmetic_mean(self, pdr_samples):
@@ -524,18 +524,18 @@ class sdwsnEnv(gym.Env):
             node = elem[0]
             pdr = elem[1]
             all_pdr_samples.append(pdr)
-            print(f'Finding the WAM of {node} with pdr {pdr}')
+            # print(f'Finding the WAM of {node} with pdr {pdr}')
             weight = self.pdr_compute_wam_weight(node)
             weights.append(weight)
         print(f'pdr all weights {weights}')
         weights_np = np.array(weights)
         sum_weights = weights_np.sum()
-        print(f'sum of weights {sum_weights}')
+        # print(f'sum of weights {sum_weights}')
         normalized_weights = weights_np/sum_weights
         print(f'normalized weights {normalized_weights}')
         all_pdr = np.array(all_pdr_samples)
         all_pdr_transpose = np.transpose(all_pdr)
-        print(f'transpose all pdr {all_pdr_transpose}')
+        # print(f'transpose all pdr {all_pdr_transpose}')
         # WAM
         wam = np.dot(normalized_weights, all_pdr_transpose)
         # Overall network mean
@@ -578,17 +578,19 @@ class sdwsnEnv(gym.Env):
         last_seq_rcv = 0
         for doc in db:
             seq = doc['seq']
-            print("seq sample")
-            print(seq)
+            # print("seq sample")
+            # print(seq)
             num_rcv += 1
             if (seq > last_seq_rcv):
                 last_seq_rcv = seq
-        print(f"last sequence received {last_seq_rcv}")
+        # print(f"last sequence received {last_seq_rcv}")
         # Get the averaged pdr for this period
         if last_seq_rcv > 0:
             avg_pdr = num_rcv/(last_seq_rcv)
         else:
             avg_pdr = 0
+        if avg_pdr > 1.0:
+            avg_pdr = 1.0
         pdr_samples.append((node, avg_pdr))
         return
 
@@ -599,7 +601,7 @@ class sdwsnEnv(gym.Env):
         pdr_samples = []
         # We first loop through all sensor nodes
         for node in nodes:
-            print(f"printing pdr for node {node}")
+            # print(f"printing pdr for node {node}")
             # Get all samples from the start of the network configuration
             self.get_avg_pdr(
                 node, timestamp, pdr_samples)
@@ -946,9 +948,9 @@ class sdwsnEnv(gym.Env):
         self.compute_schedule_for_routing(path, slotframe_size)
         # We now set and save the user requirements
         balanced = [0.35, 0.3, 0.3]
-        energy = [0.5, 0.25, 0.25]
-        delay = [0.25, 0.5, 0.25]
-        reliability = [0.25, 0.25, 0.5]
+        energy = [0.8, 0.1, 0.1]
+        delay = [0.1, 0.8, 0.1]
+        reliability = [0.1, 0.1, 0.8]
         user_req = [balanced, energy, delay, reliability]
         select_user_req = energy
         # select_user_req = random.choice(user_req)

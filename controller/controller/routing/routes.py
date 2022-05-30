@@ -78,7 +78,7 @@ class Routes:
             str(job_type.ROUTING)+', "routes":[]}'
         # parsing JSON string:
         json_message = json.loads(json_message_format)
-        self.print_routes()
+        # self.print_routes()
         # hop_limit = 0
         for _, row in self.routes.iterrows():
             data = {"scr": row['scr'], "dst": row['dst'], "via": row['via']}
