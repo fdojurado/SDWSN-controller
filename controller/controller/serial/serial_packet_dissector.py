@@ -199,16 +199,16 @@ def save_energy(pkt, na_pkt):
     # We only need to normalize it
     # We first need to calculate the pmax_n = for this specific node which depends
     # on the rank of the node.
-    h = na_pkt.rank/H_MAX
-    k_n = MIN_TX/PMAX
-    k_n = k_n**h
-    pmax_n = PMAX * k_n
-    ewma_energy_normalized = (na_pkt.energy - PMIN)/(pmax_n-PMIN)
+    # h = na_pkt.rank/H_MAX
+    # k_n = MIN_TX/PMAX
+    # k_n = k_n**h
+    # pmax_n = PMAX * k_n
+    # ewma_energy_normalized = (na_pkt.energy - PMIN)/(pmax_n-PMIN)
     # historical energy
     data = {
         "timestamp": current_time,
-        "ewma_energy": na_pkt.energy,
-        "ewma_energy_normalized": ewma_energy_normalized,
+        "ewma_energy": na_pkt.energy
+        # "ewma_energy_normalized": ewma_energy_normalized,
     }
     update = {
         "$push": {
@@ -300,45 +300,11 @@ def save_pdr(pkt, data_pkt):
 
 def save_delay(pkt, data_pkt):
     sampled_delay = data_pkt.asn * SLOT_DURATION
-    # To calculate the min and max delay, we need to obtain the rank of the sensor node
-    rank = get_rank(pkt.scrStr)
-    if rank is None:
-        # We have not received an NA packet yet.
-        # print("we don't know the rank yet")
-        rank = H_MAX
-        min_delay = 1 * SLOT_DURATION
-    else:
-        min_delay = rank * SLOT_DURATION
-    max_delay = Q_MAX * rank * R_MAX * SLOTFRAME_SIZE
-    # print("rank: "+str(rank)+" min delay: "+str(min_delay)+" max delay: " +
-    #       str(max_delay))
-    # We now need to check whether we already have knowledge of previous delay packets
-    # for this sensor node
-    query = {
-        "$and": [
-            {"node_id": pkt.scrStr},
-            {"delay": {"$exists": True}}
-        ]
-    }
-    db = Database.find_one(NODES_INFO, query)
-    if(db is None):
-        ewma_delay = sampled_delay
-    else:
-        # get last delay
-        last_delay = get_last_delay(pkt.scrStr)
-        delay_n_1 = last_delay["ewma_delay"]
-        # Compute EWMA
-        ewma_delay = compute_ewma(delay_n_1, sampled_delay)
-    # Let's normalized the delay packet
-    # print("ewma delay: "+str(ewma_delay))
-    ewma_delay_normalized = (ewma_delay - min_delay)/(max_delay-min_delay)
-    # print("ewma delay normalized: "+str(ewma_delay_normalized))
-    # Save data
     data = {
         "timestamp": current_time,
         "sampled_delay": sampled_delay,
-        "ewma_delay": ewma_delay,
-        "ewma_delay_normalized": ewma_delay_normalized
+        # "ewma_delay": ewma_delay,
+        # "ewma_delay_normalized": ewma_delay_normalized
     }
     update = {
         "$push": {
@@ -556,6 +522,12 @@ def get_last_nbr(node):
     ]
     db = Database.aggregate(NODES_INFO, pipeline)
     return db
+
+def get_number_of_sensors():
+    nbr_array = np.array(Database.distinct(NODES_INFO, "neighbors.dst"))
+    nodes = np.append(nbr_array, Database.distinct(NODES_INFO, "node_id"))
+    sensors = np.unique(nodes)
+    return sensors.size
 
 
 def get_last_index_wsn():

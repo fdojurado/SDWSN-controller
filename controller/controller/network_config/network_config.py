@@ -199,8 +199,8 @@ class NetworkConfig(mp.Process):
             if not self.input_queue.empty():
                 self.running = True
                 node, job_id = self.input_queue.get()
-                print(f"there is a new job id {job_id}")
-                print(node)
+                # print(f"there is a new job id {job_id}")
+                # print(node)
                 data = json.loads(node)
                 match(data['job_type']):
                     case job_type.TSCH:
