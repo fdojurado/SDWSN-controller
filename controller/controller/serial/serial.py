@@ -34,6 +34,7 @@ class SerialBus(mp.Process):
         self.byte_msg = bytearray()
         self.overflow = 0
         self.escape_character = 0
+        self.frame_start = 0
         self.frame_length = 0
         # Serial interface
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,7 +81,28 @@ class SerialBus(mp.Process):
             # ser.read can return an empty string
             # or raise a SerialException
             rx_byte = self.ser.recv(1)
-            if rx_byte and ord(rx_byte) == 0x7E:
+            # print("rx_byte")
+            # print(rx_byte)
+            if rx_byte and ord(rx_byte) != 0x7E:
+                if(self.escape_character):
+                    self.escape_character = 0
+                    a = int.from_bytes(rx_byte, 'big')
+                    b = int.from_bytes(b'\x20', 'big')
+                    rx_byte = a ^ b
+                    rx_byte = rx_byte.to_bytes(1, 'big')
+                elif(rx_byte and ord(rx_byte) == 0x7D):
+                    self.escape_character = 1
+                    return 0
+
+                if (self.frame_length < (122 + 2)):
+                    # Adding 2 bytes from serial communication
+                    self.byte_msg.extend(rx_byte)
+                    self.frame_length = self.frame_length + 1
+                else:
+                    self.overflow = 1
+                    # print("Packet size overflow: %u bytes\n", self.frame_length)
+                    return 0
+            else:
                 # print("FRAME_BOUNDARY_OCTET detected")
                 if (self.escape_character == 1):
                     # print("serial: escape_character == true")
@@ -89,10 +111,13 @@ class SerialBus(mp.Process):
                     # print("serial overflow")
                     self.overflow = 0
                     self.frame_length = 0
+                    self.frame_start = 1
                     self.byte_msg = bytearray()
-                elif (self.frame_length >= 6):
+                elif (self.frame_length >= 6 and self.frame_start):
                     # Wake up consumer process
                     # print("Wake up consumer process")
+                    self.frame_start = 0
+                    self.overflow = 0
                     self.frame_length = 0
                     msg_buffer = self.byte_msg
                     self.byte_msg = bytearray()
@@ -100,27 +125,11 @@ class SerialBus(mp.Process):
                 else:
                     # re-synchronization. Start over
                     # print("serial re-synchronization\n")
+                    self.frame_start = 1
                     self.byte_msg = bytearray()
                     self.frame_length = 0
                     return 0
                 return 0
-            if(self.escape_character):
-                self.escape_character = 0
-                a = int.from_bytes(rx_byte, 'big')
-                b = int.from_bytes(b'\x20', 'big')
-                rx_byte = a ^ b
-                rx_byte = rx_byte.to_bytes(1, 'big')
-            elif(rx_byte and ord(rx_byte) == 0x7D):
-                self.escape_character = 1
-                return 0
-
-            if (self.frame_length < (122 + 2)):
-                # Adding 2 bytes from serial communication
-                self.byte_msg.extend(rx_byte)
-                self.frame_length = self.frame_length + 1
-            else:
-                self.overflow = 1
-                # print("Packet size overflow: %u bytes\n", self.frame_length)
 
         except socket.error as e:
             return None
