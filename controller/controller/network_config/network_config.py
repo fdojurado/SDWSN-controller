@@ -218,7 +218,7 @@ class NetworkConfig(mp.Process):
                 # Send notification of job completion
                 self.output_queue.put((result, job_id))
 
-            # sleep(1)
+            sleep(0.5)
 
     def send(self, data, serial_pkt):
         print("Sending NC")
@@ -230,7 +230,7 @@ class NetworkConfig(mp.Process):
         result = 0
         while True:
             try:
-                ack_pkt = self.ack_queue.get(timeout=0.1)
+                ack_pkt = self.ack_queue.get(timeout=0.5)
                 if (ack_pkt.reserved0 == serial_pkt.reserved0+1):
                     print("correct ACK received")
                     result = 1

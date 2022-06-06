@@ -43,10 +43,10 @@ class Node:
     def add_tx_cell(self, destination, timeoffset, channeloffset):
         # print("adding tx cell")
         # Cell duplicated?
-        for tx_link in self.tx:
-            if((tx_link.type == cell_type.UC_TX) and (tx_link.destination == destination)):
-                # print("duplicated cell")
-                return None
+        # for tx_link in self.tx:
+        #     if((tx_link.type == cell_type.UC_TX) and (tx_link.destination == destination)):
+        #         # print("duplicated cell")
+        #         return None
 
         tx_cell = Cell(source=self.node, type=cell_type.UC_TX, destination=destination,
                        timeoffset=timeoffset, channeloffset=channeloffset)
@@ -118,15 +118,15 @@ class Schedule:
             rx_cell = sensor.add_rx_cell(channeloffset, timeoffset)
             self.schedule[channeloffset][timeoffset].append(rx_cell)
         if(type == cell_type.UC_TX and destination is not None):
-            channeloffset, timeoffset = self.get_rx_coordinates(
-                destination)
-            if (channeloffset is not None and timeoffset is not None):
-                # print("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
-                #   channeloffset, " timeoffset ", timeoffset)
-                tx_cell = sensor.add_tx_cell(
-                    destination, timeoffset, channeloffset)
-                if(tx_cell is not None):
-                    self.schedule[channeloffset][timeoffset].append(tx_cell)
+            # channeloffset, timeoffset = self.get_rx_coordinates(
+            #     destination)
+            # if (channeloffset is not None and timeoffset is not None):
+            # print("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
+            #   channeloffset, " timeoffset ", timeoffset)
+            tx_cell = sensor.add_tx_cell(
+                destination, timeoffset, channeloffset)
+            if(tx_cell is not None):
+                self.schedule[channeloffset][timeoffset].append(tx_cell)
 
         # self.print_schedule()
 
@@ -136,6 +136,22 @@ class Schedule:
                 return elem.timeslot_empty(timeslot)
         # If this is not found, then it is empty
         return 1
+
+    def get_num_of_cells(self, addr):
+        # Get the time and channel offset from the given addr.
+        for elem in self.list_nodes:
+            if elem.node == addr:
+                if elem.rx:
+                    return len(elem.rx)
+        return 0
+
+    def get_rx_cells(self, addr):
+        # Get the time and channel offset from the given addr.
+        for elem in self.list_nodes:
+            if elem.node == addr:
+                if elem.rx:
+                    return elem.rx
+        return None
 
     def get_rx_coordinates(self, addr):
         # Get the time and channel offset from the given addr.

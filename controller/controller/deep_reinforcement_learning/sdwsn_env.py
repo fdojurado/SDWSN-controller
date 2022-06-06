@@ -862,13 +862,31 @@ class sdwsnEnv(gym.Env):
         }
         Database.insert(OBSERVATIONS, data)
 
+    def tsch_add_random_tx_link(self, tx_node, rx_node, ch, ts):
+        if self.schedule.timeslot_empty(tx_node, ts):
+            print(f"Tx link schedule in node {tx_node} ({tx_node}-{rx_node}) at ts={ts}, ch={ch}")
+            self.schedule.add_uc(
+                tx_node, cell_type.UC_TX, ch, ts, rx_node)
+        else:
+            print(f"ts already in use ({tx_node}-{rx_node}) at ts={ts}, ch={ch}")
+
+    def tsch_add_random_rx_link(self, node, ch, ts, slotframe_size):
+        print(f'Rx link for node {node} Not found (selecting ts={ts} ch={ch})')
+        # Let's first check whether this timeslot is already in use
+        while(not self.schedule.timeslot_empty(node, ts)):
+            ts = random.randrange(0, slotframe_size-1)
+            print(f"ts {ts} already in use, we now try ts={ts}")
+        # We are now sure that the ts is available, then we reserve it
+        self.schedule.add_uc(node, cell_type.UC_RX, ch, ts)
+
     def compute_schedule_for_routing(self, path, slotframe_size):
         self.schedule.clear_schedule()
         for _, p in path.items():
             if(len(p) >= 2):
-                # print("try to add uc for ", p)
+                print("try to add uc for ", p)
                 # Let's process this path in reverse
                 p.reverse()
+                print(f'reverse {p}')
                 for i in range(len(p)-1):
                     # TODO: find a way to avoid forcing the last addr of
                     # sensor nodes to 0.
@@ -884,26 +902,38 @@ class sdwsnEnv(gym.Env):
                     tx_node = str(tx_node)+".0"
                     # Assign Rx link first
                     # In this first approach, we only want to schedule one Rx per node
-                    ch, ts = self.schedule.get_rx_coordinates(rx_node)
-                    if ch is None or ts is None:
-                        ch = channeloffset
-                        ts = timeslot
-                        print(f'Rx link for node {rx_node} Not found (selecting ts={ts} ch={ch})')
-                        # Let's first check whether this timeslot is already in use
-                        while(not self.schedule.timeslot_empty(rx_node, ts)):
-                            ts = random.randrange(0,
-                                                  slotframe_size-1)
-                            print(f"ts {ts} already in use, we now try ts={ts}")
-                        # We are now sure that the ts is available, then we reserve it
-                        self.schedule.add_uc(
-                            rx_node, cell_type.UC_RX, ch, ts)
-                    # Assign Tx link
-                    if self.schedule.timeslot_empty(tx_node, ts):
-                        print(f"Tx link schedule in node {tx_node} ({tx_node}-{rx_node}) at ts={ts}, ch={ch}")
-                        self.schedule.add_uc(
-                            tx_node, cell_type.UC_TX, ch, ts, rx_node)
+                    # But for the controller we add three RX links
+                    if rx_node == "1.0":
+                        print("Rx node is the controller")
+                        # Check how many rx links do we have
+                        num_rx_links = self.schedule.get_num_of_cells(rx_node)
+                        while num_rx_links < 3:
+                            print(f'num of rx links: {num_rx_links}')
+                            self.tsch_add_random_rx_link(
+                                rx_node, channeloffset, timeslot, slotframe_size)
+                            num_rx_links = self.schedule.get_num_of_cells(
+                                rx_node)
                     else:
-                        print(f"ts already in use ({tx_node}-{rx_node}) at ts={ts}, ch={ch}")
+                        print("Rx node is Not the controller")
+                        ch, ts = self.schedule.get_rx_coordinates(rx_node)
+                        if ch is None or ts is None:
+                            ch = channeloffset
+                            ts = timeslot
+                            self.tsch_add_random_rx_link(
+                                rx_node, ch, ts, slotframe_size)
+                    # Check if we need to transmit to controller
+                    if rx_node == "1.0":
+                        print(f"node {tx_node} has a tx link to controller")
+                        # We then schedule a Tx links to each RX in controller
+                        # Let's get the list of rx channels of the controller
+                        rx_cells = self.schedule.get_rx_cells(rx_node)
+                        for rx_cell in rx_cells:
+                            print(f"adding Tx link to rx cell: {rx_cell}")
+                            self.tsch_add_random_tx_link(
+                                tx_node, rx_node, rx_cell.channeloffset, rx_cell.timeoffset)
+                    else:
+                        self.tsch_add_random_tx_link(
+                            tx_node, rx_node, ch, ts)
             # else:
             #     # print("add an uc rx for node ", p[0])
             #     timeslot = random.randrange(0, slotframe_size-1)
