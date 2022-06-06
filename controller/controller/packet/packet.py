@@ -7,12 +7,12 @@ import sys
 # Packet sizes
 SDN_IPH_LEN = 10  # Size of layer 3 packet header */
 SDN_NDH_LEN = 6   # Size of neighbor discovery header */
-SDN_NAH_LEN = 6   # Size of neighbor advertisement packet header */
+SDN_NAH_LEN = 8   # Size of neighbor advertisement packet header */
 SDN_NAPL_LEN = 6  # Size of neighbor advertisement payload size */
 # SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
 SDN_RAH_LEN = 6  # Size of RA header routing packet*/
 SDN_SAH_LEN = 8  # Size of SA header schedule packet*/
-SDN_DATA_LEN = 8  # Size of data packet */
+SDN_DATA_LEN = 12  # Size of data packet */
 SDN_SERIAL_PACKETH_LEN = 8
 
 # Message types for the serial interface
@@ -276,6 +276,7 @@ class Cell_Packet_Payload:
 class Data_Packet:
 
     def __init__(self, **kwargs):
+        self.cycle_seq = kwargs.get("cycle_seq", 0)
         self.seq = kwargs.get("seq", 0)
         self.temp = kwargs.get("temp", 0)
         self.humidity = kwargs.get("humidity", 0)
@@ -286,14 +287,14 @@ class Data_Packet:
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "DataPacketPayload(seq={}, temp={}, humidity={}, light={}, asn={})".format(
-            self.seq, self.temp, self.humidity, self.light, self.asn)
+        return "DataPacketPayload(cycle_seq={}, seq={}, temp={}, humidity={}, light={}, asn={})".format(
+            self.cycle_seq, self.seq, self.temp, self.humidity, self.light, self.asn)
 
     @classmethod
     def unpack(cls, packed_data):
-        seq, temp, humidity, light, asn_ls2b, asn_ms2b = struct.unpack(
-            '!HHHHHH', packed_data)
-        return cls(seq=seq, temp=temp, humidity=humidity, light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
+        cycle_seq, seq, temp, humidity, light, asn_ls2b, asn_ms2b = struct.unpack(
+            '!BBHHHHH', packed_data)
+        return cls(cycle_seq=cycle_seq, seq=seq, temp=temp, humidity=humidity, light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
 
 
 class NA_Packet:
@@ -302,20 +303,22 @@ class NA_Packet:
         self.payload_len = kwargs.get("payload_len", 0)
         self.rank = kwargs.get("rank", 0)
         self.energy = kwargs.get("energy", 0)
+        self.cycle_seq = kwargs.get("cycle_seq", 0)
+        self.seq = kwargs.get("seq", 0)
         self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.payload = payload
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "NA_Packet(payload_len={}, rank={}, energy={}, pkt_chksum={}, payload={})".format(
-            hex(self.payload_len), hex(self.rank),
-            hex(self.energy), hex(self.pkt_chksum), self.payload)
+        return "NA_Packet(payload_len={}, rank={}, energy={}, cycle_seq={}, seq={}, pkt_chksum={}, payload={})".format(
+            hex(self.payload_len), hex(self.rank), hex(self.energy),
+            hex(self.cycle_seq), hex(self.seq), hex(self.pkt_chksum), self.payload)
 
     @classmethod
     def unpack(cls, packed_data, length):
-        payload_len, rank, energy, pkt_chksum, payload = struct.unpack(
-            '!BBHH' + str(length-SDN_NAH_LEN) + 's', packed_data)
-        return cls(payload, payload_len=payload_len, rank=rank, energy=energy, pkt_chksum=pkt_chksum)
+        payload_len, rank, energy, cycle_seq, seq, pkt_chksum, payload = struct.unpack(
+            '!BBHBBH' + str(length-SDN_NAH_LEN) + 's', packed_data)
+        return cls(payload, payload_len=payload_len, rank=rank, energy=energy, cycle_seq=cycle_seq, seq=seq, pkt_chksum=pkt_chksum)
 
 
 class NA_Packet_Payload:

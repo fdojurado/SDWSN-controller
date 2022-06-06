@@ -195,18 +195,10 @@ def process_na_packet(pkt):
 
 
 def save_energy(pkt, na_pkt):
-    # na_pkt.energy already contains the EWMA which was computed at the sensor node
-    # We only need to normalize it
-    # We first need to calculate the pmax_n = for this specific node which depends
-    # on the rank of the node.
-    # h = na_pkt.rank/H_MAX
-    # k_n = MIN_TX/PMAX
-    # k_n = k_n**h
-    # pmax_n = PMAX * k_n
-    # ewma_energy_normalized = (na_pkt.energy - PMIN)/(pmax_n-PMIN)
-    # historical energy
     data = {
         "timestamp": current_time,
+        "cycle_seq": na_pkt.cycle_seq,
+        "seq": na_pkt.seq,
         "ewma_energy": na_pkt.energy
         # "ewma_energy_normalized": ewma_energy_normalized,
     }
@@ -260,32 +252,10 @@ def save_neighbors(pkt, na_pkt):
 
 
 def save_pdr(pkt, data_pkt):
-    # Process PDR
-    # We first check if we already have knowledge of previous seq for this
-    # sensor node
-    query = {
-        "$and": [
-            {"node_id": pkt.scrStr},
-            {"pdr": {"$exists": True}}
-        ]
-    }
-    db = Database.find_one(NODES_INFO, query)
-    if(db is None):
-        num_seq = 1
-        ewma_pdr = num_seq/data_pkt.seq
-    else:
-        # get last pdr
-        last_pdr = get_last_pdr(pkt.scrStr)
-        pdr_n_1 = last_pdr['ewma_pdr']
-        num_seq = last_pdr['num_seq'] + 1
-        # Compute EWMA
-        pdr = num_seq/data_pkt.seq
-        ewma_pdr = compute_ewma(pdr_n_1, pdr)
     data = {
         "timestamp": current_time,
+        "cycle_seq": data_pkt.cycle_seq,
         "seq": data_pkt.seq,
-        "num_seq": num_seq,
-        "ewma_pdr": ewma_pdr
     }
     update = {
         "$push": {
@@ -302,9 +272,9 @@ def save_delay(pkt, data_pkt):
     sampled_delay = data_pkt.asn * SLOT_DURATION
     data = {
         "timestamp": current_time,
-        "sampled_delay": sampled_delay,
-        # "ewma_delay": ewma_delay,
-        # "ewma_delay_normalized": ewma_delay_normalized
+        "cycle_seq": data_pkt.cycle_seq,
+        "seq": data_pkt.seq,
+        "sampled_delay": sampled_delay
     }
     update = {
         "$push": {
@@ -522,6 +492,7 @@ def get_last_nbr(node):
     ]
     db = Database.aggregate(NODES_INFO, pipeline)
     return db
+
 
 def get_number_of_sensors():
     nbr_array = np.array(Database.distinct(NODES_INFO, "neighbors.dst"))
