@@ -862,6 +862,47 @@ class sdwsnEnv(gym.Env):
         }
         Database.insert(OBSERVATIONS, data)
 
+    """ Contention Free scheduler """
+
+    def compute_contention_free_schedule(self, path, slotframe_size):
+        print("running contention free scheduler")
+        self.schedule.clear_schedule()
+        for _, p in path.items():
+            if(len(p) >= 2):
+                print("try to add uc for ", p)
+                for i in range(len(p)-1):
+                    # Tx node
+                    tx_node = p[i]
+                    tx_node = str(tx_node)+".0"
+                    # Rx node
+                    rx_node = p[i+1]
+                    rx_node = str(rx_node)+".0"
+                    print(f'link {tx_node}-{rx_node}')
+                    # We first check whether the Tx-Rx link already exists.
+                    if not self.schedule.link_exists(tx_node, rx_node):
+                        print(f'link {tx_node}-{rx_node} does not exists')
+                        # Random Tx link to RX if it is available
+                        ts = random.randrange(0,
+                                              slotframe_size-1)
+                        ch = random.randrange(0,
+                                              self.schedule.num_channel_offsets-1)
+                        # Let's first check whether this timeslot is already in use in both Rx, Tx
+                        while(not self.schedule.timeslot_empty(rx_node, ts) and
+                              not self.schedule.timeslot_empty(tx_node, ts)):
+                            ts = random.randrange(0, slotframe_size-1)
+                            print(f"ts already in use, we now try ts={ts}")
+                        # We have found an empty timeslot
+                        print(f'empty time slot {ts} found for {tx_node}-{rx_node}')
+                        # Schedule Tx
+                        self.schedule.add_uc(
+                            tx_node, cell_type.UC_TX, ch, ts, rx_node)
+                        # Schedule Rx
+                        self.schedule.add_uc(rx_node, cell_type.UC_RX, ch, ts)
+                    else:
+                        print(f'link {tx_node}-{rx_node} already exists')
+
+    """ random scheduler """
+
     def tsch_add_random_tx_link(self, tx_node, rx_node, ch, ts):
         if self.schedule.timeslot_empty(tx_node, ts):
             print(f"Tx link schedule in node {tx_node} ({tx_node}-{rx_node}) at ts={ts}, ch={ch}")
@@ -975,7 +1016,7 @@ class sdwsnEnv(gym.Env):
         # slotframe_size = random.choice(slotframe_sizes)
         slotframe_size = 23
         # We now set the TSCH schedules for the current routing
-        self.compute_schedule_for_routing(path, slotframe_size)
+        self.compute_contention_free_schedule(path, slotframe_size)
         # We now set and save the user requirements
         balanced = [0.35, 0.3, 0.3]
         energy = [0.8, 0.1, 0.1]

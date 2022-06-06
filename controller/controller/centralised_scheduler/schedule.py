@@ -138,7 +138,7 @@ class Schedule:
         return 1
 
     def get_num_of_cells(self, addr):
-        # Get the time and channel offset from the given addr.
+        # Get the total number of all Rx links
         for elem in self.list_nodes:
             if elem.node == addr:
                 if elem.rx:
@@ -146,12 +146,21 @@ class Schedule:
         return 0
 
     def get_rx_cells(self, addr):
-        # Get the time and channel offset from the given addr.
+        # Get all Rx links in the node
         for elem in self.list_nodes:
             if elem.node == addr:
                 if elem.rx:
                     return elem.rx
         return None
+
+    def link_exists(self, Tx, Rx):
+        # It evaluates whether the given Tx-Rx links exists
+        for elem in self.list_nodes:
+            if elem.node == Tx:
+                for tx in elem.tx:
+                    if tx.destination == Rx:
+                        return 1
+        return 0
 
     def get_rx_coordinates(self, addr):
         # Get the time and channel offset from the given addr.
