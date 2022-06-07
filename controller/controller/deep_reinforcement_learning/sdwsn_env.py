@@ -16,6 +16,8 @@ eb_size = 397
 common_size = 31
 control_plane_size = 27
 
+sequence = 0
+
 
 class sdwsnEnv(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
@@ -84,9 +86,9 @@ class sdwsnEnv(gym.Env):
             del schedules_json['cells'][12:]
             new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
             # set job id
-            job_id = randrange(1, 254)
+            sequence = self.increase_sequence()
             # Send job with id and wait for reply
-            self.send_job(new_job, job_id)
+            self.send_job(new_job, sequence)
             del schedules_json['cells']
             schedules_json['cells'] = extra_cells
             schedules_json["sf_len"] = 0
@@ -94,9 +96,9 @@ class sdwsnEnv(gym.Env):
         # We now save the slotframe size in the SLOTFRAME_LEN collection
         # self.save_slotframe_len(sf_len)
         # set job id
-        job_id = randrange(1, 254)
+        sequence = self.increase_sequence()
         # Send job with id and wait for reply
-        self.send_job(schedules_json, job_id)
+        self.send_job(schedules_json, sequence)
         # We now wait for the cycle to complete
         self.input_queue.get()
         print("process reward")
@@ -105,14 +107,24 @@ class sdwsnEnv(gym.Env):
         observation = np.append(user_requirements, last_ts_in_schedule)
         observation = np.append(observation, sf_len)
         # Calculate the reward
-        reward = self.calculate_reward(sample_time, alpha, beta, delta)
+        reward, power, delay, pdr = self.calculate_reward(
+            sample_time, alpha, beta, delta)
         print(f'Reward {reward}')
         self.save_observations(
-            sample_time, alpha, beta, delta, last_ts_in_schedule, sf_len, reward)
+            sample_time, alpha, beta, delta, power, delay, pdr, last_ts_in_schedule, sf_len, reward)
         # self.parser_action(action)
         done = False
         info = {}
         return observation, reward, done, info
+
+    """ Increase sequence """
+
+    def increase_sequence(self):
+        global sequence
+        sequence += 1
+        if sequence > 255:
+            sequence = 0
+        return sequence
 
     """ Coprime checks methods """
 
@@ -198,14 +210,20 @@ class sdwsnEnv(gym.Env):
         # Get the sensor nodes to loop in ascending order
         nodes = self.get_sensor_nodes_in_order()
         # Get the normalized average power consumption for this cycle
-        power = self.get_network_power_consumption(init_time, nodes)
+        power_samples, power_wam, power_normalized = self.get_network_power_consumption(
+            init_time, nodes)
+        power = [power_samples, power_wam, power_normalized]
         # Get the normalized average delay for this cycle
-        delay = self.get_network_delay(init_time, nodes)
+        delay_samples, delay_wam, delay_normalized = self.get_network_delay(
+            init_time, nodes)
+        delay = [delay_samples, delay_wam, delay_normalized]
         # Get the normalized average pdr for this cycle
-        pdr = self.get_network_pdr(init_time, nodes)
+        pdr_samples, pdr_normalized = self.get_network_pdr(init_time, nodes)
+        pdr = [pdr_samples, pdr_normalized]
         # Calculate the reward
-        reward = -1*(alpha*power+beta*delay-delta*pdr)
-        return reward
+        reward = -1*(alpha*power_normalized+beta *
+                     delay_normalized-delta*pdr_normalized)
+        return reward, power, delay, pdr
 
     def get_last_observations(self):
         db = Database.find_one(OBSERVATIONS, {})
@@ -319,7 +337,8 @@ class sdwsnEnv(gym.Env):
         print(f'power network WAM {wam} normal mean {normal_mean}')
         return wam
 
-    def get_last_power_consumption(self, node, timestamp, power_samples):
+    def get_last_power_consumption(self, node, power_samples):
+        global sequence
         query = {
             "$and": [
                 {"node_id": node},
@@ -333,6 +352,12 @@ class sdwsnEnv(gym.Env):
         pipeline = [
             {"$match": {"node_id": node}},
             {"$unwind": "$energy"},
+            {"$match": {
+                "energy.cycle_seq": {
+                    "$gte": sequence
+                }
+            }
+            },
             {"$sort": {"energy.timestamp": -1}},
             {"$limit": 1},
             {'$project':
@@ -355,6 +380,7 @@ class sdwsnEnv(gym.Env):
         return
 
     def get_network_power_consumption(self, init_time, nodes):
+        global sequence
         # Min power
         p_min = 0
         # Max power
@@ -368,8 +394,8 @@ class sdwsnEnv(gym.Env):
             # print(f"printing power for node {node}")
             # Get all samples from the start of the network configuration
             self.get_last_power_consumption(
-                node, timestamp, power_samples)
-        print("power samples")
+                node, power_samples)
+        print(f"power samples for sequence {sequence}")
         print(power_samples)
         # We now need to compute the weighted arithmetic mean
         power_wam = self.power_weighted_arithmetic_mean(
@@ -377,7 +403,7 @@ class sdwsnEnv(gym.Env):
         # We now need to normalize the power WAM
         normalized_power = (power_wam - p_min)/(p_max-p_min)
         print(f'normalized power {normalized_power}')
-        return normalized_power
+        return power_samples, power_wam, normalized_power
 
     """ Delay processing methods """
 
@@ -420,7 +446,8 @@ class sdwsnEnv(gym.Env):
         print(f'delay network WAM {wam} normal mean {normal_mean}')
         return wam
 
-    def get_avg_delay(self, node, timestamp, delay_samples):
+    def get_avg_delay(self, node, delay_samples):
+        global sequence
         query = {
             "$and": [
                 {"node_id": node},
@@ -435,15 +462,16 @@ class sdwsnEnv(gym.Env):
             {"$match": {"node_id": node}},
             {"$unwind": "$delay"},
             {"$match": {
-                "delay.timestamp": {
-                    "$gt": timestamp
+                "delay.cycle_seq": {
+                    "$gte": sequence
                 }
             }
             },
             {'$project':
              {
                  "_id": 1,
-                 'timestamp': '$delay.timestamp',
+                 "cycle_seq": '$delay.cycle_seq',
+                 "seq": '$delay.seq',
                  'sampled_delay': '$delay.sampled_delay',
              }
              }
@@ -471,6 +499,7 @@ class sdwsnEnv(gym.Env):
         return
 
     def get_network_delay(self, init_time, nodes):
+        global sequence
         # Min power
         delay_min = SLOT_DURATION
         # Max power
@@ -484,8 +513,8 @@ class sdwsnEnv(gym.Env):
             # print(f"printing delay for node {node}")
             # Get all samples from the start of the network configuration
             self.get_avg_delay(
-                node, timestamp, delay_samples)
-        print("delay samples")
+                node, delay_samples)
+        print(f"delay samples for sequence {sequence}")
         print(delay_samples)
         # We now need to compute the weighted arithmetic mean
         delay_wam = self.delay_weighted_arithmetic_mean(
@@ -493,7 +522,7 @@ class sdwsnEnv(gym.Env):
         # We now need to normalize the power WAM
         normalized_delay = (delay_wam - delay_min)/(delay_max-delay_min)
         print(f'normalized delay {normalized_delay}')
-        return normalized_delay
+        return delay_samples, delay_wam, normalized_delay
 
     """ PDR processing methods """
 
@@ -543,7 +572,8 @@ class sdwsnEnv(gym.Env):
         print(f'pdr network WAM {wam} normal mean {normal_mean}')
         return wam
 
-    def get_avg_pdr(self, node, timestamp, pdr_samples):
+    def get_avg_pdr(self, node, pdr_samples):
+        global sequence
         query = {
             "$and": [
                 {"node_id": node},
@@ -558,16 +588,16 @@ class sdwsnEnv(gym.Env):
             {"$match": {"node_id": node}},
             {"$unwind": "$pdr"},
             {"$match": {
-                "pdr.timestamp": {
-                    "$gt": timestamp
+                "pdr.cycle_seq": {
+                    "$gte": sequence
                 }
             }
             },
             {'$project':
              {
                  "_id": 1,
-                 'timestamp': '$pdr.timestamp',
-                 'seq': '$pdr.seq'
+                 "cycle_seq": '$pdr.cycle_seq',
+                 "seq": '$pdr.seq'
              }
              }
         ]
@@ -575,18 +605,14 @@ class sdwsnEnv(gym.Env):
         # Variable to keep track of the number rcv packets
         num_rcv = 0
         # Last received sequence
-        last_seq_rcv = 0
+        seq = 0
         for doc in db:
             seq = doc['seq']
-            # print("seq sample")
-            # print(seq)
             num_rcv += 1
-            if (seq > last_seq_rcv):
-                last_seq_rcv = seq
         # print(f"last sequence received {last_seq_rcv}")
         # Get the averaged pdr for this period
-        if last_seq_rcv > 0:
-            avg_pdr = num_rcv/(last_seq_rcv)
+        if seq > 0:
+            avg_pdr = num_rcv/seq
         else:
             avg_pdr = 0
         if avg_pdr > 1.0:
@@ -595,6 +621,7 @@ class sdwsnEnv(gym.Env):
         return
 
     def get_network_pdr(self, init_time, nodes):
+        global sequence
         # Get the time when the last network configuration was deployed
         timestamp = init_time
         # Variable to keep track of the number of pdr samples
@@ -604,14 +631,14 @@ class sdwsnEnv(gym.Env):
             # print(f"printing pdr for node {node}")
             # Get all samples from the start of the network configuration
             self.get_avg_pdr(
-                node, timestamp, pdr_samples)
-        print("pdr samples")
+                node, pdr_samples)
+        print(f"pdr samples for sequence {sequence}")
         print(pdr_samples)
         # We now need to compute the weighted arithmetic mean
         normalized_pdr = self.pdr_weighted_arithmetic_mean(
             pdr_samples)
         print(f'normalized pdr {normalized_pdr}')
-        return normalized_pdr
+        return pdr_samples, normalized_pdr
 
     def get_tsch_link_schedules(self):
         db = Database.find_one(SCHEDULES, {})
@@ -850,12 +877,16 @@ class sdwsnEnv(gym.Env):
         }
         Database.insert(SLOTFRAME_LEN, data)
 
-    def save_observations(self, timestamp, alpha, beta, delta, last_ts_in_schedule, current_sf_len, reward):
+    def save_observations(self, timestamp, alpha, beta, delta, power,
+                          delay, pdr, last_ts_in_schedule, current_sf_len, reward):
         data = {
             "timestamp": timestamp,
             "alpha": alpha,
             "beta": beta,
             "delta": delta,
+            "power": power,
+            "delay": delay,
+            "pdr": pdr,
             "last_ts_in_schedule": last_ts_in_schedule,
             "current_sf_len": current_sf_len,
             "reward": reward
@@ -999,6 +1030,7 @@ class sdwsnEnv(gym.Env):
         :return: (np.array)
         """
         # The reset sets the routing and scheduling
+        global sequence
         # We support to initial states: shortest path and MST
         protocol = ["dijkstra", "mst"]
         # We get the network links, we use them to calculate the routing
@@ -1036,9 +1068,9 @@ class sdwsnEnv(gym.Env):
             del schedules_json['cells'][12:]
             new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
             # set job id
-            job_id = randrange(1, 254)
+            sequence = self.increase_sequence()
             # Send job with id and wait for reply
-            self.send_job(new_job, job_id)
+            self.send_job(new_job, sequence)
             del schedules_json['cells']
             schedules_json['cells'] = extra_cells
             schedules_json["sf_len"] = 0
@@ -1046,15 +1078,15 @@ class sdwsnEnv(gym.Env):
         # Let's prepare the routing information in the json format
         routes_json = self.routes.routes_toJSON()
         # set job id
-        job_id = randrange(1, 254)
+        sequence = self.increase_sequence()
         # We send the jobs but we don't need the whole cycle to complete
         # as we are not returning the reward.
         # Send job with id and wait for reply
-        self.send_job(schedules_json, job_id)
+        self.send_job(schedules_json, sequence)
         # set job id
-        job_id = randrange(1, 254)
+        sequence = self.increase_sequence()
         # Send job with id and wait for reply
-        self.send_job(routes_json, job_id)
+        self.send_job(routes_json, sequence)
         # Wait for the network to settle
         sleep(0.5)
         # We now save all the observations
@@ -1072,7 +1104,8 @@ class sdwsnEnv(gym.Env):
         observation = np.append(user_requirements, last_ts)
         observation = np.append(observation, slotframe_size)
         self.save_observations(
-            sample_time, select_user_req[0], select_user_req[1], select_user_req[2], last_ts, slotframe_size, None)
+            sample_time, select_user_req[0], select_user_req[1], select_user_req[2],
+            None, None, None, last_ts, slotframe_size, None)
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):

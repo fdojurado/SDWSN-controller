@@ -25,9 +25,6 @@ job_type = types.SimpleNamespace()
 job_type.TSCH = 0
 job_type.ROUTING = 1
 
-schedule_sequence = 0
-routes_sequence = 0
-
 
 def routes_to_deploy(node, routes):
     """ Remove already deployed routes """
@@ -107,9 +104,7 @@ class NetworkConfig(mp.Process):
             payload = routed_packed
         return payload
 
-    def build_routes_packet(self, data):
-        global routes_sequence
-        routes_sequence += 1
+    def build_routes_packet(self, data, routes_sequence):
         # print("building routing packet")
         # Build routes payload
         payloadPacked = self.process_json_routes_packets(data)
@@ -158,9 +153,7 @@ class NetworkConfig(mp.Process):
             payload = cell_packed
         return payload
 
-    def build_schedule_packet(self, data):
-        global schedule_sequence
-        schedule_sequence += 1
+    def build_schedule_packet(self, data, schedule_sequence):
         # print("building schedule packet")
         # Build schedules payload
         payloadPacked = self.process_json_schedule_packets(data)
@@ -206,10 +199,10 @@ class NetworkConfig(mp.Process):
                     case job_type.TSCH:
                         print("Schedule job type")
                         packedData, serial_pkt = self.build_schedule_packet(
-                            data)
+                            data, job_id)
                     case job_type.ROUTING:
                         print("routing job type")
-                        packedData, serial_pkt = self.build_routes_packet(data)
+                        packedData, serial_pkt = self.build_routes_packet(data, job_id)
                     case _:
                         print("unknown job type")
                         return None
