@@ -1061,12 +1061,12 @@ class sdwsnEnv(gym.Env):
         # We now set the TSCH schedules for the current routing
         self.compute_contention_free_schedule(path, slotframe_size)
         # We now set and save the user requirements
-        balanced = [0.35, 0.3, 0.3]
+        balanced = [0.4, 0.3, 0.3]
         energy = [0.8, 0.1, 0.1]
         delay = [0.1, 0.8, 0.1]
         reliability = [0.1, 0.1, 0.8]
         user_req = [balanced, energy, delay, reliability]
-        select_user_req = energy
+        select_user_req = balanced
         # select_user_req = random.choice(user_req)
         # Let's prepare the schedule information in the json format
         schedules_json = self.schedule.schedule_toJSON(slotframe_size)
