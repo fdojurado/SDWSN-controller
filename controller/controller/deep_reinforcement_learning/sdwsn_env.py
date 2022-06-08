@@ -111,7 +111,10 @@ class sdwsnEnv(gym.Env):
             sample_time, alpha, beta, delta)
         print(f'Reward {reward}')
         self.save_observations(
-            sample_time, alpha, beta, delta, power, delay, pdr, last_ts_in_schedule, sf_len, reward)
+            sample_time, alpha, beta, delta, power[0], power[1], power[2],
+            delay[0], delay[1], delay[2],
+            pdr[0], pdr[1],
+            last_ts_in_schedule, sf_len, reward)
         # self.parser_action(action)
         done = False
         info = {}
@@ -210,19 +213,19 @@ class sdwsnEnv(gym.Env):
         # Get the sensor nodes to loop in ascending order
         nodes = self.get_sensor_nodes_in_order()
         # Get the normalized average power consumption for this cycle
-        power_samples, power_wam, power_normalized = self.get_network_power_consumption(
+        power_wam, power_mean, power_normalized = self.get_network_power_consumption(
             init_time, nodes)
-        power = [power_samples, power_wam, power_normalized]
+        power = [power_wam, power_mean, power_normalized]
         # Get the normalized average delay for this cycle
-        delay_samples, delay_wam, delay_normalized = self.get_network_delay(
+        delay_wam, delay_mean, delay_normalized = self.get_network_delay(
             init_time, nodes)
-        delay = [delay_samples, delay_wam, delay_normalized]
+        delay = [delay_wam, delay_mean, delay_normalized]
         # Get the normalized average pdr for this cycle
-        pdr_samples, pdr_normalized = self.get_network_pdr(init_time, nodes)
-        pdr = [pdr_samples, pdr_normalized]
+        pdr_wam, pdf_mean = self.get_network_pdr(init_time, nodes)
+        pdr = [pdr_wam, pdf_mean]
         # Calculate the reward
         reward = -1*(alpha*power_normalized+beta *
-                     delay_normalized-delta*pdr_normalized)
+                     delay_normalized-delta*pdr_wam)
         return reward, power, delay, pdr
 
     def get_last_observations(self):
@@ -335,7 +338,7 @@ class sdwsnEnv(gym.Env):
         # Overall network mean
         normal_mean = all_power.sum()/len(all_power_samples)
         print(f'power network WAM {wam} normal mean {normal_mean}')
-        return wam
+        return wam, normal_mean
 
     def get_last_power_consumption(self, node, power_samples):
         global sequence
@@ -398,12 +401,12 @@ class sdwsnEnv(gym.Env):
         print(f"power samples for sequence {sequence}")
         print(power_samples)
         # We now need to compute the weighted arithmetic mean
-        power_wam = self.power_weighted_arithmetic_mean(
+        power_wam, power_mean = self.power_weighted_arithmetic_mean(
             power_samples)
         # We now need to normalize the power WAM
         normalized_power = (power_wam - p_min)/(p_max-p_min)
         print(f'normalized power {normalized_power}')
-        return power_samples, power_wam, normalized_power
+        return power_wam, power_mean, normalized_power
 
     """ Delay processing methods """
 
@@ -444,7 +447,7 @@ class sdwsnEnv(gym.Env):
         # Overall network mean
         normal_mean = all_delay.sum()/len(all_delay_samples)
         print(f'delay network WAM {wam} normal mean {normal_mean}')
-        return wam
+        return wam, normal_mean
 
     def get_avg_delay(self, node, delay_samples):
         global sequence
@@ -517,12 +520,12 @@ class sdwsnEnv(gym.Env):
         print(f"delay samples for sequence {sequence}")
         print(delay_samples)
         # We now need to compute the weighted arithmetic mean
-        delay_wam = self.delay_weighted_arithmetic_mean(
+        delay_wam, delay_mean = self.delay_weighted_arithmetic_mean(
             delay_samples)
         # We now need to normalize the power WAM
         normalized_delay = (delay_wam - delay_min)/(delay_max-delay_min)
         print(f'normalized delay {normalized_delay}')
-        return delay_samples, delay_wam, normalized_delay
+        return delay_wam, delay_mean, normalized_delay
 
     """ PDR processing methods """
 
@@ -570,7 +573,7 @@ class sdwsnEnv(gym.Env):
         # Overall network mean
         normal_mean = all_pdr.sum()/len(all_pdr_samples)
         print(f'pdr network WAM {wam} normal mean {normal_mean}')
-        return wam
+        return wam, normal_mean
 
     def get_avg_pdr(self, node, pdr_samples):
         global sequence
@@ -635,10 +638,10 @@ class sdwsnEnv(gym.Env):
         print(f"pdr samples for sequence {sequence}")
         print(pdr_samples)
         # We now need to compute the weighted arithmetic mean
-        normalized_pdr = self.pdr_weighted_arithmetic_mean(
+        pdr_wam, pdr_mean = self.pdr_weighted_arithmetic_mean(
             pdr_samples)
-        print(f'normalized pdr {normalized_pdr}')
-        return pdr_samples, normalized_pdr
+        print(f'normalized pdr {pdr_wam}')
+        return pdr_wam, pdr_mean
 
     def get_tsch_link_schedules(self):
         db = Database.find_one(SCHEDULES, {})
@@ -877,16 +880,24 @@ class sdwsnEnv(gym.Env):
         }
         Database.insert(SLOTFRAME_LEN, data)
 
-    def save_observations(self, timestamp, alpha, beta, delta, power,
-                          delay, pdr, last_ts_in_schedule, current_sf_len, reward):
+    def save_observations(self, timestamp, alpha, beta, delta,
+                          power_wam, power_mean, power_normalized,
+                          delay_wam, delay_mean, delay_normalized,
+                          pdr_wam, pdr_mean,
+                          last_ts_in_schedule, current_sf_len, reward):
         data = {
             "timestamp": timestamp,
             "alpha": alpha,
             "beta": beta,
             "delta": delta,
-            "power": power,
-            "delay": delay,
-            "pdr": pdr,
+            "power_wam": power_wam,
+            "power_avg": power_mean,
+            "power_normalized": power_normalized,
+            "delay_wam": delay_wam,
+            "delay_avg": delay_mean,
+            "delay_normalized": delay_normalized,
+            "pdr_wam": pdr_wam,
+            "pdr_mean": pdr_mean,
             "last_ts_in_schedule": last_ts_in_schedule,
             "current_sf_len": current_sf_len,
             "reward": reward
@@ -1105,7 +1116,10 @@ class sdwsnEnv(gym.Env):
         observation = np.append(observation, slotframe_size)
         self.save_observations(
             sample_time, select_user_req[0], select_user_req[1], select_user_req[2],
-            None, None, None, last_ts, slotframe_size, None)
+            None, None, None,
+            None, None, None,
+            None, None,
+            last_ts, slotframe_size, None)
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):
