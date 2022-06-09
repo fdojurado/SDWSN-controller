@@ -76,57 +76,68 @@ class sdwsnEnv(gym.Env):
         if action == 1:
             sf_len = self.previous_coprime(sf_len)
             print("decreasing slotframe size")
-        schedules_json = self.schedule.schedule_toJSON(sf_len)
-        # Save the time of performing the action
-        sample_time = datetime.now().timestamp() * 1000.0
-        # Check if the current schedule job fits in the packet size 127 B
-        while len(schedules_json['cells']) > 12:
-            print("fragmentation is required for TSCH schedule job")
-            extra_cells = schedules_json['cells'][12:]
-            del schedules_json['cells'][12:]
-            new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
+            # Lets verify that the SF size is greater than
+        # the last slot in the current schedule
+        if (sf_len > last_ts_in_schedule):
+            schedules_json = self.schedule.schedule_toJSON(sf_len)
+            # Save the time of performing the action
+            sample_time = datetime.now().timestamp() * 1000.0
+            # Check if the current schedule job fits in the packet size 127 B
+            while len(schedules_json['cells']) > 12:
+                print("fragmentation is required for TSCH schedule job")
+                extra_cells = schedules_json['cells'][12:]
+                del schedules_json['cells'][12:]
+                new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
+                # set job id
+                sequence = self.increase_sequence()
+                # Send job with id and wait for reply
+                self.send_job(new_job, sequence)
+                del schedules_json['cells']
+                schedules_json['cells'] = extra_cells
+                schedules_json["sf_len"] = 0
+            schedules_json = json.dumps(
+                schedules_json, indent=4, sort_keys=True)
+            # We now save the slotframe size in the SLOTFRAME_LEN collection
+            # self.save_slotframe_len(sf_len)
             # set job id
             sequence = self.increase_sequence()
             # Send job with id and wait for reply
-            self.send_job(new_job, sequence)
-            del schedules_json['cells']
-            schedules_json['cells'] = extra_cells
-            schedules_json["sf_len"] = 0
-        schedules_json = json.dumps(schedules_json, indent=4, sort_keys=True)
-        # We now save the slotframe size in the SLOTFRAME_LEN collection
-        # self.save_slotframe_len(sf_len)
-        # set job id
-        sequence = self.increase_sequence()
-        # Send job with id and wait for reply
-        self.send_job(schedules_json, sequence)
-        # We now wait for the cycle to complete
-        self.input_queue.get()
-        print("process reward")
-        # Build observations
-        user_requirements = np.array([alpha, beta, delta])
-        observation = np.append(user_requirements, last_ts_in_schedule)
-        observation = np.append(observation, sf_len)
-        # Calculate the reward
-        reward, power, delay, pdr = self.calculate_reward(
-            sample_time, alpha, beta, delta)
-        print(f'Reward {reward}')
-        self.save_observations(
-            sample_time, alpha, beta, delta, power[0], power[1], power[2],
-            delay[0], delay[1], delay[2],
-            pdr[0], pdr[1],
-            last_ts_in_schedule, sf_len, reward)
-        # self.parser_action(action)
-        done = False
-        info = {}
-        return observation, reward, done, info
+            self.send_job(schedules_json, sequence)
+            # We now wait for the cycle to complete
+            self.input_queue.get()
+            print("process reward")
+            # Build observations
+            user_requirements = np.array([alpha, beta, delta])
+            observation = np.append(user_requirements, last_ts_in_schedule)
+            observation = np.append(observation, sf_len)
+            # Calculate the reward
+            reward, power, delay, pdr = self.calculate_reward(
+                sample_time, alpha, beta, delta)
+            print(f'Reward {reward}')
+            self.save_observations(
+                sample_time, alpha, beta, delta, power[0], power[1], power[2],
+                delay[0], delay[1], delay[2],
+                pdr[0], pdr[1],
+                last_ts_in_schedule, sf_len, reward)
+            # self.parser_action(action)
+            done = False
+            info = {}
+            return observation, reward, done, info
+        else:
+            # Penalty for going below the last ts in the schedule
+            # Build observations
+            user_requirements = np.array([alpha, beta, delta])
+            observation = np.append(user_requirements, last_ts_in_schedule)
+            observation = np.append(observation, sf_len)
+            done = False
+            info = {}
+            return observation, -3, done, info
 
     """ Increase sequence """
 
     def increase_sequence(self):
         global sequence
         sequence += 1
-        if sequence > 255:
-            sequence = 0
         return sequence
 
     """ Coprime checks methods """
@@ -374,12 +385,17 @@ class sdwsnEnv(gym.Env):
         ]
         db = Database.aggregate(NODES_INFO, pipeline)
 
+        energy = 0
         for doc in db:
             energy = doc['ewma_energy']
             # print("last energy sample")
             # print(energy)
             power_samples.append((node, energy))
-            break
+         # Calculate the avg delay
+        if energy > 0:
+            power_samples.append((node, energy))
+        else:
+            power_samples.append((node, 3000))
         return
 
     def get_network_power_consumption(self, init_time, nodes):
@@ -497,7 +513,7 @@ class sdwsnEnv(gym.Env):
         if num_rcv > 0:
             avg_delay = sum_delay/num_rcv
         else:
-            avg_delay = 1
+            avg_delay = 3000
         delay_samples.append((node, avg_delay))
         return
 

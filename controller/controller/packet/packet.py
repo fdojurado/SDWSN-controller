@@ -7,12 +7,12 @@ import sys
 # Packet sizes
 SDN_IPH_LEN = 10  # Size of layer 3 packet header */
 SDN_NDH_LEN = 6   # Size of neighbor discovery header */
-SDN_NAH_LEN = 8   # Size of neighbor advertisement packet header */
+SDN_NAH_LEN = 10   # Size of neighbor advertisement packet header */
 SDN_NAPL_LEN = 6  # Size of neighbor advertisement payload size */
 # SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
 SDN_RAH_LEN = 6  # Size of RA header routing packet*/
-SDN_SAH_LEN = 8  # Size of SA header schedule packet*/
-SDN_DATA_LEN = 12  # Size of data packet */
+SDN_SAH_LEN = 6  # Size of SA header schedule packet*/
+SDN_DATA_LEN = 10  # Size of data packet */
 SDN_SERIAL_PACKETH_LEN = 8
 
 # Message types for the serial interface
@@ -177,7 +177,7 @@ class RA_Packet:
 
     def __init__(self, payload, **kwargs):
         self.payload_len = kwargs.get("payload_len", 0)
-        self.hop_limit = kwargs.get("hop_limit", 0)
+        self.padding = kwargs.get("padding", 0)
         self.seq = kwargs.get("seq", 0)
         self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.payload = payload
@@ -185,12 +185,12 @@ class RA_Packet:
     def pack(self):
         #  Let's first compute the checksum
         data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
-                           self.hop_limit, self.seq, self.pkt_chksum, bytes(self.payload))
+                           self.padding, self.seq, self.pkt_chksum, bytes(self.payload))
         self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_RAH_LEN)
         print("computed checksum")
         print(self.pkt_chksum)
         return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
-                           self.hop_limit, self.seq, self.pkt_chksum, bytes(self.payload))
+                           self.padding, self.seq, self.pkt_chksum, bytes(self.payload))
 
     # optional: nice string representation of packet for printing purposes
 
@@ -230,7 +230,6 @@ class Cell_Packet:
 
     def __init__(self, payload, **kwargs):
         self.payload_len = kwargs.get("payload_len", 0)
-        self.hop_limit = kwargs.get("hop_limit", 0)
         self.sf_len = kwargs.get("sf_len", 0)
         self.seq = kwargs.get("seq", 0)
         self.pkt_chksum = kwargs.get("pkt_chksum", 0)
@@ -238,12 +237,12 @@ class Cell_Packet:
 
     def pack(self):
         #  Let's first compute the checksum
-        data = struct.pack('!BBHHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
+        data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
                            self.sf_len, self.seq, self.pkt_chksum, bytes(self.payload))
         self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_SAH_LEN)
         print("computed checksum")
         print(self.pkt_chksum)
-        return struct.pack('!BBHHH' + str(len(self.payload)) + 's', self.payload_len, self.hop_limit,
+        return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
                            self.sf_len, self.seq, self.pkt_chksum, bytes(self.payload))
 
 
@@ -293,7 +292,7 @@ class Data_Packet:
     @classmethod
     def unpack(cls, packed_data):
         cycle_seq, seq, temp, humidity, light, asn_ls2b, asn_ms2b = struct.unpack(
-            '!BBHHHHH', packed_data)
+            '!HBBBBHH', packed_data)
         return cls(cycle_seq=cycle_seq, seq=seq, temp=temp, humidity=humidity, light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
 
 
@@ -305,6 +304,7 @@ class NA_Packet:
         self.energy = kwargs.get("energy", 0)
         self.cycle_seq = kwargs.get("cycle_seq", 0)
         self.seq = kwargs.get("seq", 0)
+        self.padding = kwargs.get("padding", 0)
         self.pkt_chksum = kwargs.get("pkt_chksum", 0)
         self.payload = payload
 
@@ -316,8 +316,8 @@ class NA_Packet:
 
     @classmethod
     def unpack(cls, packed_data, length):
-        payload_len, rank, energy, cycle_seq, seq, pkt_chksum, payload = struct.unpack(
-            '!BBHBBH' + str(length-SDN_NAH_LEN) + 's', packed_data)
+        payload_len, rank, energy, cycle_seq, seq, _, pkt_chksum, payload = struct.unpack(
+            '!BBHHBBH' + str(length-SDN_NAH_LEN) + 's', packed_data)
         return cls(payload, payload_len=payload_len, rank=rank, energy=energy, cycle_seq=cycle_seq, seq=seq, pkt_chksum=pkt_chksum)
 
 
