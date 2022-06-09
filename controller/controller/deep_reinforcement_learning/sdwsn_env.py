@@ -928,9 +928,8 @@ class sdwsnEnv(gym.Env):
                                               slotframe_size-1)
                         ch = random.randrange(0,
                                               self.schedule.num_channel_offsets-1)
-                        # Let's first check whether this timeslot is already in use in both Rx, Tx
-                        while(not self.schedule.timeslot_empty(rx_node, ts) and
-                              not self.schedule.timeslot_empty(tx_node, ts)):
+                        # Let's first check whether this timeslot is already in use in the schedule
+                        while(not self.schedule.timeslot_free_in_schedule(ts)):
                             ts = random.randrange(0, slotframe_size-1)
                             print(f"ts already in use, we now try ts={ts}")
                         # We have found an empty timeslot
@@ -1066,7 +1065,7 @@ class sdwsnEnv(gym.Env):
         delay = [0.1, 0.8, 0.1]
         reliability = [0.1, 0.1, 0.8]
         user_req = [balanced, energy, delay, reliability]
-        select_user_req = balanced
+        select_user_req = energy
         # select_user_req = random.choice(user_req)
         # Let's prepare the schedule information in the json format
         schedules_json = self.schedule.schedule_toJSON(slotframe_size)

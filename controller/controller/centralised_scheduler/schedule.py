@@ -130,6 +130,18 @@ class Schedule:
 
         # self.print_schedule()
 
+    def timeslot_free_in_schedule(self, ts):
+        # This function checks whether the given timeslot is free
+        # in the entire schedule
+        for elem in self.list_nodes:
+            for rx in elem.rx:
+                if rx.timeoffset == ts:
+                    return 0
+            for tx in elem.tx:
+                if tx.timeoffset == ts:
+                    return 0
+        return 1
+
     def timeslot_empty(self, node, timeslot):
         for elem in self.list_nodes:
             if elem.node == node:
