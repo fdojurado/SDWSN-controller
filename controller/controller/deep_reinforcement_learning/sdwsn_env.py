@@ -24,11 +24,12 @@ class sdwsnEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, num_nodes, max_channel_offsets, max_slotframe_size,
-                 nc_job_queue, input_queue, job_completion):
+                 nc_job_queue, input_queue, job_completion, sequence_number):
         super(sdwsnEnv, self).__init__()
         self.nc_job_queue = nc_job_queue
         self.input_queue = input_queue
         self.job_completion = job_completion
+        self.sequence_number = sequence_number
         self.num_nodes = num_nodes
         self.max_channel_offsets = max_channel_offsets
         self.max_slotframe_size = max_slotframe_size
@@ -104,8 +105,10 @@ class sdwsnEnv(gym.Env):
             # Send job with id and wait for reply
             self.send_job(schedules_json, sequence)
             # We now wait for the cycle to complete
+            self.sequence_number.put(sequence)
             self.input_queue.get()
             print("process reward")
+            sleep(1)
             # Build observations
             user_requirements = np.array([alpha, beta, delta])
             observation = np.append(user_requirements, last_ts_in_schedule)
@@ -192,7 +195,7 @@ class sdwsnEnv(gym.Env):
         result = 0
         while True:
             try:
-                result, job = self.job_completion.get(timeout=0.1)
+                result, job = self.job_completion.get(timeout=0.5)
                 if job == job_id and result == 1:
                     print("job completion successful")
                     result = 1
@@ -201,7 +204,7 @@ class sdwsnEnv(gym.Env):
                 print("job not completed yet")
                 # We stop sending the current NC packet if
                 # we reached the max RTx or we received ACK
-                if(rtx >= 7):
+                if(rtx >= 17):
                     print("Job didn't complete")
                     break
                 # We wait until max queue readings < 7
@@ -368,7 +371,7 @@ class sdwsnEnv(gym.Env):
             {"$unwind": "$energy"},
             {"$match": {
                 "energy.cycle_seq": {
-                    "$gte": sequence
+                    "$eq": sequence
                 }
             }
             },
@@ -388,10 +391,9 @@ class sdwsnEnv(gym.Env):
         energy = 0
         for doc in db:
             energy = doc['ewma_energy']
-            # print("last energy sample")
-            # print(energy)
-            power_samples.append((node, energy))
-         # Calculate the avg delay
+            print("last energy sample")
+            print(energy)
+        # Calculate the avg delay
         if energy > 0:
             power_samples.append((node, energy))
         else:
@@ -410,7 +412,7 @@ class sdwsnEnv(gym.Env):
         power_samples = []
         # We first loop through all sensor nodes
         for node in nodes:
-            # print(f"printing power for node {node}")
+            print(f"printing power for node {node}")
             # Get all samples from the start of the network configuration
             self.get_last_power_consumption(
                 node, power_samples)
@@ -513,7 +515,7 @@ class sdwsnEnv(gym.Env):
         if num_rcv > 0:
             avg_delay = sum_delay/num_rcv
         else:
-            avg_delay = 3000
+            avg_delay = 2500
         delay_samples.append((node, avg_delay))
         return
 
@@ -522,7 +524,7 @@ class sdwsnEnv(gym.Env):
         # Min power
         delay_min = SLOT_DURATION
         # Max power
-        delay_max = 3000
+        delay_max = 2500
         # Get the time when the last network configuration was deployed
         timestamp = init_time
         # Variable to keep track of the number of delay samples
@@ -1081,7 +1083,7 @@ class sdwsnEnv(gym.Env):
         delay = [0.1, 0.8, 0.1]
         reliability = [0.1, 0.1, 0.8]
         user_req = [balanced, energy, delay, reliability]
-        select_user_req = energy
+        select_user_req = delay
         # select_user_req = random.choice(user_req)
         # Let's prepare the schedule information in the json format
         schedules_json = self.schedule.schedule_toJSON(slotframe_size)
@@ -1113,6 +1115,7 @@ class sdwsnEnv(gym.Env):
         sequence = self.increase_sequence()
         # Send job with id and wait for reply
         self.send_job(routes_json, sequence)
+        self.sequence_number.put(sequence)
         # Wait for the network to settle
         sleep(0.5)
         # We now save all the observations
@@ -1127,6 +1130,7 @@ class sdwsnEnv(gym.Env):
         _, last_ts = self.build_link_schedules_matrix_obs()
         # We now save the observations with reward None
         # observation = np.zeros(self.n_observations).astype(np.float32)
+        slotframe_size = slotframe_size + 15
         observation = np.append(user_requirements, last_ts)
         observation = np.append(observation, slotframe_size)
         self.save_observations(

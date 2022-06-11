@@ -81,6 +81,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
     routing_input_queue = mp.Queue()
     routing_output_queue = mp.Queue()
     routing_alg_queue = mp.Queue()
+    sequence_number = mp.Queue()
     # NC Queues
     nc_input_queue = mp.Queue()
     nc_output_queue = mp.Queue()
@@ -92,7 +93,7 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
     # can be change at run time
     if rl:
         rp = SDWSN_RL(ServerConfig.from_json_file(config), verbose,
-                      routing_input_queue, routing_output_queue, nc_input_queue, nc_output_queue)
+                      routing_input_queue, routing_output_queue, nc_input_queue, nc_output_queue, sequence_number)
     else:
         rp = Routing(ServerConfig.from_json_file(config), verbose, "dijkstra",
                      routing_input_queue, routing_output_queue, routing_alg_queue)
@@ -129,12 +130,16 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
     interval = ServerConfig.from_json_file(config).routing.time
     # timeout = time.time()+int(120.0)
     while True:
+        # Read latest sequence number from RL
+        if not sequence_number.empty():
+            sequence = sequence_number.get()
+            globals.sequence = sequence
         # look for incoming request from the serial interface
         if not serial_output_queue.empty():
             data = serial_output_queue.get()
             handle_serial_packet(data, ack_queue)
         # Run the routing protocol?
-        if globals.num_packets_period > 150:
+        if globals.num_packets_period > 200:
             G = load_wsn_links("rssi")
             routing_input_queue.put(G)
             globals.num_packets_period = 0

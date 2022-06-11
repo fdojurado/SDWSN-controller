@@ -224,7 +224,7 @@ class NetworkConfig(mp.Process):
         result = 0
         while True:
             try:
-                ack_pkt = self.ack_queue.get(timeout=0.5)
+                ack_pkt = self.ack_queue.get(timeout=1.2)
                 if (ack_pkt.reserved0 == serial_pkt.reserved0+1):
                     print("correct ACK received")
                     result = 1

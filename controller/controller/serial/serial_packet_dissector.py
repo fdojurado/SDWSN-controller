@@ -64,12 +64,17 @@ def handle_serial_packet(data, ack_queue):
                 "bad NA packet"
                 return
             # Add to number of pkts received during this period
+            if not na_pkt.cycle_seq == globals.sequence:
+                return
+            print(repr(pkt))
+            print(repr(na_pkt))
             globals.num_packets_period += 1
+            print(f"num seq (NA): {globals.num_packets_period}")
             # We now build the energy DB
             save_energy(pkt, na_pkt)
             # We now build the neighbors DB
             save_neighbors(pkt, na_pkt)
-            # return
+            return
         # case sdn_protocols.SDN_PROTO_NC_ROUTE:
         #     # rt_pkt = process_nc_route_packet(pkt.payload, pkt.tlen-SDN_IPH_LEN)
         #     ack_queue.put(pkt)
@@ -81,12 +86,17 @@ def handle_serial_packet(data, ack_queue):
                 "bad Data packet"
                 return
             # Add to number of pkts received during this period
+            if not data_pkt.cycle_seq == globals.sequence:
+                return
+            print(repr(pkt))
+            print(repr(data_pkt))
             globals.num_packets_period += 1
+            print(f"num seq (data): {globals.num_packets_period}")
             # We now build the pdr DB
             save_pdr(pkt, data_pkt)
             # We now build the delay DB
             save_delay(pkt, data_pkt)
-            # return
+            return
         case _:
             print("sdn IP packet type not found")
             return
