@@ -1052,6 +1052,18 @@ class sdwsnEnv(gym.Env):
         }
         Database.insert(USER_REQUIREMENTS, data)
 
+    def save_json(self, json_string):
+        with open('json_data.json', 'w') as outfile:
+            json.dump(json_string, outfile)
+
+    def load_json(self):
+        with open('json_data.json') as json_file:
+            print("json file")
+            print(json_file)
+            data = json.load(json_file)
+            print(data)
+        return data
+
     def reset(self):
         """
         Important: the observation must be a numpy array

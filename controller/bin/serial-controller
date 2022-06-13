@@ -16,9 +16,12 @@ def main(verbose: ('use verbose output', 'flag', 'v'),
          mqtt: ('run MQTT client', 'flag', 'm'),
          fit: ('connect to FIT IoT LAB', 'flag', 'f'),
          rl: ('use reinforcement learning', 'flag', 'r'),
+         eval: ('evaluate the RL algorithm', 'flag', 'e'),
+         continue_learning: ('continue learning', 'flag', 'l'),
          daemon: ('run as daemon', 'flag', 'd')):
     """The serial-controller implements the control plane of the SDWSN."""
-    cli.main(APP, verbose, version, config, plot, mqtt, daemon, rl, fit)
+    cli.main(APP, verbose, version, config, plot, mqtt,
+             daemon, rl, eval, continue_learning, fit)
 
 
 if __name__ == '__main__':

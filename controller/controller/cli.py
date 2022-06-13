@@ -44,7 +44,7 @@ SERVER = {'serial-controller': SerialBus}
 Database.initialise()
 
 
-def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, fit=None):
+def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, eval=None, continue_learning=None, fit=None):
     """The main function run by the CLI command.
 
     Args:
@@ -68,6 +68,10 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
     # Register signals.
     signal.signal(signal.SIGQUIT, exit_process)
     signal.signal(signal.SIGTERM, exit_process)
+    """ Exit if both training and eval flag are set """
+    if rl is True and eval is True and continue_learning is True:
+        print("wrong input parameters")
+        sys.exit(0)
     """ Initialize the global variables """
     globals.globals_initialize()
     """ Define Queues """
@@ -91,9 +95,18 @@ def main(command, verbose, version, config, plot, mqtt_client, daemon, rl=None, 
     # rp stands for routing process
     # We need to consider that the computation of the new routing alg.
     # can be change at run time
-    if rl:
-        rp = SDWSN_RL(ServerConfig.from_json_file(config), verbose,
-                      routing_input_queue, routing_output_queue, nc_input_queue, nc_output_queue, sequence_number)
+    if rl or eval or continue_learning:
+        if rl:
+            rp = SDWSN_RL(ServerConfig.from_json_file(config), verbose,
+                          routing_input_queue, routing_output_queue, nc_input_queue, nc_output_queue, sequence_number, 'train')
+        if eval:
+            print("evaluating with trained model")
+            rp = SDWSN_RL(ServerConfig.from_json_file(config), verbose,
+                          routing_input_queue, routing_output_queue, nc_input_queue, nc_output_queue, sequence_number, 'eval')
+        if continue_learning:
+            print("continue learning with the trained model")
+            rp = SDWSN_RL(ServerConfig.from_json_file(config), verbose,
+                          routing_input_queue, routing_output_queue, nc_input_queue, nc_output_queue, sequence_number, 'continue')
     else:
         rp = Routing(ServerConfig.from_json_file(config), verbose, "dijkstra",
                      routing_input_queue, routing_output_queue, routing_alg_queue)
