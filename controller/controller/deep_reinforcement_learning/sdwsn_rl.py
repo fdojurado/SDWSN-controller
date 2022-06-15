@@ -8,9 +8,46 @@ import networkx as nx
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.evaluation import evaluate_policy
+import gym
 
 # env = sdwsnEnv(10, 3, [10,17,31], None)
 # check_env(env, warn=True)
+
+
+class TimeLimitWrapper(gym.Wrapper):
+    """
+    :param env: (gym.Env) Gym environment that will be wrapped
+    :param max_steps: (int) Max number of steps per episode
+    """
+
+    def __init__(self, env, max_steps=100):
+        # Call the parent constructor, so we can access self.env later
+        super(TimeLimitWrapper, self).__init__(env)
+        self.max_steps = max_steps
+        # Counter of steps per episode
+        self.current_step = 0
+
+    def reset(self):
+        """
+        Reset the environment 
+        """
+        # Reset the counter
+        self.current_step = 0
+        return self.env.reset()
+
+    def step(self, action):
+        """
+        :param action: ([float] or int) Action taken by the agent
+        :return: (np.ndarray, float, bool, dict) observation, reward, is the episode over?, additional information
+        """
+        self.current_step += 1
+        obs, reward, done, info = self.env.step(action)
+        # Overwrite the done signal when
+        if self.current_step >= self.max_steps:
+            done = True
+            # Update the info dict to signal that the limit was exceeded
+            info['time_limit_reached'] = True
+        return obs, reward, done, info
 
 
 class MonitorCallback(BaseCallback):
@@ -122,14 +159,16 @@ class SDWSN_RL(mp.Process):
         N = get_last_index_wsn()+1
         self.env = sdwsnEnv(N, self.max_channel_offsets,
                             self.max_slotframe_size, self.nc_job_queue, self.input_queue, self.nc_job_completion, self.sequence_number)
+
+        self.env = TimeLimitWrapper(self.env, max_steps=4)
         print('Number of states: {}'.format(self.env.observation_space))
         print('Number of actions: {}'.format(self.env.action_space))
-        self.model = DQN('MlpPolicy', self.env, verbose=2)
+        self.model = DQN('MlpPolicy', self.env, verbose=1)
         # Save a checkpoint every 1000 steps
-        self.checkpoint_callback = CheckpointCallback(save_freq=20, save_path='./logs/',
-                                                      name_prefix='rl_energy')
+        # self.checkpoint_callback = CheckpointCallback(save_freq=20, save_path='./logs/',
+        #                                               name_prefix='rl_energy')
         # Create the callback: check every 1000 steps
-        self.callback = MonitorCallback()
+        # self.callback = MonitorCallback()
 
     def run(self):
         while(1):
@@ -142,7 +181,7 @@ class SDWSN_RL(mp.Process):
                         self.configure_env()
                         # Train the agent
                         self.model.learn(total_timesteps=int(
-                            500), callback=[self.callback, self.checkpoint_callback])
+                            500))
                     if self.type_exec == 'eval':
                         # Loading saved model
                         self.load_env()

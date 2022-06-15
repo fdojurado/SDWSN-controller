@@ -66,10 +66,10 @@ def handle_serial_packet(data, ack_queue):
             # Add to number of pkts received during this period
             if not na_pkt.cycle_seq == globals.sequence:
                 return
-            print(repr(pkt))
-            print(repr(na_pkt))
+            # print(repr(pkt))
+            # print(repr(na_pkt))
             globals.num_packets_period += 1
-            print(f"num seq (NA): {globals.num_packets_period}")
+            # print(f"num seq (NA): {globals.num_packets_period}")
             # We now build the energy DB
             save_energy(pkt, na_pkt)
             # We now build the neighbors DB
@@ -88,17 +88,17 @@ def handle_serial_packet(data, ack_queue):
             # Add to number of pkts received during this period
             if not data_pkt.cycle_seq == globals.sequence:
                 return
-            print(repr(pkt))
-            print(repr(data_pkt))
+            # print(repr(pkt))
+            # print(repr(data_pkt))
             globals.num_packets_period += 1
-            print(f"num seq (data): {globals.num_packets_period}")
+            # print(f"num seq (data): {globals.num_packets_period}")
             # We now build the pdr DB
             save_pdr(pkt, data_pkt)
             # We now build the delay DB
             save_delay(pkt, data_pkt)
             return
         case _:
-            print("sdn IP packet type not found")
+            "sdn IP packet type not found"
             return
     # Everytime we received a valid packet, we update the features table
     # save_features()
@@ -112,7 +112,7 @@ def process_serial_packet(data):
     # If the reported payload length in the serial header doesnot match the packet size,
     # then we drop the packet.
     if(len(pkt.payload) < pkt.payload_len):
-        print("packet shorter than reported in serial header")
+        "packet shorter than reported in serial header"
         return None
     # serial packet succeed
     # print("succeed unpacking serial packet")
@@ -129,7 +129,7 @@ def process_data_packet(pkt):
     # If the reported length in the sdn IP header doesnot match the packet size,
     # then we drop the packet.
     if(len(pkt.payload) < (pkt.tlen-SDN_IPH_LEN)):
-        print("Data packet shorter than reported in IP header")
+        "Data packet shorter than reported in IP header"
         return
     # Process data packet header
     pkt = Data_Packet.unpack(pkt.payload)
@@ -142,7 +142,7 @@ def process_data_packet(pkt):
 def process_sdn_ip_packet(data):
     # We first check the integrity of the HEADER of the sdn IP packet
     if(sdn_ip_checksum(data, SDN_IPH_LEN) != 0xffff):
-        print("bad checksum")
+        "bad checksum"
         return
     # Parse sdn IP packet
     # print("processing IP packet")
@@ -151,7 +151,7 @@ def process_sdn_ip_packet(data):
     # If the reported length in the sdn IP header doesnot match the packet size,
     # then we drop the packet.
     if(len(data) < pkt.tlen):
-        print("packet shorter than reported in IP header")
+        "packet shorter than reported in IP header"
         return
     # sdn IP packet succeed
     # print("succeed unpacking sdn IP packet")
@@ -189,7 +189,7 @@ def process_na_packet(pkt):
     length = pkt.tlen-SDN_IPH_LEN
     # We first check the integrity of the entire SDN NA packet
     if(sdn_ip_checksum(pkt.payload, length) != 0xffff):
-        print("bad NA checksum")
+        "bad NA checksum"
         return
     # Parse sdn NA packet
     pkt = NA_Packet.unpack(pkt.payload, length)
@@ -197,7 +197,7 @@ def process_na_packet(pkt):
     # If the reported payload length in the sdn NA header does not match the packet size,
     # then we drop the packet.
     if(len(pkt.payload) < pkt.payload_len):
-        print("NA packet shorter than reported in the header")
+        "NA packet shorter than reported in the header"
         return
     # sdn IP packet succeed
     # print("succeed unpacking SDN NA packet")

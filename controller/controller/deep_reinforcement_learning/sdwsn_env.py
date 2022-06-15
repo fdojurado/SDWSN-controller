@@ -1095,7 +1095,7 @@ class sdwsnEnv(gym.Env):
         delay = [0.1, 0.8, 0.1]
         reliability = [0.1, 0.1, 0.8]
         user_req = [balanced, energy, delay, reliability]
-        select_user_req = delay
+        select_user_req = energy
         # select_user_req = random.choice(user_req)
         # Let's prepare the schedule information in the json format
         schedules_json = self.schedule.schedule_toJSON(slotframe_size)
@@ -1142,7 +1142,7 @@ class sdwsnEnv(gym.Env):
         _, last_ts = self.build_link_schedules_matrix_obs()
         # We now save the observations with reward None
         # observation = np.zeros(self.n_observations).astype(np.float32)
-        slotframe_size = slotframe_size + 15
+        # slotframe_size = slotframe_size + 15
         observation = np.append(user_requirements, last_ts)
         observation = np.append(observation, slotframe_size)
         self.save_observations(

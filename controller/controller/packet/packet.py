@@ -100,14 +100,9 @@ class SerialPacket:
         #  Let's first compute the checksum
         data = struct.pack('!HHBBBB' + str(len(self.payload)) + 's', self.addr, self.pkt_chksum, self.message_type,
                            self.payload_len, self.reserved0, self.reserved1, bytes(self.payload))
-        print("payload len")
-        print(len(self.payload))
-        print("data")
-        print(len(data))
         self.pkt_chksum = sdn_ip_checksum(
             data, self.payload_len+SDN_SERIAL_PACKETH_LEN)
-        print("computed checksum")
-        print(self.pkt_chksum)
+
         return struct.pack('!HHBBBB' + str(len(self.payload)) + 's', self.addr, self.pkt_chksum, self.message_type,
                            self.payload_len, self.reserved0, self.reserved1, bytes(self.payload))
 
@@ -151,8 +146,7 @@ class SDN_IP_Packet:
         data = struct.pack('!BBBBHHH', self.vap, self.tlen,
                            self.ttl, self.padding, self.hdr_chksum, self.scr, self.dest)
         self.hdr_chksum = sdn_ip_checksum(data, SDN_IPH_LEN)
-        print("computed checksum")
-        print(self.hdr_chksum)
+
         return struct.pack('!BBBBHHH' + str(len(self.payload)) + 's', self.vap, self.tlen,
                            self.ttl, self.padding, self.hdr_chksum, self.scr, self.dest, bytes(self.payload))
 
@@ -187,8 +181,7 @@ class RA_Packet:
         data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
                            self.padding, self.seq, self.pkt_chksum, bytes(self.payload))
         self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_RAH_LEN)
-        print("computed checksum")
-        print(self.pkt_chksum)
+
         return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
                            self.padding, self.seq, self.pkt_chksum, bytes(self.payload))
 
@@ -240,8 +233,7 @@ class Cell_Packet:
         data = struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
                            self.sf_len, self.seq, self.pkt_chksum, bytes(self.payload))
         self.pkt_chksum = sdn_ip_checksum(data, self.payload_len+SDN_SAH_LEN)
-        print("computed checksum")
-        print(self.pkt_chksum)
+
         return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
                            self.sf_len, self.seq, self.pkt_chksum, bytes(self.payload))
 
