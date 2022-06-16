@@ -1,32 +1,14 @@
 import socket
 import sys
 # import logging
-from controller import Message
 from typing import Optional
 from time import time
 from datetime import datetime
-import multiprocessing as mp
-
-# logger = logging.getLogger('can.serial')
-
-# try:
-#     import serial
-# except ImportError:
-#     logger.warning(
-#         "You won't be able to use the serial can backend without "
-#         "the serial module installed!"
-#     )
-#     serial = None
-
-try:
-    from serial.tools import list_ports
-except ImportError:
-    list_ports = None
 
 
-class SerialBus(mp.Process):
+class SerialBus():
     def __init__(self, config, verbose, input_queue, output_queue):
-        mp.Process.__init__(self)
+        # mp.Process.__init__(self)
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.config = config
@@ -41,7 +23,7 @@ class SerialBus(mp.Process):
         server_address = (self.config.serial.host, self.config.serial.port)
         result = self.ser.connect_ex(server_address)
         if (result != 0):
-            print("error connecting to serial port")
+            print("error connecting to socket")
 
     def decodeByte(self, n):
         data = bytearray()
@@ -136,7 +118,7 @@ class SerialBus(mp.Process):
 
         return 0
 
-    def recv(self, timeout: Optional[float] = None) -> Optional[Message]:
+    def recv(self, timeout: Optional[float] = None):
         """Block waiting for a message from the Bus.
         :param timeout:
             seconds to wait for a message or None to wait indefinitely

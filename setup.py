@@ -3,7 +3,6 @@ from pathlib import Path
 from setuptools import setup, find_packages
 
 SRC_ROOT = 'controller'
-BIN_ROOT = 'bin/'
 
 about = import_module(SRC_ROOT + '.about')
 
@@ -15,8 +14,6 @@ with Path('requirements.txt').open('r') as fh:
     requirements = fh.read().splitlines()
     requirements = [requirement for requirement in requirements
                     if not requirement.startswith('#')]
-
-binaries = [BIN_ROOT + about.APP]
 
 setup(
     name=about.PROJECT,
@@ -34,6 +31,5 @@ setup(
     packages=find_packages('controller'),
     package_dir={'': SRC_ROOT},
     python_requires='>=3.10',
-    keywords=about.KEYWORDS,
-    scripts=binaries
+    keywords=about.KEYWORDS
 )
