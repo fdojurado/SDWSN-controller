@@ -4,15 +4,16 @@ import sys
 from typing import Optional
 from time import time
 from datetime import datetime
+import multiprocessing as mp
 
 
 class SerialBus():
-    def __init__(self, config, verbose, input_queue, output_queue):
-        # mp.Process.__init__(self)
+    def __init__(self, host, port, input_queue, output_queue):
+        mp.Process.__init__(self)
         self.input_queue = input_queue
         self.output_queue = output_queue
-        self.config = config
-        self.verbose = verbose
+        self.host = host
+        self.port = port
         self.byte_msg = bytearray()
         self.overflow = 0
         self.escape_character = 0
@@ -20,7 +21,7 @@ class SerialBus():
         self.frame_length = 0
         # Serial interface
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_address = (self.config.serial.host, self.config.serial.port)
+        server_address = (self.host, self.port)
         result = self.ser.connect_ex(server_address)
         if (result != 0):
             print("error connecting to socket")
