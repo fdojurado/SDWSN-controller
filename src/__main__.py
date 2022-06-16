@@ -1,3 +1,5 @@
+import app
+
 
 if __name__ == '__main__':
-    print("hello from main")
+    app.run()
