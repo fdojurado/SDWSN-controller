@@ -160,10 +160,11 @@ class SDWSN_RL(mp.Process):
         self.env = sdwsnEnv(N, self.max_channel_offsets,
                             self.max_slotframe_size, self.nc_job_queue, self.input_queue, self.nc_job_completion, self.sequence_number)
 
-        self.env = TimeLimitWrapper(self.env, max_steps=4)
+        self.env = TimeLimitWrapper(self.env, max_steps=200)
         print('Number of states: {}'.format(self.env.observation_space))
         print('Number of actions: {}'.format(self.env.action_space))
-        self.model = DQN('MlpPolicy', self.env, verbose=1)
+        self.model = DQN('MlpPolicy', self.env, verbose=1, learning_starts=100,
+                         target_update_interval=8, exploration_fraction=0.2)
         # Save a checkpoint every 1000 steps
         # self.checkpoint_callback = CheckpointCallback(save_freq=20, save_path='./logs/',
         #                                               name_prefix='rl_energy')
@@ -180,8 +181,7 @@ class SDWSN_RL(mp.Process):
                     if self.type_exec == 'train':
                         self.configure_env()
                         # Train the agent
-                        self.model.learn(total_timesteps=int(
-                            500))
+                        self.model.learn(total_timesteps=int(1e6))
                     if self.type_exec == 'eval':
                         # Loading saved model
                         self.load_env()

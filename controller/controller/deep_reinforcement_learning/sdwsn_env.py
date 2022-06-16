@@ -44,30 +44,17 @@ class sdwsnEnv(gym.Env):
         self.schedule = Schedule(
             self.max_slotframe_size, max_channel_offsets)
         # We define the number of actions
-        # 1) change parent node of a specific node (size: 1 * num_nodes * num_nodes)
-        # 2) Increase slotframe size
-        # 3) Decrease slotframe size
-        # -- 4) change timeoffset of a specific node (size: 1 * num_nodes)
-        # -- 5) change channeloffset of a specific node (size: 1 * num_nodes)
-        # 4) add a new RX link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size )
-        # 5) add a new Tx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # 6) remove a Rx link to parent of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # 7) remove a Tx link of a specific node (size: 1 * num_nodes * num_channel_offsets x slotframe_size)
-        # Total number of actions = num_nodes * num_nodes + 1 + 1 + 4 * num_nodes * num_channel_offsets x slotframe_size
-        # Total = 2 + num_nodes (num_nodes + 4 * num_channel_offsets x slotframe_size)
-        # n_actions = 2 + self.num_nodes * \
-        #     (self.num_nodes + 4 * self.max_channel_offsets * self.max_slotframe_size)
         n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
-        # They will be the user requirements, energy, delay and pdr.
-        self.n_observations = 5
+        # They will be the user requirements, last ts, SF size and normalized ts in schedule
+        self.n_observations = 6
         self.observation_space = spaces.Box(low=0, high=1,
                                             shape=(self.n_observations, ), dtype=np.float32)
 
     def step(self, action):
         # We now get the last observations
-        alpha, beta, delta, last_ts_in_schedule, current_sf_len, _ = self.get_last_observations()
+        alpha, beta, delta, last_ts_in_schedule, current_sf_len, normalized_ts_in_schedule, _ = self.get_last_observations()
         # Get the current slotframe size
         sf_len = current_sf_len
         print("Performing action "+str(action))
@@ -113,6 +100,7 @@ class sdwsnEnv(gym.Env):
             user_requirements = np.array([alpha, beta, delta])
             observation = np.append(user_requirements, last_ts_in_schedule)
             observation = np.append(observation, sf_len)
+            observation = np.append(observation, normalized_ts_in_schedule)
             # Calculate the reward
             reward, power, delay, pdr = self.calculate_reward(
                 sample_time, alpha, beta, delta)
@@ -121,7 +109,8 @@ class sdwsnEnv(gym.Env):
                 sample_time, alpha, beta, delta, power[0], power[1], power[2],
                 delay[0], delay[1], delay[2],
                 pdr[0], pdr[1],
-                last_ts_in_schedule, sf_len, reward)
+                last_ts_in_schedule, sf_len, normalized_ts_in_schedule,
+                reward)
             # self.parser_action(action)
             done = False
             info = {}
@@ -132,6 +121,7 @@ class sdwsnEnv(gym.Env):
             user_requirements = np.array([alpha, beta, delta])
             observation = np.append(user_requirements, last_ts_in_schedule)
             observation = np.append(observation, sf_len)
+            observation = np.append(observation, normalized_ts_in_schedule)
             done = False
             info = {}
             return observation, -3, done, info
@@ -254,8 +244,9 @@ class sdwsnEnv(gym.Env):
             delta = doc["delta"]
             last_ts_in_schedule = doc['last_ts_in_schedule']
             current_sf_len = doc['current_sf_len']
+            normalized_ts_in_schedule = doc['normalized_ts_in_schedule']
             reward = doc['reward']
-            return alpha, beta, delta, last_ts_in_schedule, current_sf_len, reward
+            return alpha, beta, delta, last_ts_in_schedule, current_sf_len, normalized_ts_in_schedule, reward
 
     def get_observations(self):
         # 1) Get the current user requirements
@@ -902,7 +893,8 @@ class sdwsnEnv(gym.Env):
                           power_wam, power_mean, power_normalized,
                           delay_wam, delay_mean, delay_normalized,
                           pdr_wam, pdr_mean,
-                          last_ts_in_schedule, current_sf_len, reward):
+                          last_ts_in_schedule, current_sf_len, normalized_ts_in_schedule,
+                          reward):
         data = {
             "timestamp": timestamp,
             "alpha": alpha,
@@ -918,6 +910,7 @@ class sdwsnEnv(gym.Env):
             "pdr_mean": pdr_mean,
             "last_ts_in_schedule": last_ts_in_schedule,
             "current_sf_len": current_sf_len,
+            "normalized_ts_in_schedule": normalized_ts_in_schedule,
             "reward": reward
         }
         Database.insert(OBSERVATIONS, data)
@@ -1140,17 +1133,25 @@ class sdwsnEnv(gym.Env):
         # routing = self.save_routes_matrix_obs(path)
         # We now build the TSCH schedule matrix
         _, last_ts = self.build_link_schedules_matrix_obs()
+        # Format the scheduler in binary form upto the size of the schedule
+        ts_in_schedule = self.schedule.get_list_ts_in_use()
+        sum = 0
+        for ts in ts_in_schedule:
+            sum += 2**ts
+        normalized_ts_in_schedule = sum/(2**slotframe_size)
         # We now save the observations with reward None
         # observation = np.zeros(self.n_observations).astype(np.float32)
         # slotframe_size = slotframe_size + 15
         observation = np.append(user_requirements, last_ts)
         observation = np.append(observation, slotframe_size)
+        observation = np.append(observation, normalized_ts_in_schedule)
         self.save_observations(
             sample_time, select_user_req[0], select_user_req[1], select_user_req[2],
             None, None, None,
             None, None, None,
             None, None,
-            last_ts, slotframe_size, None)
+            last_ts, slotframe_size, normalized_ts_in_schedule,
+            None)
         return observation  # reward, done, info can't be included
 
     def render(self, mode='human'):

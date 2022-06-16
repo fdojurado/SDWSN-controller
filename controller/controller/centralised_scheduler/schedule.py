@@ -183,6 +183,15 @@ class Schedule:
                         return rx.channeloffset, rx.timeoffset
         return None, None
 
+    def get_list_ts_in_use(self):
+        # This function returns a list of ts currently used
+        list_ts = []
+        for ts in range(self.slotframe_size):
+            if not self.timeslot_free_in_schedule(ts):
+                list_ts.append(ts)
+        return list_ts
+
+
     def clear_schedule(self):
         rows, cols = (self.num_channel_offsets, self.slotframe_size)
         self.schedule = [[0 for i in range(cols)] for j in range(rows)]
