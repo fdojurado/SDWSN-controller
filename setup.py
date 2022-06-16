@@ -33,7 +33,7 @@ setup(
     install_requires=requirements,
     packages=find_packages('controller'),
     package_dir={'': SRC_ROOT},
-    python_requires='>=3',
+    python_requires='>=3.10',
     keywords=about.KEYWORDS,
     scripts=binaries
 )
