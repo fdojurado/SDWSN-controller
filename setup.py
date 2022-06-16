@@ -22,7 +22,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 
 setup(
-    name='elise-package',
+    name='sdn-controller-package',
     version='1.0',
     description='An open source implementation of an SDWSN controller',
     author='Fernando Jurado-Lasso',
