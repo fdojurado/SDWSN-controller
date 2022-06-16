@@ -1,11 +1,11 @@
 # from controller.message import Message
 from datetime import datetime
 import struct
-from controller.database.database import *
-from controller.packet.packet import *
+from src.database.database import *
+from src.packet.packet import *
 import numpy as np
 import pandas as pd
-from controller import globals
+from src import globals
 
 # Network parameters
 H_MAX = 10  # max number of hops

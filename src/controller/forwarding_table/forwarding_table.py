@@ -11,7 +11,7 @@ The structure of the database is as follows.
     deployed:
 } """
 
-from controller.database.database import Database
+from src.database.database import Database
 import pandas as pd
 from datetime import datetime
 import networkx as nx

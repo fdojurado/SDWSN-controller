@@ -1,10 +1,10 @@
 from logging import exception
-from controller.forwarding_table.forwarding_table import FWD_TABLE
+from src.forwarding_table.forwarding_table import FWD_TABLE
 # from controller.routing.routing import *
-from controller.database.database import Database
-from controller.network_config.queue import Queue
-from controller.serial.serial_packet_dissector import *
-from controller.packet.packet import SerialPacket
+from src.database.database import Database
+from src.network_config.queue import Queue
+from src.packet.packet_dissector import *
+from src.packet.packet import SerialPacket
 import multiprocessing as mp
 import networkx as nx
 from time import sleep
