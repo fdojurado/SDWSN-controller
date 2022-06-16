@@ -1,35 +1,42 @@
-from importlib import import_module
-from pathlib import Path
+from binascii import rledecode_hqx
 from setuptools import setup, find_packages
+import os
 
-SRC_ROOT = 'src'
+lib_folder = os.path.dirname(os.path.realpath(__file__))
+requirement_path = lib_folder + '/requirements.txt'
+requirements = []  # Here we'll get: ["gunicorn", "docutils>=0.3", "lxml==0.5a7"]
+if os.path.isfile(requirement_path):
+    with open(requirement_path) as fh:
+        requirements = fh.read().splitlines()
+        requirements = [requirement for requirement in requirements
+                        if not requirement.startswith('#')]
 
-about = import_module(SRC_ROOT + '.about')
+
+print(f'requirements: {requirements}')
+
+SRC_ROOT = "src"
 
 
-# with Path('README.md').open('r') as fh:
-#     long_description = fh.read()
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
-with Path('requirements.txt').open('r') as fh:
-    requirements = fh.read().splitlines()
-    requirements = [requirement for requirement in requirements
-                    if not requirement.startswith('#')]
 
 setup(
-    name=about.PROJECT,
-    version=about.VERSION,
-    description=about.DESCRIPTION,
-    author=about.AUTHOR,
-    author_email=about.EMAIL,
+    name='elise-package',
+    version='1.0',
+    description='An open source implementation of an SDWSN controller',
+    author='Fernando Jurado-Lasso',
+    author_email='ffjla@dtu.dk',
+    long_description=long_description,
     project_urls={
-        'Documentation': about.DOC_URL,
-        'Source': about.GITHUB_URL,
-        'Tracker': about.TRACKER_URL,
+        'Documentation': 'https://github.com/fdojurado/SDWSN-controller/wiki',
+        'Source': 'https://github.com/fdojurado/SDWSN-controller',
+        'Tracker': 'https://github.com/fdojurado/SDWSN-controller/issues',
     },
-    # packages=['controller'],  # same as name
+    # packages=['elise'],  # same as name
     install_requires=requirements,
-    packages=find_packages('src'),
+    packages=find_packages(),
     package_dir={'': SRC_ROOT},
-    python_requires='>=3.10',
-    keywords=about.KEYWORDS
+    keywords='SDWSN controller SDN WSN',
+    python_requires='>=3.10'
 )
