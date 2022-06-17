@@ -1,11 +1,21 @@
 # from controller.message import Message
 from datetime import datetime
+
 import struct
-from src.sdwsn_database.database import *
-from src.packet.packet import *
+
+from sdwsn_database.database import Database, PACKETS,NODES_INFO,FEATURES,SLOTFRAME_LEN
+
+from sdwsn_packet.packet import serial_protocol, sdn_protocols
+from sdwsn_packet.packet import SerialPacket, SDN_IP_Packet
+from sdwsn_packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload
+from sdwsn_packet.packet import SDN_IPH_LEN, SDN_NAPL_LEN
+
+from sdwsn_common import globals
+
+import json
+
 import numpy as np
 import pandas as pd
-from src import globals
 
 # Network parameters
 H_MAX = 10  # max number of hops
@@ -75,10 +85,6 @@ def handle_serial_packet(data, ack_queue):
             # We now build the neighbors DB
             save_neighbors(pkt, na_pkt)
             return
-        # case sdn_protocols.SDN_PROTO_NC_ROUTE:
-        #     # rt_pkt = process_nc_route_packet(pkt.payload, pkt.tlen-SDN_IPH_LEN)
-        #     ack_queue.put(pkt)
-        #     return
         case sdn_protocols.SDN_PROTO_DATA:
             # print("Processing data packet")
             data_pkt = process_data_packet(pkt)
@@ -100,8 +106,6 @@ def handle_serial_packet(data, ack_queue):
         case _:
             "sdn IP packet type not found"
             return
-    # Everytime we received a valid packet, we update the features table
-    # save_features()
 
 
 def process_serial_packet(data):
@@ -109,7 +113,7 @@ def process_serial_packet(data):
     # print("processing serial packet")
     pkt = SerialPacket.unpack(data)
     # print(repr(pkt))
-    # If the reported payload length in the serial header doesnot match the packet size,
+    # If the reported payload length in the serial header doesn't match the packet size,
     # then we drop the packet.
     if(len(pkt.payload) < pkt.payload_len):
         "packet shorter than reported in serial header"
@@ -126,7 +130,7 @@ def save_serial_packet(pkt):
 
 
 def process_data_packet(pkt):
-    # If the reported length in the sdn IP header doesnot match the packet size,
+    # If the reported length in the sdn IP header doesn't match the packet size,
     # then we drop the packet.
     if(len(pkt.payload) < (pkt.tlen-SDN_IPH_LEN)):
         "Data packet shorter than reported in IP header"
@@ -295,48 +299,6 @@ def save_delay(pkt, data_pkt):
         "node_id": pkt.scrStr
     }
     Database.update_one(NODES_INFO, filter, update, True, None)
-
-
-# def process_nc_route_packet(data, length):
-#     print("Processing NC route packet")
-#     # We first check the integrity of the HEADER of the sdn IP packet
-#     if(sdn_ip_checksum(data, length) != 0xffff):
-#         print("bad checksum")
-#         return
-#     # Parse NC route packet
-#     pkt = NC_Routing_Packet.unpack(data, length)
-#     print(repr(pkt))
-#     # If the reported length in the sdn IP header doesnot match the packet size,
-#     # then we drop the packet.
-#     if(len(data) < (pkt.payload_len+SDN_NCH_LEN)):
-#         print("packet shorter than reported in NC route header")
-#         return
-#     # sdn IP packet succeed
-#     print("succeed unpacking NC route packet")
-#     return pkt
-
-
-# def process_nc_ack(addr, pkt):
-#     pkt = NC_ACK_Packet.unpack(pkt.payload, addr)
-#     print("ack received: ", pkt.ack, " from ", pkt.addrStr)
-#     return pkt
-
-
-# def insert_links(data):
-#     links = {
-#         'time': data['time'],
-#         'scr': data['scr'],
-#         'dst': data['dst'],
-#         'rssi': data['rssi'],
-#     }
-#     # load the collection to pandas frame
-#     db = Database.find_one("links", {}, None)
-#     if(db is None):
-#         Database.insert("links", links)
-#     else:
-#         # It first checks if the links already exists in the collection.
-#         # If it does, it update with the current values, otherwise it creates it.
-#         Database.push_links("links", links)
 
 
 def compute_ewma(old_data, new_data):

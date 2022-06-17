@@ -1,12 +1,14 @@
 import sys
 import argparse
 import multiprocessing as mp
-from sdwsn_serial import serial
 
+from sdwsn_common import common
 
-def socket_connect(host, port, send, rcv):
-    print(f'socket connection to {host} and port {port}')
-    return serial.SerialBus(host, port, send, rcv)
+from sdwsn_packet import packet_dissector
+
+from sdwsn_common import globals
+
+from sdwsn_controller.network_config.network_config import NetworkConfig
 
 
 def main():
@@ -17,13 +19,18 @@ def main():
                         help='socket port')
 
     args = parser.parse_args()
-    print(f'arg: {args}')
+    
+    # Initialize global variables
+    globals.globals_initialize()
 
     # Run serial port to Cooja
     socket_send = mp.Queue()
     socket_rcv = mp.Queue()
-    socket_cooja = socket_connect(
+    socket_cooja = common.socket_connect(
         args.socket, args.port, socket_send, socket_rcv)
+
+    # Initialize network configuration process
+
 
     """ Let's start all processes """
 
@@ -36,7 +43,8 @@ def main():
 
     while True:
         if not socket_rcv.empty():
-            print(f'there is something in serial interface')
+            data = common.get_data_from_mqueue(socket_rcv)
+            packet_dissector.handle_serial_packet(data)
 
 
 if __name__ == '__main__':
