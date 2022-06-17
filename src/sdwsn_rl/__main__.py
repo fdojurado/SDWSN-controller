@@ -4,9 +4,9 @@ import multiprocessing as mp
 from sdwsn_serial import serial
 
 
-def socket_connect(host, port, rcv, send):
+def socket_connect(host, port, send, rcv):
     print(f'socket connection to {host} and port {port}')
-    return serial.SerialBus(host, port, rcv, send)
+    return serial.SerialBus(host, port, send, rcv)
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
     socket_send = mp.Queue()
     socket_rcv = mp.Queue()
     socket_cooja = socket_connect(
-        args.socket, args.port, socket_rcv, socket_send)
+        args.socket, args.port, socket_send, socket_rcv)
 
     """ Let's start all processes """
 
