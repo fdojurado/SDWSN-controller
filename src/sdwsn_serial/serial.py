@@ -7,7 +7,7 @@ from datetime import datetime
 import multiprocessing as mp
 
 
-class SerialBus():
+class SerialBus(mp.Process):
     def __init__(self, host, port, input_queue, output_queue):
         mp.Process.__init__(self)
         self.input_queue = input_queue
@@ -22,9 +22,8 @@ class SerialBus():
         # Serial interface
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_address = (self.host, self.port)
-        result = self.ser.connect_ex(server_address)
-        if (result != 0):
-            print("error connecting to socket")
+        self.result = self.ser.connect_ex(server_address)
+
 
     def decodeByte(self, n):
         data = bytearray()

@@ -13,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--socket', type=str, default='127.0.0.1',
                         help='socket address')
-    parser.add_argument('-p', '--port', type=str, default='60001',
+    parser.add_argument('-p', '--port', type=int, default=60001,
                         help='socket port')
 
     args = parser.parse_args()
@@ -26,8 +26,17 @@ def main():
         args.socket, args.port, socket_rcv, socket_send)
 
     """ Let's start all processes """
-    socket_cooja.daemon = True
-    socket_cooja.start()
+
+    # Serial interface
+    if socket_cooja.result != 0:
+        print("error connecting to socket")
+    else:
+        socket_cooja.daemon = True
+        socket_cooja.start()
+
+    while True:
+        if not socket_rcv.empty():
+            print(f'there is something in serial interface')
 
 
 if __name__ == '__main__':
