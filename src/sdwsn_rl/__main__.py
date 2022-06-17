@@ -1,7 +1,7 @@
 import sys
 import argparse
 import multiprocessing as mp
-import src 
+from sdwsn_serial import serial
 
 
 def socket_connect(host, port, rcv, send):

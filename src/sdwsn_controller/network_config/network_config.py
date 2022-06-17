@@ -1,7 +1,7 @@
 from logging import exception
 from src.forwarding_table.forwarding_table import FWD_TABLE
 # from controller.routing.routing import *
-from src.database.database import Database
+from src.sdwsn_database.database import Database
 from src.network_config.queue import Queue
 from src.packet.packet_dissector import *
 from src.packet.packet import SerialPacket
