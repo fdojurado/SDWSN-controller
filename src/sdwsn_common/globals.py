@@ -1,3 +1,5 @@
+import numpy as np
+
 # Global variables
 def globals_initialize():
     print("initializing globals")

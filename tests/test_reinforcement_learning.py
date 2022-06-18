@@ -8,8 +8,6 @@ from sdwsn_packet import packet_dissector
 
 from sdwsn_common import globals
 
-from sdwsn_controller.network_config.network_config import NetworkConfig
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -22,6 +20,8 @@ def main():
     
     # Initialize global variables
     globals.globals_initialize()
+
+    # Create a resource manager
 
     # Run serial port to Cooja
     socket_send = mp.Queue()
