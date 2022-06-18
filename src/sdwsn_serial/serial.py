@@ -7,6 +7,18 @@ from datetime import datetime
 import multiprocessing as mp
 
 
+def serial_init(send, rcv, **kwargs):
+    print(f'socket kwargs {kwargs}')
+    host = str(kwargs.get('host', "localhost"))
+    port = kwargs.get('port', 60001)
+    print(f'socket connection to {host} and port {port}')
+    serial =  SerialBus(host, port, send, rcv)
+    if serial.result != 0:
+        print("error connecting to socket")
+        return
+    else:
+        return serial
+
 class SerialBus(mp.Process):
     def __init__(self, host, port, input_queue, output_queue):
         mp.Process.__init__(self)

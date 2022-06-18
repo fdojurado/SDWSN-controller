@@ -8,6 +8,10 @@ from sdwsn_packet import packet_dissector
 
 from sdwsn_common import globals
 
+import sdwsn_serial
+
+from sdwsn_resource_manager import resource_manager
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -17,34 +21,26 @@ def main():
                         help='socket port')
 
     args = parser.parse_args()
-    
+
     # Initialize global variables
     globals.globals_initialize()
 
     # Create a resource manager
-
-    # Run serial port to Cooja
-    socket_send = mp.Queue()
-    socket_rcv = mp.Queue()
-    socket_cooja = common.socket_connect(
-        args.socket, args.port, socket_send, socket_rcv)
-
-    # Initialize network configuration process
-
+    resources = resource_manager.ResourceManager()
+    # All resources run in an independent multiprocessing module
+    # Add Cooja simulator as a resource
+    # cooja_component =resource_manager.ResourceComponent(
+    #     name='cooja', init_func=sdwsn_serial.serial.serial_init, host=args.socket, port=args.port)
+    # Add serial interface to the resource manager
+    serial_component = resource_manager.ResourceComponent(
+        name='serial', init_func=sdwsn_serial.serial.serial_init, host=args.socket, port=args.port)
+    resources.add(serial_component)
 
     """ Let's start all processes """
+    if not resources.start():
+        print("fail to start, exiting")
+        return
 
-    # Serial interface
-    if socket_cooja.result != 0:
-        print("error connecting to socket")
-    else:
-        socket_cooja.daemon = True
-        socket_cooja.start()
-
-    while True:
-        if not socket_rcv.empty():
-            data = common.get_data_from_mqueue(socket_rcv)
-            packet_dissector.handle_serial_packet(data)
 
 
 if __name__ == '__main__':
