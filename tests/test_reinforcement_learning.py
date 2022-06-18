@@ -1,6 +1,7 @@
 import sys
 import argparse
 import multiprocessing as mp
+from time import sleep
 
 from sdwsn_common import common
 
@@ -8,9 +9,13 @@ from sdwsn_packet import packet_dissector
 
 from sdwsn_common import globals
 
-import sdwsn_serial
+from sdwsn_serial.serial import SerialBus
 
 from sdwsn_resource_manager import resource_manager
+
+from sdwsn_controller.controller import Controller
+
+from sdwsn_database.database import Database
 
 
 def main():
@@ -19,28 +24,38 @@ def main():
                         help='socket address')
     parser.add_argument('-p', '--port', type=int, default=60001,
                         help='socket port')
+    parser.add_argument('-db', '--db', type=str, default='127.0.0.1',
+                        help='Database address')
+    parser.add_argument('-dbp', '--dbPort', type=int, default=27017,
+                        help='Database port')
 
     args = parser.parse_args()
+
+    print(args)
 
     # Initialize global variables
     globals.globals_initialize()
 
-    # Create a resource manager
-    resources = resource_manager.ResourceManager()
-    # All resources run in an independent multiprocessing module
-    # Add Cooja simulator as a resource
-    # cooja_component =resource_manager.ResourceComponent(
-    #     name='cooja', init_func=sdwsn_serial.serial.serial_init, host=args.socket, port=args.port)
-    # Add serial interface to the resource manager
-    serial_component = resource_manager.ResourceComponent(
-        name='serial', init_func=sdwsn_serial.serial.serial_init, host=args.socket, port=args.port)
-    resources.add(serial_component)
+    # Create an instance of the controller
+    controller = Controller()
+    # Create a serial interface instance
+    serial_interface = SerialBus(args.socket, args.port)
+    # Add it to the controller
+    controller.serial = serial_interface
+    # Create an instance of the Database
+    myDB = Database('mySDN', args.db, args.dbPort)
+    # Add it to the controller
+    controller.db = myDB
+    # Create an instance of the packet dissector
+    myPacketDissector = packet_dissector.PacketDissector('MyDissector', myDB, None)
+    # Add it to the controller
+    controller.packet_dissector = myPacketDissector
+    # Start the controller
+    controller.daemon = True
+    controller.start()
 
-    """ Let's start all processes """
-    if not resources.start():
-        print("fail to start, exiting")
-        return
-
+    while True:
+        sleep(0.1)
 
 
 if __name__ == '__main__':

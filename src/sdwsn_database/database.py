@@ -1,3 +1,4 @@
+from audioop import add
 import pymongo
 from pymongo.collation import Collation
 
@@ -11,37 +12,35 @@ SCHEDULES = "schedules"
 USER_REQUIREMENTS = "user_requirements"
 OBSERVATIONS = "observations"
 
-class Database(object):
-    URI = "mongodb://127.0.0.1:27017"
-    DATABASE = None
 
-    @staticmethod
-    def initialise():
-        client = pymongo.MongoClient(Database.URI)
-        client.drop_database('SDN')
-        Database.DATABASE = client["SDN"]
+class Database():
+    def __init__(self, name, host, port) -> None:
+        self.name = name
+        self.URI = "mongodb://"+host+":"+str(port)
+        self.DATABASE = None
+
+    def initialise(self):
+        self.client = pymongo.MongoClient(self.URI)
+        self.client.drop_database(self.name)
+        self.DATABASE = self.client[self.name]
         # for db in client.list_databases():
         #     print(db)
 
-    @staticmethod
-    def insert(collection, data):
-        return Database.DATABASE[collection].insert_one(data)
+    def insert(self, collection, data):
+        return self.DATABASE[collection].insert_one(data)
 
-    @staticmethod
-    def exist(collection, addr):
-        return Database.DATABASE[collection].count_documents({"_id": addr}, limit=1) > 0
+    def exist(self, collection, addr):
+        return self.DATABASE[collection].count_documents({"_id": addr}, limit=1) > 0
 
-    @staticmethod
-    def push_doc(collection, addr, field, data):
-        Database.DATABASE[collection].update_one(
+    def push_doc(self, collection, addr, field, data):
+        self.DATABASE[collection].update_one(
             {"_id": addr},
             {"$push": {field: data}},
             upsert=True
         )
 
-    @staticmethod
-    def push_links(collection, data):
-        Database.DATABASE[collection].update_one(
+    def push_links(self, collection, data):
+        self.DATABASE[collection].update_one(
             {
                 "$or": [
                     {"$and": [{"scr": data['scr']},
@@ -56,56 +55,45 @@ class Database(object):
             upsert=True
         )
 
-    @staticmethod
-    def update_energy(collection, addr, data):
-        Database.DATABASE[collection].update_one(
+    def update_energy(self, collection, addr, data):
+        self.DATABASE[collection].update_one(
             {"_id": addr},
             {"$set": {"time": data['time'],
                       "energy": data['energy']}}
         )
 
-    @staticmethod
-    def update_pdr(collection, addr, data):
-        Database.DATABASE[collection].update_one(
+    def update_pdr(self, collection, addr, data):
+        self.DATABASE[collection].update_one(
             {"_id": addr},
             {"$set": {"time": data['time'],
                       "pdr": data['pdr']}}
         )
 
-    @staticmethod
-    def update_one(collection, filter, update, upsert, arrayFilters):
-        return Database.DATABASE[collection].update_one(filter, update, upsert=upsert, array_filters=arrayFilters)
+    def update_one(self, collection, filter, update, upsert, arrayFilters):
+        return self.DATABASE[collection].update_one(filter, update, upsert=upsert, array_filters=arrayFilters)
 
-    @staticmethod
-    def aggregate(collection, pipeline):
-        return Database.DATABASE[collection].aggregate(pipeline)
+    def aggregate(self, collection, pipeline):
+        return self.DATABASE[collection].aggregate(pipeline)
 
-    @staticmethod
     def find(collection, query):
-        return Database.DATABASE[collection].find(query)
+        return self.DATABASE[collection].find(query)
 
-    @staticmethod
-    def delete_one(collection, query):
-        return Database.DATABASE[collection].delete_one(query)
+    def delete_one(self, collection, query):
+        return self.DATABASE[collection].delete_one(query)
 
-    @staticmethod
-    def distinct(collection, query):
-        return Database.DATABASE[collection].distinct(query)
+    def distinct(self, collection, query):
+        return self.DATABASE[collection].distinct(query)
 
-    @staticmethod
-    def print_documents(collection):
-        for document in Database.DATABASE[collection].find_one({}):
+    def print_documents(self, collection):
+        for document in self.DATABASE[collection].find_one({}):
             print(document)
 
-    @staticmethod
-    def find_one(collection, query, sort=None):
-        return Database.DATABASE[collection].find_one(query, sort=sort)
+    def find_one(self, collection, query, sort=None):
+        return self.DATABASE[collection].find_one(query, sort=sort)
 
-    @staticmethod
-    def delete_collection(collection):
-        return Database.DATABASE[collection].drop()
+    def delete_collection(self, collection):
+        return self.DATABASE[collection].drop()
 
-    @staticmethod
-    def list_collections():
-        for collection in Database.DATABASE.list_collections():
+    def list_collections(self):
+        for collection in self.DATABASE.list_collections():
             print(collection)

@@ -1,10 +1,10 @@
+import re
 import socket
 import sys
 # import logging
 from typing import Optional
 from time import time
 from datetime import datetime
-import multiprocessing as mp
 
 
 def serial_init(send, rcv, **kwargs):
@@ -12,18 +12,16 @@ def serial_init(send, rcv, **kwargs):
     host = str(kwargs.get('host', "localhost"))
     port = kwargs.get('port', 60001)
     print(f'socket connection to {host} and port {port}')
-    serial =  SerialBus(host, port, send, rcv)
+    serial = SerialBus(host, port, send, rcv)
     if serial.result != 0:
         print("error connecting to socket")
         return
     else:
         return serial
 
-class SerialBus(mp.Process):
-    def __init__(self, host, port, input_queue, output_queue):
-        mp.Process.__init__(self)
-        self.input_queue = input_queue
-        self.output_queue = output_queue
+
+class SerialBus():
+    def __init__(self, host, port):
         self.host = host
         self.port = port
         self.byte_msg = bytearray()
@@ -31,11 +29,13 @@ class SerialBus(mp.Process):
         self.escape_character = 0
         self.frame_start = 0
         self.frame_length = 0
-        # Serial interface
+        self.msg = None
+
+    def connect(self):
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_address = (self.host, self.port)
         self.result = self.ser.connect_ex(server_address)
-
+        return self.result
 
     def decodeByte(self, n):
         data = bytearray()
@@ -184,19 +184,13 @@ class SerialBus(mp.Process):
         else:
             byte_data.extend(data)
 
-    def run(self):
+    def read(self):
         while(1):
-            # look for incoming  request
-            if not self.input_queue.empty():
-                # print("incoming queue request")
-                data = self.input_queue.get()
-                # print(data)
-                # send serial packet
-                self.send(data)
             try:
                 msg = self.recv(0.1)
                 if(len(msg) > 0):
                     # send it back to main
-                    self.output_queue.put(msg)
+                    self.msg = msg
+                    # self.output_queue.put(msg)
             except TypeError:
                 pass
