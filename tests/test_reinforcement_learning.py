@@ -46,7 +46,7 @@ def main():
 
     # Create an instance of the RL environment
     env = Env(myPacketDissector, myNC,
-              args.tschmaxchannel, args.tschmaxslotframe)
+              args.tschmaxchannel, args.tschmaxslotframe, processing_window=200)
     # Wrap the environment to limit the max steps per episode
     env = TimeLimitWrapper(env, max_steps=200)
     # Create an instance of the RL model to use

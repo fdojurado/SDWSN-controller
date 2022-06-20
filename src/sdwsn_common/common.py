@@ -113,3 +113,55 @@ def compute_algo(G, alg, routes):
     else:
         print("not able to compute routing, graph empty")
     return path
+
+
+""" Coprime checks methods """
+
+# These are the size of other schedules in orchestra
+eb_size = 397
+common_size = 31
+control_plane_size = 27
+
+
+def gcd(p, q):
+    # Create the gcd of two positive integers.
+    while q != 0:
+        p, q = q, p % q
+    return p
+
+
+def fc_is_coprime(x, y):
+    return gcd(x, y) == 1
+
+
+def compare_coprime(num):
+    sf_sizes = [eb_size, common_size, control_plane_size]
+    result = 0
+    for sf_size in sf_sizes:
+        is_coprime = fc_is_coprime(num, sf_size)
+        result += is_coprime
+
+    if result == 3:
+        return 1
+    else:
+        return 0
+
+
+def next_coprime(num):
+    is_coprime = 0
+    while not is_coprime:
+        num += 1
+        # Check if num is coprime with all other sf sizes
+        is_coprime = compare_coprime(num)
+    print(f'next coprime found {num}')
+    return num
+
+
+def previous_coprime(num):
+    is_coprime = 0
+    while not is_coprime:
+        num -= 1
+        # Check if num is coprime with all other sf sizes
+        is_coprime = compare_coprime(num)
+    print(f'previous coprime found {num}')
+    return num
