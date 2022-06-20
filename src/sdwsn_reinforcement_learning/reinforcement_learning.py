@@ -19,11 +19,12 @@ class ReinforcementLearning(Controller):
         if not self.serial_start():
             sys.exit(1)
 
-        
+        # Train the agent
+        self.model.learn(total_timesteps=int(1e6))
 
-        while(1):
-            if self.packet_dissector.sequence > self.processing_window:
-                print('time to run the RL algorithm')
-            sleep(0.1)
+        # while(1):
+        #     if self.packet_dissector.sequence > self.processing_window:
+        #         print('time to run the RL algorithm')
+        #     sleep(0.1)
 
         pass
