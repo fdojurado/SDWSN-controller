@@ -2,7 +2,6 @@ from ast import Not
 from pickletools import read_uint1
 import types
 import json
-from src.sdwsn_network_reconfiguration.network_config import *
 
 # Protocols encapsulated in sdn IP packet
 cell_type = types.SimpleNamespace()

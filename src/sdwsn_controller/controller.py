@@ -6,7 +6,7 @@ from threading import Thread
 
 
 class Controller(mp.Process):
-    def __init__(self, serial_interface=None, network_reconfiguration=None, database=None, packet_dissector=None):
+    def __init__(self, input_queue=mp.Queue(), output_queue=mp.Queue(), serial_interface=None, network_reconfiguration=None, database=None, packet_dissector=None):
         mp.Process.__init__(self)
         # Save instance of a serial interface
         self.serial = serial_interface
@@ -16,6 +16,9 @@ class Controller(mp.Process):
         self.db = database
         # Save instance of packet dissector
         self.packet_dissector = packet_dissector
+        # Set queues
+        self.input_queue = input_queue
+        self.output_queue = output_queue
 
     def run(self):
         print(f'controller running')

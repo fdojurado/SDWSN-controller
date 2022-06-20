@@ -43,10 +43,12 @@ current_time = 0
 
 
 class PacketDissector():
-    def __init__(self, name, database, ack) -> None:
+    def __init__(self, name, database, ack, cycle_sequence=0, sequence=0) -> None:
         self.name = name
         self.db = database
         self.ack_queue = ack
+        self.cycle_sequence = cycle_sequence
+        self.sequence = sequence
 
     def handle_serial_packet(self, data):
         global current_time
@@ -80,12 +82,12 @@ class PacketDissector():
                     print("bad NA packet")
                     return
                 # Add to number of pkts received during this period
-                # if not na_pkt.cycle_seq == globals.sequence:
-                #     return
+                if not na_pkt.cycle_seq == self.cycle_sequence:
+                    return
                 print(repr(pkt))
                 print(repr(na_pkt))
-                # globals.num_packets_period += 1
-                # print(f"num seq (NA): {globals.num_packets_period}")
+                self.sequence += 1
+                print(f"num seq (NA): {self.sequence}")
                 # We now build the energy DB
                 self.save_energy(pkt, na_pkt)
                 # We now build the neighbors DB
@@ -98,12 +100,12 @@ class PacketDissector():
                     print("bad Data packet")
                     return
                 # Add to number of pkts received during this period
-                # if not data_pkt.cycle_seq == globals.sequence:
-                #     return
+                if not data_pkt.cycle_seq == self.cycle_sequence:
+                    return
                 print(repr(pkt))
                 print(repr(data_pkt))
-                # globals.num_packets_period += 1
-                # print(f"num seq (data): {globals.num_packets_period}")
+                self.sequence += 1
+                print(f"num seq (data): {self.sequence}")
                 # We now build the pdr DB
                 self.save_pdr(pkt, data_pkt)
                 # We now build the delay DB
