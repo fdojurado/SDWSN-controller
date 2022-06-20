@@ -5,6 +5,8 @@ import sys
 from typing import Optional
 from time import time
 from datetime import datetime
+from bus import BusABC
+from sdwsn_packet.packet import SerialPacket
 
 
 def serial_init(send, rcv, **kwargs):
@@ -20,7 +22,7 @@ def serial_init(send, rcv, **kwargs):
         return serial
 
 
-class SerialBus():
+class SerialBus(BusABC):
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -115,7 +117,7 @@ class SerialBus():
                     self.frame_length = 0
                     msg_buffer = self.byte_msg
                     self.byte_msg = bytearray()
-                    return msg_buffer
+                    return msg_buffer, False
                 else:
                     # re-synchronization. Start over
                     # print("serial re-synchronization\n")
@@ -129,34 +131,6 @@ class SerialBus():
             return None
 
         return 0
-
-    def recv(self, timeout: Optional[float] = None):
-        """Block waiting for a message from the Bus.
-        :param timeout:
-            seconds to wait for a message or None to wait indefinitely
-        :return:
-            None on timeout or a :class:`Message` object.
-        :raises can.CanError:
-            if an error occurred while reading
-        """
-        start = time()
-        time_left = timeout
-
-        while True:
-            msg = self._recv_internal(timeout=time_left)
-            if (msg != 0):
-                return msg
-            # if not, and timeout is None, try indefinitely
-            if timeout is None:
-                continue
-            # try next one only if there still is time, and with
-            # reduced timeout
-            else:
-                time_left = timeout - (time() - start)
-                if time_left > 0:
-                    continue
-                else:
-                    return None
 
     def send(self, data):
         """
@@ -184,13 +158,13 @@ class SerialBus():
         else:
             byte_data.extend(data)
 
-    def read(self):
-        while(1):
-            try:
-                msg = self.recv(0.1)
-                if(len(msg) > 0):
-                    # send it back to main
-                    self.msg = msg
-                    # self.output_queue.put(msg)
-            except TypeError:
-                pass
+    # def read(self):
+    #     while(1):
+    #         try:
+    #             msg = self.recv(0.1)
+    #             if(len(msg) > 0):
+    #                 # send it back to main
+    #                 self.msg = msg
+    #                 # self.output_queue.put(msg)
+    #         except TypeError:
+    #             pass

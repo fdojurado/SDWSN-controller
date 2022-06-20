@@ -36,43 +36,47 @@ def main():
     # Initialize global variables
     # globals.globals_initialize()
 
-    # Create an instance of the controller
-    controller_input = mp.Queue()
-    controller_output = mp.Queue()
-    controller = Controller()
     # Create a serial interface instance
     serial_interface = SerialBus(args.socket, args.port)
-    # Add it to the controller
-    controller.serial = serial_interface
     # Create an instance of the Database
     myDB = Database('mySDN', args.db, args.dbPort)
-    # Add it to the controller
-    controller.db = myDB
     # Create an instance of the packet dissector
     myPacketDissector = packet_dissector.PacketDissector(
         'MyDissector', myDB, None, None)
+    # Create an instance of the controller
+    controller = Controller(serial_interface=serial_interface,
+                            database=myDB, packet_dissector=myPacketDissector)
+    # Start the serial interface
+    serial = controller.serial_start()
+    if not serial:
+        sys.exit(1)
     # Add it to the controller
-    controller.packet_dissector = myPacketDissector
+    # controller.db = myDB
+    # # Create an instance of the packet dissector
+    # myPacketDissector = packet_dissector.PacketDissector(
+    #     'MyDissector', myDB, None, None)
+    # # Add it to the controller
+    # controller.packet_dissector = myPacketDissector
 
-    # Create an instance of the RL environment
-    env = Env(args.tschmaxchannel, args.tschmaxslotframe)
-    # Wrap the environment to limit the max steps per episode
-    env = TimeLimitWrapper(env, max_steps=200)
-    # Create an instance of the reinforcement learning module
-    drl = ReinforcementLearning(
-        controller_input, controller_output, env=env, processing_window=200)
-    # Create an instance of the RL model to use
-    # model = DQN('MlpPolicy', env, verbose=1, learning_starts=100,
-    #             target_update_interval=8, exploration_fraction=0.2)
-    # # Add it to the RL instance
-    # drl.model = model
+    # # Create an instance of the RL environment
+    # env = Env(args.tschmaxchannel, args.tschmaxslotframe)
+    # # Wrap the environment to limit the max steps per episode
+    # env = TimeLimitWrapper(env, max_steps=200)
+    # # Create an instance of the reinforcement learning module
+    # drl = ReinforcementLearning(
+    #     controller_input, controller_output, env=env, processing_window=200)
+    # # Create an instance of the RL model to use
+    # # model = DQN('MlpPolicy', env, verbose=1, learning_starts=100,
+    # #             target_update_interval=8, exploration_fraction=0.2)
+    # # # Add it to the RL instance
+    # # drl.model = model
 
-    # Start the controller
-    controller.daemon = True
-    controller.start()
-    # Start the RL module
-    drl.daemon = True
-    drl.start()
+    # # Start the controller
+    # controller.daemon = True
+    # controller.start()
+    # # Start the RL module
+    # drl.daemon = True
+    # drl.start()
 
     while True:
         sleep(0.1)

@@ -1,4 +1,3 @@
-# from controller.message import Message
 from datetime import datetime
 
 import struct
