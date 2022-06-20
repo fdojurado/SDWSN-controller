@@ -1,15 +1,15 @@
 from logging import exception
-from src.sdwsn_forwarding_table.forwarding_table import FWD_TABLE
+# from src.sdwsn_forwarding_table.forwarding_table import FWD_TABLE
 # from controller.routing.routing import *
-from src.sdwsn_database.database import Database
-from src.sdwsn_network_reconfiguration.queue import Queue
-from src.packet.packet_dissector import *
-from src.packet.packet import SerialPacket
-import multiprocessing as mp
+from sdwsn_database.database import Database
+# from src.sdwsn_network_reconfiguration.queue import Queue
+from sdwsn_packet.packet_dissector import *
+from sdwsn_packet.packet import SerialPacket
 import networkx as nx
 from time import sleep
 import pandas as pd
 import queue  # or Queue in Python 2
+import types
 # Generate random number for ack
 from random import randrange
 import json
@@ -52,47 +52,18 @@ def routes_to_deploy(node, routes):
             print("route already exists in deployed")
 
 
-def compute_routes_nc():
-    df, G = FWD_TABLE.fwd_get_graph('scr', 'via', None, 0)
-    length, path = nx.single_source_dijkstra(G, "1.0")
-    node_list = []
-    for u, p in path.items():
-        node_list.extend([str(u)])
-    return node_list
+# def compute_routes_nc():
+#     df, G = FWD_TABLE.fwd_get_graph('scr', 'via', None, 0)
+#     length, path = nx.single_source_dijkstra(G, "1.0")
+#     node_list = []
+#     for u, p in path.items():
+#         node_list.extend([str(u)])
+#     return node_list
 
 
-class NetworkConfig(mp.Process):
-    def __init__(self, verbose, input_queue, output_queue, serial_input_queue, ack_queue):
-        mp.Process.__init__(self)
-        self.G = nx.Graph()
-        self.running = False
-        self.verbose = verbose
-        self.input_queue = input_queue
-        self.output_queue = output_queue
-        self.serial_input_queue = serial_input_queue
-        self.ack_queue = ack_queue
-        self.NC_routes = Queue(None)  # Queue for NC packets
-        self.NC_ACK = Queue(None)  # Queue for ACKs
-
-    def is_running(self):
-        return self.running
-
-    def dfs_tree_nc(self):
-        print("building dfs tree from controller")
-        return nx.dfs_tree(self.G, "1").edges()
-
-    def bfs_tree_nc(self):
-        print("building bfs tree from controller")
-        return nx.bfs_tree(self.G, "1").edges()
-
-    def send_nc(self, node, rtx):
-        print('Sending NC packet ', node, ' rtx ', rtx)
-
-    def process_nc(self):
-        print('Processing NC packet')
-
-    def ack_nc(self):
-        print('Processing NC ack')
+class NetworkReconfig():
+    def __init__(self):
+        pass
 
     def process_json_routes_packets(self, routes):
         # Let's loop into routes
@@ -137,12 +108,6 @@ class NetworkConfig(mp.Process):
         # print(repr(pkt))
         return packedData, pkt
 
-    def set_route_flag(self, node, df):
-        print("setting routes flag")
-        for index, route in df.iterrows():
-            FWD_TABLE.fwd_set_deployed_flag(
-                node, route["dst"], route["via"], 1)
-
     def process_json_schedule_packets(self, schedules):
         # Let's loop into routes
         payload = []
@@ -186,7 +151,7 @@ class NetworkConfig(mp.Process):
         # print(repr(pkt))
         return packedData, pkt
 
-    def run(self):
+    def send_nc(self):
         while True:
             # look for incoming jobs
             if not self.input_queue.empty():

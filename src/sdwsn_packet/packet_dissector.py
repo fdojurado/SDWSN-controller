@@ -42,7 +42,7 @@ current_time = 0
 
 
 class PacketDissector():
-    def __init__(self, name, database, ack, cycle_sequence=0, sequence=0) -> None:
+    def __init__(self, name, database, ack=None, cycle_sequence=0, sequence=0) -> None:
         self.name = name
         self.db = database
         self.ack_queue = ack
