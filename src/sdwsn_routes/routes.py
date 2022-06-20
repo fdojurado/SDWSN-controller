@@ -2,7 +2,9 @@
 # deployed at the WSN.
 
 import pandas as pd
+import json
 from datetime import datetime
+from sdwsn_network_reconfiguration.network_config import job_type
 
 
 class Routes:
@@ -37,14 +39,14 @@ class Routes:
     def clear_routes(self):
         self.routes.drop(self.routes.index, inplace=True)
 
-    def save_historical_routes_db(self):
-        if(not self.routes.empty):
-            self.time = datetime.now().timestamp() * 1000.0
-            data = {
-                'time': self.time,
-                'routes': self.routes.to_dict('records')
-            }
-            Database.insert("historical-routes", data)
+    # def save_historical_routes_db(self):
+    #     if(not self.routes.empty):
+    #         self.time = datetime.now().timestamp() * 1000.0
+    #         data = {
+    #             'time': self.time,
+    #             'routes': self.routes.to_dict('records')
+    #         }
+    #         Database.insert("historical-routes", data)
 
     # def save_routes_db(self):
     #     # Insert all routes in the collection

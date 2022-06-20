@@ -75,7 +75,7 @@ class Database():
     def aggregate(self, collection, pipeline):
         return self.DATABASE[collection].aggregate(pipeline)
 
-    def find(collection, query):
+    def find(self, collection, query):
         return self.DATABASE[collection].find(query)
 
     def delete_one(self, collection, query):

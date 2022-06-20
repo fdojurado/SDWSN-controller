@@ -42,10 +42,11 @@ def main():
     myPacketDissector = packet_dissector.PacketDissector(
         'MyDissector', myDB)
     # Create an instance of the network reconfiguration
-    myNC = NetworkReconfig()
+    myNC = NetworkReconfig(serial_interface, myPacketDissector)
 
     # Create an instance of the RL environment
-    env = Env(args.tschmaxchannel, args.tschmaxslotframe)
+    env = Env(myPacketDissector, myNC,
+              args.tschmaxchannel, args.tschmaxslotframe)
     # Wrap the environment to limit the max steps per episode
     env = TimeLimitWrapper(env, max_steps=200)
     # Create an instance of the RL model to use

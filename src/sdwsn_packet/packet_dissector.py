@@ -45,7 +45,7 @@ class PacketDissector():
     def __init__(self, name, database, ack=None, cycle_sequence=0, sequence=0) -> None:
         self.name = name
         self.db = database
-        self.ack_queue = ack
+        self.ack_pkt = ack
         self.cycle_sequence = cycle_sequence
         self.sequence = sequence
 
@@ -53,8 +53,8 @@ class PacketDissector():
         global current_time
         # Get Unix timestamp from a datetime object
         current_time = datetime.now().timestamp() * 1000.0
-        print("serial packet received")
-        print(data)
+        # print("serial packet received")
+        # print(data)
         # Let's parse serial packet
         serial_pkt = self.process_serial_packet(data)
         if serial_pkt is None:
@@ -64,7 +64,7 @@ class PacketDissector():
         self.save_serial_packet(serial_pkt)
         # Check if this is a serial ACK packet
         if serial_pkt.message_type == serial_protocol.ACK:
-            self.ack_queue.put(serial_pkt)
+            self.ack_pkt = serial_pkt
             return
         # Let's now process the sdn IP packet
         pkt = self.process_sdn_ip_packet(serial_pkt.payload)
@@ -83,10 +83,10 @@ class PacketDissector():
                 # Add to number of pkts received during this period
                 if not na_pkt.cycle_seq == self.cycle_sequence:
                     return
-                print(repr(pkt))
-                print(repr(na_pkt))
+                # print(repr(pkt))
+                # print(repr(na_pkt))
                 self.sequence += 1
-                print(f"num seq (NA): {self.sequence}")
+                # print(f"num seq (NA): {self.sequence}")
                 # We now build the energy DB
                 self.save_energy(pkt, na_pkt)
                 # We now build the neighbors DB
@@ -101,10 +101,10 @@ class PacketDissector():
                 # Add to number of pkts received during this period
                 if not data_pkt.cycle_seq == self.cycle_sequence:
                     return
-                print(repr(pkt))
-                print(repr(data_pkt))
+                # print(repr(pkt))
+                # print(repr(data_pkt))
                 self.sequence += 1
-                print(f"num seq (data): {self.sequence}")
+                # print(f"num seq (data): {self.sequence}")
                 # We now build the pdr DB
                 self.save_pdr(pkt, data_pkt)
                 # We now build the delay DB
@@ -446,7 +446,7 @@ class PacketDissector():
         if db is None:
             return None
         # We first need to get the last timestamp of neighbors of the given node
-        timestamp = get_last_nbr_timestamp(node)
+        timestamp = self.get_last_nbr_timestamp(node)
         # get last links
         pipeline = [
             {"$match": {"node_id": node}},

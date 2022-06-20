@@ -4,7 +4,7 @@ from logging import exception
 from sdwsn_database.database import Database
 # from src.sdwsn_network_reconfiguration.queue import Queue
 from sdwsn_packet.packet_dissector import *
-from sdwsn_packet.packet import SerialPacket
+from sdwsn_packet.packet import SerialPacket, Cell_Packet, Cell_Packet_Payload, SDN_SAH_LEN, SDN_RAH_LEN, RA_Packet, RA_Packet_Payload
 import networkx as nx
 from time import sleep
 import pandas as pd
@@ -62,7 +62,9 @@ def routes_to_deploy(node, routes):
 
 
 class NetworkReconfig():
-    def __init__(self):
+    def __init__(self, serial_interface, packet_dissector):
+        self.ser = serial_interface
+        self.packet_dissector = packet_dissector
         pass
 
     def process_json_routes_packets(self, routes):
@@ -151,46 +153,39 @@ class NetworkReconfig():
         # print(repr(pkt))
         return packedData, pkt
 
-    def send_nc(self):
-        while True:
-            # look for incoming jobs
-            if not self.input_queue.empty():
-                self.running = True
-                node, job_id = self.input_queue.get()
-                # print(f"there is a new job id {job_id}")
-                # print(node)
-                data = json.loads(node)
-                match(data['job_type']):
-                    case job_type.TSCH:
-                        print(f"TSCH job type (SEQ:{job_id})")
-                        packedData, serial_pkt = self.build_schedule_packet(
-                            data, job_id)
-                    case job_type.ROUTING:
-                        print(f"Routing job type (SEQ:{job_id})")
-                        packedData, serial_pkt = self.build_routes_packet(
-                            data, job_id)
-                    case _:
-                        print("unknown job type")
-                        return None
-                # Send NC packet
-                result = self.send(packedData, serial_pkt)
-                # Send notification of job completion
-                self.output_queue.put((result, job_id))
-
-            sleep(0.5)
+    def send_nc(self, node, job_id):
+        # look for incoming jobs
+        data = json.loads(node)
+        match(data['job_type']):
+            case job_type.TSCH:
+                print(f"TSCH job type (SEQ:{job_id})")
+                packedData, serial_pkt = self.build_schedule_packet(
+                    data, job_id)
+            case job_type.ROUTING:
+                print(f"Routing job type (SEQ:{job_id})")
+                packedData, serial_pkt = self.build_routes_packet(
+                    data, job_id)
+            case _:
+                print("unknown job type")
+                return None
+        # Send NC packet
+        result = self.send(packedData, serial_pkt)
+        # Send notification of job completion
+        return result, job_id
 
     def send(self, data, serial_pkt):
         print("Sending NC")
         # set retransmission
         rtx = 0
         # Send NC packet through serial interface
-        self.serial_input_queue.put(data)
+        self.ser.send(data)
+        # self.serial_input_queue.put(data)
         # Result variable to see if the sending went well
         result = 0
         while True:
             try:
-                ack_pkt = self.ack_queue.get(timeout=1.2)
-                if (ack_pkt.reserved0 == serial_pkt.reserved0+1):
+                sleep(1.2)
+                if (self.packet_dissector.ack_pkt.reserved0 == serial_pkt.reserved0+1):
                     print("correct ACK received")
                     result = 1
                     break

@@ -2,7 +2,7 @@ from ast import Not
 from pickletools import read_uint1
 import types
 import json
-
+from sdwsn_network_reconfiguration.network_config import job_type
 # Protocols encapsulated in sdn IP packet
 cell_type = types.SimpleNamespace()
 cell_type.UC_RX = 2
