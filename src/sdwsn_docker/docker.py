@@ -72,4 +72,5 @@ class CoojaDocker():
         return self.container.status
 
     def shutdown(self):
-        self.container.kill()
+        if self.container:
+            self.container.stop()

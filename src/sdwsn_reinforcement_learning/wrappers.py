@@ -1,16 +1,18 @@
 import gym
 
+
 class TimeLimitWrapper(gym.Wrapper):
     """
     :param env: (gym.Env) Gym environment that will be wrapped
     :param max_steps: (int) Max number of steps per episode
     """
 
-    def __init__(self, env, max_steps=100):
+    def __init__(self, env, container, max_steps=100):
         # Call the parent constructor, so we can access self.env later
         super(TimeLimitWrapper, self).__init__(env)
         self.max_steps = max_steps
         self.env = env
+        self.container = container
         # Counter of steps per episode
         self.current_step = 0
 
@@ -18,6 +20,11 @@ class TimeLimitWrapper(gym.Wrapper):
         """
         Reset the environment 
         """
+        # Stop the serial reading thread
+        # self.env.stop_serial()
+        print('Episode ended, restarting the container application')
+        # Stop the container
+        self.container.shutdown()
         # Reset the counter
         self.current_step = 0
         return self.env.reset()

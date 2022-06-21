@@ -13,7 +13,7 @@ class Controller():
         # Save instance of the Database
         self.db = database
         # Initialize DB
-        self.db.initialise()
+        # self.db.initialise()
         # Save instance of packet dissector
         self.packet_dissector = packet_dissector
 

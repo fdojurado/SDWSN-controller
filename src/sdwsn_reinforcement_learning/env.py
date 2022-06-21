@@ -43,6 +43,7 @@ class Env(gym.Env):
         self.processing_window = processing_window
         self.container = container
         self.ser = ser
+        self._read_ser_thread = threading.Thread(target=self._read_ser)
         # Keep track of the running routes
         self.routes = Routes()
         # Keep track of schedules
@@ -546,24 +547,31 @@ class Env(gym.Env):
             except TypeError:
                 pass
 
-    def serial_start(self):
+    def stop_serial(self):
+        self._read_ser_thread.stop()
+
+    def _serial_start(self):
         # Connect serial
         if self.ser.connect() != 0:
             print('unsuccessful serial connection')
             return 0
         # Read serial
-        self._read_ser_thread = threading.Thread(target=self._read_ser)
-        self._read_ser_thread.start()
+        if not self._read_ser_thread.is_alive():
+            self._read_ser_thread.start()
         return 1
 
     def reset(self):
+        # Reset the database
+        self.packet_dissector.db.initialise()
+        self.packet_dissector.cycle_sequence = 0
+        self.packet_dissector.sequence = 0
         # We start and run the container application first
         self.container.start_container()
         print(f'status: {self.container.status()}')
         # We now wait until the socket is active in Cooja
         self.container.wait_socket_running()
         # Start the serial interface
-        if not self.serial_start():
+        if not self._serial_start():
             print('unable to start serial interface')
         print("serial interface up and running")
         # We now wait until we reach the processing_window

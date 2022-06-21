@@ -78,7 +78,7 @@ def main():
     env = Env(myPacketDissector, myNC, cooja_container, serial_interface,
               args.tschmaxchannel, args.tschmaxslotframe, processing_window=200)
     # Wrap the environment to limit the max steps per episode
-    env = TimeLimitWrapper(env, max_steps=200)
+    env = TimeLimitWrapper(env, cooja_container, max_steps=2)
     # Create an instance of the RL model to use
     model = DQN('MlpPolicy', env, verbose=1, learning_starts=100,
                 target_update_interval=8, exploration_fraction=0.2)
@@ -87,6 +87,7 @@ def main():
                                 env=env, model=model, processing_window=200)
 
     drl.exec()
+
 
     # while True:
     #     sleep(0.1)
