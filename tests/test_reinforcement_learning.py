@@ -14,7 +14,7 @@ from sdwsn_reinforcement_learning.env import Env
 from sdwsn_reinforcement_learning.wrappers import TimeLimitWrapper
 from stable_baselines3 import DQN
 from sdwsn_network_reconfiguration.network_config import NetworkReconfig
-from sdwsn_docker.docker import CoojaDocker
+from sdwsn_docker.docker import CoojaDocker, cooja_socket_status
 
 
 def main():
@@ -53,10 +53,28 @@ def main():
 
     cooja = CoojaDocker('contiker/contiki-ng', cmd, mount, sysctls, ports)
 
+    # We now run the entire simulation, creating a new docker when a RL cycle finishes
+    cooja.client.containers.prune()  # Remove previous containers
     cooja.run()
+
+    sleep(3)
 
     status = cooja.status()
     print(f'status: {status}')
+    # We now wait until the socket is active in Cooja
+    cooja_socket_active, fatal_error = cooja_socket_status(
+        '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log', ports['host'])
+
+    while cooja_socket_active != True:
+        sleep(2)
+        cooja_socket_active, fatal_error = cooja_socket_status(
+            '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log', ports['host'])
+        if fatal_error:
+            print("Simulation compilation error, starting over ...")
+            cooja.client.containers.prune()  # Remove previous containers
+            cooja.run()
+
+    print("Cooja socket interface is up and running")
 
     # container = client.containers.run('contiker/contiki-ng', command=cmd,
     #                                   mounts=[mount], sysctls=sysctls, privileged=True, detach=True)
@@ -110,6 +128,7 @@ def main():
     #                             env=env, model=model, processing_window=200)
 
     # drl.exec()
+
 
     # while True:
     #     sleep(0.1)
