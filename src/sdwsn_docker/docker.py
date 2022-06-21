@@ -2,9 +2,23 @@ from contextlib import suppress
 from typing import Dict, Optional, Tuple
 import os
 import docker
-from docker.errors import DockerException
 from docker.types import Mount
-from requests.exceptions import ReadTimeout
+from time import sleep
+
+
+def wait_socket_running(cooja, file, port):
+    cooja_socket_active, fatal_error = cooja_socket_status(file, port)
+
+    while cooja_socket_active != True:
+        sleep(2)
+        cooja_socket_active, fatal_error = cooja_socket_status(
+            file, port)
+        if fatal_error:
+            print("Simulation compilation error, starting over ...")
+            cooja.client.containers.prune()  # Remove previous containers
+            cooja.start_container()
+
+    print("Cooja socket interface is up and running")
 
 
 def cooja_socket_status(file, port):
@@ -42,7 +56,7 @@ class CoojaDocker():
         self.client = docker.from_env()
         self.container = None
 
-    def run(self):
+    def start_container(self):
         self.container = self.client.containers.run(self.image, command=self.command,
                                                     mounts=[
                                                         self.mount], sysctls=self.sysctls,

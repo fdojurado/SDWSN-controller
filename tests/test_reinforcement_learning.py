@@ -14,7 +14,7 @@ from sdwsn_reinforcement_learning.env import Env
 from sdwsn_reinforcement_learning.wrappers import TimeLimitWrapper
 from stable_baselines3 import DQN
 from sdwsn_network_reconfiguration.network_config import NetworkReconfig
-from sdwsn_docker.docker import CoojaDocker, cooja_socket_status
+from sdwsn_docker.docker import CoojaDocker, wait_socket_running
 
 
 def main():
@@ -44,6 +44,8 @@ def main():
     sysctls = {
         'net.ipv6.conf.all.disable_ipv6': 0
     }
+
+    # Simulation file to run
     cmd = '/bin/sh -c "cd examples/benchmarks/rl-sdwsn && ./run-cooja.py"'
 
     ports = {
@@ -51,83 +53,43 @@ def main():
         'host': 60001
     }
 
-    cooja = CoojaDocker('contiker/contiki-ng', cmd, mount, sysctls, ports)
+    cooja_container = CoojaDocker('contiker/contiki-ng', cmd, mount, sysctls, ports)
 
-    # We now run the entire simulation, creating a new docker when a RL cycle finishes
-    cooja.client.containers.prune()  # Remove previous containers
-    cooja.run()
+    # We start the container
+    cooja_container.client.containers.prune()  # Remove previous containers
+    cooja_container.start_container()
 
     sleep(3)
 
-    status = cooja.status()
+    status = cooja_container.status()
     print(f'status: {status}')
     # We now wait until the socket is active in Cooja
-    cooja_socket_active, fatal_error = cooja_socket_status(
-        '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log', ports['host'])
+    wait_socket_running(
+        cooja_container, '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log', ports['host'])
 
-    while cooja_socket_active != True:
-        sleep(2)
-        cooja_socket_active, fatal_error = cooja_socket_status(
-            '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log', ports['host'])
-        if fatal_error:
-            print("Simulation compilation error, starting over ...")
-            cooja.client.containers.prune()  # Remove previous containers
-            cooja.run()
+    # Create a serial interface instance
+    serial_interface = SerialBus(args.socket, args.port)
+    # Create an instance of the Database
+    myDB = Database('mySDN', args.db, args.dbPort)
+    # Create an instance of the packet dissector
+    myPacketDissector = packet_dissector.PacketDissector(
+        'MyDissector', myDB)
+    # Create an instance of the network reconfiguration
+    myNC = NetworkReconfig(serial_interface, myPacketDissector)
 
-    print("Cooja socket interface is up and running")
+    # Create an instance of the RL environment
+    env = Env(myPacketDissector, myNC,
+              args.tschmaxchannel, args.tschmaxslotframe, processing_window=200)
+    # Wrap the environment to limit the max steps per episode
+    env = TimeLimitWrapper(env, max_steps=200)
+    # Create an instance of the RL model to use
+    model = DQN('MlpPolicy', env, verbose=1, learning_starts=100,
+                target_update_interval=8, exploration_fraction=0.2)
+    # Create an instance of the reinforcement learning module
+    drl = ReinforcementLearning(serial_interface, myNC, myDB, myPacketDissector,
+                                env=env, model=model, processing_window=200)
 
-    # container = client.containers.run('contiker/contiki-ng', command=cmd,
-    #                                   mounts=[mount], sysctls=sysctls, privileged=True, detach=True)
-
-    # container.logs()
-
-    # # container.wait(timeout=100)
-
-    # a = container.logs(stderr=True).decode()
-
-    # print(a)
-    # print(client.containers.list('all'))
-    # Run exec run
-    # cmd = '/bin/sh -c "echo hello stdout ; echo hello stderr >&2"'
-    # res = container.exec_run(cmd, stream=False, demux=False)
-    # print(res.output)
-    # client.containers.prune()
-
-    # docker run --privileged --sysctl net.ipv6.conf.all.disable_ipv6=0 --mount type=bind,source=/Users/fernando/contiki-ng,destination=/home/user/contiki-ng -ti contiker/contiki-ng
-    # container.exec_run()
-    # container = docker.run_docker_container(
-    #     'contiker/contiki-ng', privileged=True)
-    # print(contsainer)
-    # docker.run_docker_container('contiker/contiki-ng', mount=('/Users/fernando/contiki-ng','/home/user/contiki-ng'))
-    # for container in client.containers.list():
-    #     print(container.id)
-
-    # for image in client.images.list():
-    #     print(image.id)
-
-    # # Create a serial interface instance
-    # serial_interface = SerialBus(args.socket, args.port)
-    # # Create an instance of the Database
-    # myDB = Database('mySDN', args.db, args.dbPort)
-    # # Create an instance of the packet dissector
-    # myPacketDissector = packet_dissector.PacketDissector(
-    #     'MyDissector', myDB)
-    # # Create an instance of the network reconfiguration
-    # myNC = NetworkReconfig(serial_interface, myPacketDissector)
-
-    # # Create an instance of the RL environment
-    # env = Env(myPacketDissector, myNC,
-    #           args.tschmaxchannel, args.tschmaxslotframe, processing_window=200)
-    # # Wrap the environment to limit the max steps per episode
-    # env = TimeLimitWrapper(env, max_steps=200)
-    # # Create an instance of the RL model to use
-    # model = DQN('MlpPolicy', env, verbose=1, learning_starts=100,
-    #             target_update_interval=8, exploration_fraction=0.2)
-    # # Create an instance of the reinforcement learning module
-    # drl = ReinforcementLearning(serial_interface, myNC, myDB, myPacketDissector,
-    #                             env=env, model=model, processing_window=200)
-
-    # drl.exec()
+    drl.exec()
 
 
     # while True:
