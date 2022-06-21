@@ -14,7 +14,7 @@ from sdwsn_reinforcement_learning.env import Env
 from sdwsn_reinforcement_learning.wrappers import TimeLimitWrapper
 from stable_baselines3 import DQN
 from sdwsn_network_reconfiguration.network_config import NetworkReconfig
-from sdwsn_docker.docker import CoojaDocker, wait_socket_running
+from sdwsn_docker.docker import CoojaDocker
 
 
 def main():
@@ -53,19 +53,16 @@ def main():
         'host': 60001
     }
 
-    cooja_container = CoojaDocker('contiker/contiki-ng', cmd, mount, sysctls, ports)
+    socket_file = '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log'
+
+    cooja_container = CoojaDocker(
+        'contiker/contiki-ng', cmd, mount, sysctls, ports, socket_file=socket_file)
 
     # We start the container
-    cooja_container.client.containers.prune()  # Remove previous containers
     cooja_container.start_container()
-
-    sleep(3)
-
-    status = cooja_container.status()
-    print(f'status: {status}')
+    print(f'status: {cooja_container.status()}')
     # We now wait until the socket is active in Cooja
-    wait_socket_running(
-        cooja_container, '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log', ports['host'])
+    cooja_container.wait_socket_running()
 
     # Create a serial interface instance
     serial_interface = SerialBus(args.socket, args.port)
