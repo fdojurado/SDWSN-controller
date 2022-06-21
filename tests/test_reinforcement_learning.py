@@ -58,11 +58,11 @@ def main():
     cooja_container = CoojaDocker(
         'contiker/contiki-ng', cmd, mount, sysctls, ports, socket_file=socket_file)
 
-    # We start the container
-    cooja_container.start_container()
-    print(f'status: {cooja_container.status()}')
-    # We now wait until the socket is active in Cooja
-    cooja_container.wait_socket_running()
+    # # We start the container
+    # cooja_container.start_container()
+    # print(f'status: {cooja_container.status()}')
+    # # We now wait until the socket is active in Cooja
+    # cooja_container.wait_socket_running()
 
     # Create a serial interface instance
     serial_interface = SerialBus(args.socket, args.port)
@@ -75,7 +75,7 @@ def main():
     myNC = NetworkReconfig(serial_interface, myPacketDissector)
 
     # Create an instance of the RL environment
-    env = Env(myPacketDissector, myNC,
+    env = Env(myPacketDissector, myNC, cooja_container, serial_interface,
               args.tschmaxchannel, args.tschmaxslotframe, processing_window=200)
     # Wrap the environment to limit the max steps per episode
     env = TimeLimitWrapper(env, max_steps=200)
@@ -87,7 +87,6 @@ def main():
                                 env=env, model=model, processing_window=200)
 
     drl.exec()
-
 
     # while True:
     #     sleep(0.1)

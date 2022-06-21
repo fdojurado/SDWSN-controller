@@ -12,6 +12,7 @@ import json
 from time import sleep
 from datetime import datetime
 from pymongo.collation import Collation
+import threading
 
 from sdwsn_common import common
 from sdwsn_packet import packet_dissector
@@ -32,7 +33,7 @@ class Env(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, packet_dissector, network_reconfiguration, max_channel_offsets=3,
+    def __init__(self, packet_dissector, network_reconfiguration, container, ser, max_channel_offsets=3,
                  max_slotframe_size=100, processing_window=200):
         super(Env, self).__init__()
         self.packet_dissector = packet_dissector
@@ -40,6 +41,8 @@ class Env(gym.Env):
         self.max_channel_offsets = max_channel_offsets
         self.max_slotframe_size = max_slotframe_size
         self.processing_window = processing_window
+        self.container = container
+        self.ser = ser
         # Keep track of the running routes
         self.routes = Routes()
         # Keep track of schedules
@@ -534,7 +537,40 @@ class Env(gym.Env):
 
     """ Reset the environment, reset the routing and the TSCH schedules """
 
+    def _read_ser(self):
+        while(1):
+            try:
+                msg = self.ser.recv(0.1)
+                if(len(msg) > 0):
+                    self.packet_dissector.handle_serial_packet(msg)
+            except TypeError:
+                pass
+
+    def serial_start(self):
+        # Connect serial
+        if self.ser.connect() != 0:
+            print('unsuccessful serial connection')
+            return 0
+        # Read serial
+        self._read_ser_thread = threading.Thread(target=self._read_ser)
+        self._read_ser_thread.start()
+        return 1
+
     def reset(self):
+        # We start and run the container application first
+        self.container.start_container()
+        print(f'status: {self.container.status()}')
+        # We now wait until the socket is active in Cooja
+        self.container.wait_socket_running()
+        # Start the serial interface
+        if not self.serial_start():
+            print('unable to start serial interface')
+        print("serial interface up and running")
+        # We now wait until we reach the processing_window
+        while(1):
+            if self.packet_dissector.sequence > self.processing_window:
+                break
+            sleep(0.1)
         # We get the network links, useful when calculating the routing
         G = common.get_network_links(self.packet_dissector)
         # Run the chosen algorithm with the current links
