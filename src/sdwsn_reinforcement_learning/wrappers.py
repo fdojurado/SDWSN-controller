@@ -55,6 +55,8 @@ class TimeLimitWrapper(gym.Wrapper):
         print('Episode ended, restarting the container application')
         # Stop the container
         self.container.shutdown()
+        # Shutdown the socket
+        self.env.stop_serial()
         # Reset the counter
         self.current_step = 0
         # Run the analysis script

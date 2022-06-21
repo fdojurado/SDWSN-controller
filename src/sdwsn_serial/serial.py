@@ -158,6 +158,12 @@ class SerialBus(BusABC):
         else:
             byte_data.extend(data)
 
+    def shutdown(self) -> None:
+        """
+        Close the serial interface.
+        """
+        self.ser.close()
+
     # def read(self):
     #     while(1):
     #         try:

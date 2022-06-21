@@ -271,8 +271,6 @@ class Env(gym.Env):
         energy = 0
         for doc in db:
             energy = doc['ewma_energy']
-            print("last energy sample")
-            print(energy)
         # Calculate the avg delay
         if energy > 0:
             power_samples.append((node, energy))
@@ -548,7 +546,7 @@ class Env(gym.Env):
                 pass
 
     def stop_serial(self):
-        self._read_ser_thread.stop()
+        self.ser.shutdown()
 
     def _serial_start(self):
         # Connect serial

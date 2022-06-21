@@ -61,7 +61,7 @@ def main():
 
     # Callback to save the model and replay buffer every N steps.
     save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
-    event_callback = EveryNTimesteps(n_steps=2, callback=save_model_replay)
+    event_callback = EveryNTimesteps(n_steps=50, callback=save_model_replay)
 
     # Create a serial interface instance
     serial_interface = SerialBus(args.socket, args.port)
@@ -77,7 +77,7 @@ def main():
     env = Env(myPacketDissector, myNC, cooja_container, serial_interface,
               args.tschmaxchannel, args.tschmaxslotframe, processing_window=200)
     # Wrap the environment to limit the max steps per episode
-    env = TimeLimitWrapper(env, cooja_container, myDB, 'example', max_steps=2)
+    env = TimeLimitWrapper(env, cooja_container, myDB, 'example', max_steps=200)
     # Create an instance of the RL model to use
     model = DQN('MlpPolicy', env, verbose=1, learning_starts=100,
                 target_update_interval=8, exploration_fraction=0.2)
