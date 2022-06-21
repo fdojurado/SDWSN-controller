@@ -11,10 +11,11 @@ from sdwsn_controller.controller import Controller
 from sdwsn_database.database import Database
 from sdwsn_reinforcement_learning.reinforcement_learning import ReinforcementLearning
 from sdwsn_reinforcement_learning.env import Env
-from sdwsn_reinforcement_learning.wrappers import TimeLimitWrapper
+from sdwsn_reinforcement_learning.wrappers import TimeLimitWrapper, SaveModelSaveBuffer
 from stable_baselines3 import DQN
 from sdwsn_network_reconfiguration.network_config import NetworkReconfig
 from sdwsn_docker.docker import CoojaDocker
+from stable_baselines3.common.callbacks import EveryNTimesteps
 
 
 def main():
@@ -58,11 +59,9 @@ def main():
     cooja_container = CoojaDocker(
         'contiker/contiki-ng', cmd, mount, sysctls, ports, socket_file=socket_file)
 
-    # # We start the container
-    # cooja_container.start_container()
-    # print(f'status: {cooja_container.status()}')
-    # # We now wait until the socket is active in Cooja
-    # cooja_container.wait_socket_running()
+    # Callback to save the model and replay buffer every N steps.
+    save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
+    event_callback = EveryNTimesteps(n_steps=2, callback=save_model_replay)
 
     # Create a serial interface instance
     serial_interface = SerialBus(args.socket, args.port)
@@ -84,7 +83,7 @@ def main():
                 target_update_interval=8, exploration_fraction=0.2)
     # Create an instance of the reinforcement learning module
     drl = ReinforcementLearning(serial_interface, myNC, myDB, myPacketDissector,
-                                env=env, model=model, processing_window=200)
+                                env=env, model=model, callback=event_callback, processing_window=200)
 
     drl.exec()
 

@@ -1,5 +1,23 @@
+from numpy import save
 import gym
+import os
 from sdwsn_result_analysis.run_analysis import run_analysis
+from stable_baselines3.common.callbacks import BaseCallback
+
+
+class SaveModelSaveBuffer(BaseCallback):
+    def __init__(self, save_path: str, name_prefix: str = "rl_model", verbose: int = 0):
+        super().__init__(verbose)
+        self.save_path = save_path
+        self.name_prefix = name_prefix
+
+    def _init_callback(self) -> None:
+        # Create folder if needed
+        if self.save_path is not None:
+            os.makedirs(self.save_path, exist_ok=True)
+
+    def _on_step(self) -> bool:
+        print("saving model and buffer")
 
 
 class TimeLimitWrapper(gym.Wrapper):
