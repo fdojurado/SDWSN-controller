@@ -7,10 +7,17 @@ from time import sleep
 
 
 class CoojaDocker():
-    def __init__(self, image: str, command: Optional[str] = None,
-                 mount: Optional[Dict] = None, sysctls: Optional[Dict] = None,
-                 ports: Optional[Dict] = None, privileged: bool = True, detach: bool = True,
-                 socket_file: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        image: str,
+        command: str = None,
+        mount: Optional[Dict] = None,
+        sysctls: Optional[Dict] = None,
+        ports: Optional[Dict] = None,
+        privileged: bool = True,
+        detach: bool = True,
+        socket_file: Optional[str] = None
+    ):
         self.image = image
         self.command = command
         self.mount = Mount(
@@ -24,7 +31,7 @@ class CoojaDocker():
         self.container = None
         self.socket_file = socket_file
 
-    def setup_container(self):
+    def __run_container(self):
         self.container = self.client.containers.run(self.image, command=self.command,
                                                     mounts=[
                                                         self.mount], sysctls=self.sysctls,
@@ -34,10 +41,11 @@ class CoojaDocker():
 
     def start_container(self):
         self.client.containers.prune()  # Remove previous containers
-        self.setup_container()
+        self.__run_container()
         sleep(3)
+        self.__wait_socket_running()
 
-    def cooja_socket_status(self):
+    def __cooja_socket_status(self):
         # This method checks whether the socket is currently running in Cooja
         if not os.access(self.socket_file, os.R_OK):
             print('The input file "{}" does not exist'.format(self.socket_file))
@@ -55,12 +63,12 @@ class CoojaDocker():
             is_fatal = fatal_line in contents
         return is_listening, is_fatal
 
-    def wait_socket_running(self):
-        cooja_socket_active, fatal_error = self.cooja_socket_status()
+    def __wait_socket_running(self):
+        cooja_socket_active, fatal_error = self.__cooja_socket_status()
 
         while cooja_socket_active != True:
             sleep(2)
-            cooja_socket_active, fatal_error = self.cooja_socket_status()
+            cooja_socket_active, fatal_error = self.__cooja_socket_status()
             if fatal_error:
                 print("Simulation compilation error, starting over ...")
                 self.client.containers.prune()  # Remove previous containers

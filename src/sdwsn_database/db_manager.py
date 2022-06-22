@@ -1,9 +1,31 @@
 from sdwsn_database.database import Database, PACKETS, NODES_INFO
 from sdwsn_packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
-from sdwsn_packet.packet_dissector import SLOT_DURATION, SLOTFRAME_LEN
 import json
 from datetime import datetime
 import numpy as np
+
+# Network parameters
+H_MAX = 10  # max number of hops
+#  EWMA (exponential moving average) used to maintain statistics over time
+EWMA_SCALE = 100
+EWMA_ALPHA = 40
+# Sensor nodes electrical parameters references
+VOLTAGE = 3
+I_LPM = 0.545  # mA
+# I_TX = 17.4  # mA
+I_RX = 20  # mA
+# Constants for energy normalization
+# ENERGY_SAMPLE_DURATION = 10  # seconds
+PMIN = 0  # Value in micro
+PMAX = VOLTAGE * I_RX * 1.2 * 1e3  # Value in micro
+MIN_TX = PMAX/3  # Max energy for the last node in the network
+# Constants for packet delay calculation
+SLOT_DURATION = 10
+NUM_SLOTS = 17
+Q_MAX = 4  # Maximum size of the queue
+R_MAX = 3   # Maximum number of retransmissions
+SLOTFRAME_SIZE = NUM_SLOTS * SLOT_DURATION  # Size of the dataplane slotframe
+
 
 
 class DatabaseManager(Database):

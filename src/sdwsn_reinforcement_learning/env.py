@@ -4,6 +4,7 @@ import imp
 import random
 # from scipy import rand
 from random import randrange
+from typing import Type
 import networkx as nx
 import gym
 from gym import spaces
@@ -21,7 +22,9 @@ from sdwsn_routes.routes import Routes
 from sdwsn_database.database import NODES_INFO
 from sdwsn_tsch.contention_free_scheduler import contention_free_schedule
 from sdwsn_database.database import OBSERVATIONS
-from sdwsn_packet.packet_dissector import SLOT_DURATION
+from sdwsn_database.db_manager import SLOT_DURATION
+from sdwsn_controller.controller import ContainerController
+from sdwsn_docker.docker import CoojaDocker
 
 # These are the size of other schedules in orchestra
 eb_size = 397
@@ -33,17 +36,16 @@ class Env(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, controller=None, max_channel_offsets=3,
-                 max_slotframe_size=100, processing_window=200):
+    def __init__(
+            self,
+            container_controller: Type[ContainerController],
+            max_channel_offsets: int = 3,
+            max_slotframe_size: int = 100):
         super(Env, self).__init__()
-        # self.packet_dissector = packet_dissector
-        # self.nc = network_reconfiguration
+        self.container_controller = container_controller
         self.max_channel_offsets = max_channel_offsets
         self.max_slotframe_size = max_slotframe_size
-        self.processing_window = processing_window
         # self.container = container
-        # self.ser = ser
-        self._read_ser_thread = threading.Thread(target=self._read_ser)
         # Keep track of the running routes
         self.routes = Routes()
         # Keep track of schedules
@@ -103,10 +105,7 @@ class Env(gym.Env):
             self.send_job(schedules_json, self.packet_dissector.cycle_sequence)
             self.packet_dissector.sequence = 0
             # We now wait for the cycle to complete
-            while(1):
-                if self.packet_dissector.sequence > self.processing_window:
-                    break
-                sleep(0.1)
+            self.container_controller.controller_wait_cycle_finishes()
             print("process reward")
             sleep(1)
             # Build observations
@@ -536,51 +535,15 @@ class Env(gym.Env):
 
     """ Reset the environment, reset the routing and the TSCH schedules """
 
-    def _read_ser(self):
-        while(1):
-            try:
-                msg = self.ser.recv(0.1)
-                if(len(msg) > 0):
-                    self.packet_dissector.handle_serial_packet(msg)
-            except TypeError:
-                pass
-
-    def stop_serial(self):
-        self.ser.shutdown()
-
-    def _serial_start(self):
-        # Connect serial
-        if self.ser.connect() != 0:
-            print('unsuccessful serial connection')
-            return 0
-        # Read serial
-        if not self._read_ser_thread.is_alive():
-            self._read_ser_thread.start()
-        return 1
-
     def reset(self):
-        # Reset the database
-        self.packet_dissector.db.initialise()
-        self.packet_dissector.cycle_sequence = 0
-        self.packet_dissector.sequence = 0
-        # We start and run the container application first
-        self.container.start_container()
-        print(f'status: {self.container.status()}')
-        # We now wait until the socket is active in Cooja
-        self.container.wait_socket_running()
-        # Start the serial interface
-        if not self._serial_start():
-            print('unable to start serial interface')
-        print("serial interface up and running")
+        # Reset the container controller
+        self.container_controller.container_reset()
         # We now wait until we reach the processing_window
-        while(1):
-            if self.packet_dissector.sequence > self.processing_window:
-                break
-            sleep(0.1)
+        self.container_controller.controller_wait_cycle_finishes()
         # We get the network links, useful when calculating the routing
-        G = common.get_network_links(self.packet_dissector)
-        # Run the chosen algorithm with the current links
-        path = common.compute_algo(G, "dijkstra", self.routes)
+        G = self.container_controller.controller_get_network_links()
+        # Run the dijkstra algorithm with the current links
+        path = self.container_controller.compute_dijkstra(G, self.routes)
         # Set the slotframe size
         slotframe_size = 23
         # We now set the TSCH schedules for the current routing
@@ -597,10 +560,11 @@ class Env(gym.Env):
             del schedules_json['cells'][12:]
             new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
             # set job id
-            self.packet_dissector.cycle_sequence += 1
+            self.container_controller.increase_cycle_sequence()
             # Send job with id and wait for reply
-            self.send_job(new_job, self.packet_dissector.cycle_sequence)
-            self.packet_dissector.sequence = 0
+            self.send_job(
+                new_job, self.container_controller.get_cycle_sequence())
+            self.container_controller.reset_pkt_sequence()
             del schedules_json['cells']
             schedules_json['cells'] = extra_cells
             schedules_json["sf_len"] = 0
@@ -609,15 +573,17 @@ class Env(gym.Env):
         # Let's prepare the routing information in the json format
         routes_json = self.routes.routes_toJSON()
         # set job id
-        self.packet_dissector.cycle_sequence += 1
+        self.container_controller.increase_cycle_sequence()
         # Send job with id and wait for reply
-        self.send_job(schedules_json, self.packet_dissector.cycle_sequence)
-        self.packet_dissector.sequence = 0
+        self.send_job(schedules_json,
+                      self.container_controller.get_cycle_sequence())
+        self.container_controller.reset_pkt_sequence()
         # set job id
-        self.packet_dissector.cycle_sequence += 1
+        self.container_controller.increase_cycle_sequence()
         # Send job with id and wait for reply
-        self.send_job(routes_json, self.packet_dissector.cycle_sequence)
-        self.packet_dissector.sequence = 0
+        self.send_job(
+            routes_json, self.container_controller.get_cycle_sequence())
+        self.container_controller.reset_pkt_sequence()
         # Wait for the network to settle
         sleep(0.5)
         # We now save all the observations

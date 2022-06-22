@@ -49,53 +49,6 @@ def build_link_schedules_matrix_obs(packet_dissector, mySchedule):
     return res, last_ts
 
 
-def get_network_links(packet_dissector):
-    # Get last index of sensor
-    N = packet_dissector.get_last_index_wsn()+1
-    # Neighbor matrix
-    nbr_rssi_matrix = np.zeros(shape=(N, N))
-    # We first loop through all sensor nodes
-    nodes = packet_dissector.db.find(NODES_INFO, {})
-    # nbr_etx_matrix = np.array([])
-    for node in nodes:
-        # Get last neighbors
-        nbr = packet_dissector.get_last_nbr(node["node_id"])
-        if nbr is not None:
-            for nbr_node in nbr:
-                source, _ = node["node_id"].split('.')
-                dst, _ = nbr_node["dst"].split('.')
-                nbr_rssi_matrix[int(source)][int(
-                    dst)] = int(nbr_node["rssi"])
-                # nbr_etx_matrix[int(source)][int(
-                #     dst)] = int(nbr_node["etx"])
-    matrix = nbr_rssi_matrix * -1
-    G = nx.from_numpy_matrix(matrix, create_using=nx.DiGraph)
-    G.remove_nodes_from(list(nx.isolates(G)))
-    return G
-
-
-def dijkstra(G, routes):
-    # We want to compute the SP from all nodes to the controller
-    path = {}
-    for node in list(G.nodes):
-        if node != 1 and node != 0:
-            print("sp from node "+str(node))
-            try:
-                node_path = nx.dijkstra_path(G, node, 1, weight='weight')
-                print("dijkstra path")
-                print(node_path)
-                path[node] = node_path
-                # TODO: find a way to avoid forcing the last addr of
-                # sensor nodes to 0.
-                routes.add_route(
-                    str(node)+".0", "1.1", str(node_path[1])+".0")
-            except nx.NetworkXNoPath:
-                print("path not found")
-    routes.print_routes()
-    print("total path")
-    print(path)
-    return path
-
 
 def compute_algo(G, alg, routes):
     # We first make sure the G is not empty

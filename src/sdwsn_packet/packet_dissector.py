@@ -1,47 +1,10 @@
 # This class allows to read and write from the database
-
-from datetime import datetime
-import imp
-
 import struct
-
-from sdwsn_database.database import Database, PACKETS, NODES_INFO, FEATURES, SLOTFRAME_LEN
-
 from sdwsn_packet.packet import serial_protocol, sdn_protocols
 from sdwsn_packet.packet import SerialPacket, SDN_IP_Packet
 from sdwsn_packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload
 from sdwsn_packet.packet import SDN_IPH_LEN, SDN_NAPL_LEN
-
 from sdwsn_database.db_manager import DatabaseManager
-
-import json
-
-import numpy as np
-import pandas as pd
-
-# Network parameters
-H_MAX = 10  # max number of hops
-#  EWMA (exponential moving average) used to maintain statistics over time
-EWMA_SCALE = 100
-EWMA_ALPHA = 40
-# Sensor nodes electrical parameters references
-VOLTAGE = 3
-I_LPM = 0.545  # mA
-# I_TX = 17.4  # mA
-I_RX = 20  # mA
-# Constants for energy normalization
-# ENERGY_SAMPLE_DURATION = 10  # seconds
-PMIN = 0  # Value in micro
-PMAX = VOLTAGE * I_RX * 1.2 * 1e3  # Value in micro
-MIN_TX = PMAX/3  # Max energy for the last node in the network
-# Constants for packet delay calculation
-SLOT_DURATION = 10
-NUM_SLOTS = 17
-Q_MAX = 4  # Maximum size of the queue
-R_MAX = 3   # Maximum number of retransmissions
-SLOTFRAME_SIZE = NUM_SLOTS * SLOT_DURATION  # Size of the dataplane slotframe
-
-current_time = 0
 
 
 class PacketDissector(DatabaseManager):
@@ -59,11 +22,6 @@ class PacketDissector(DatabaseManager):
         self.sequence = sequence
 
     def handle_serial_packet(self, data):
-        global current_time
-        # Get Unix timestamp from a datetime object
-        current_time = datetime.now().timestamp() * 1000.0
-        # print("serial packet received")
-        # print(data)
         # Let's parse serial packet
         serial_pkt = self.process_serial_packet(data)
         if serial_pkt is None:

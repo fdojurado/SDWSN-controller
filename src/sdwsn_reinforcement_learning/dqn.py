@@ -1,20 +1,34 @@
 import sys
 from time import sleep
+import gym
+from typing import Type
 from sdwsn_controller.controller import Controller
 from sdwsn_reinforcement_learning.env import Env
 from stable_baselines3 import DQN
 from sdwsn_reinforcement_learning.rl import BaseReinforcementLearning
+from stable_baselines3.common.type_aliases import MaybeCallback
+from stable_baselines3 import DQN
 
 
-class BaseDQN(BaseReinforcementLearning):
-    def __init__(self, env=None, callback=None, processing_window=100) -> None:
+class BaseDQN(DQN):
+    def __init__(
+        self,
+        env: Type[gym.Env],
+        verbose: int = 0,
+    ):
         self.env = env
-        self.processing_window = processing_window
-        self.callback = callback
-        print('Number of states: {}'.format(self.env.observation_space))
-        print('Number of actions: {}'.format(self.env.action_space))
+        self.verbose = verbose
+        # def __init__(self, env=None, callback=None, processing_window=100) -> None:
+        #     self.env = env
+        #     self.processing_window = processing_window
+        #     self.callback = callback
+        #     print('Number of states: {}'.format(self.env.observation_space))
+        #     print('Number of actions: {}'.format(self.env.action_space))
 
-    def exec(self):
+    def learn(
+        self,
+        callback: MaybeCallback = None,
+    ):
         # Train the agent
         self.model.learn(total_timesteps=int(1e6), callback=self.callback)
 
