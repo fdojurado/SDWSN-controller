@@ -1,21 +1,12 @@
 import sys
 import argparse
-import multiprocessing as mp
-from time import sleep
 
 
-from sdwsn_common import common
-from sdwsn_packet import packet_dissector
-from sdwsn_serial.serial import SerialBus
-from sdwsn_controller.controller import Controller
-from sdwsn_database.database import Database
-from sdwsn_reinforcement_learning.dqn import ReinforcementLearning
 from sdwsn_reinforcement_learning.env import Env
 from sdwsn_reinforcement_learning.wrappers import TimeLimitWrapper, SaveModelSaveBuffer
 from stable_baselines3 import DQN
-from sdwsn_network_reconfiguration.network_config import NetworkReconfig
-from sdwsn_docker.docker import CoojaDocker
 from stable_baselines3.common.callbacks import EveryNTimesteps
+from sdwsn_controller.controller import ContainerController
 
 
 def main():
@@ -37,31 +28,26 @@ def main():
 
     print(args)
 
-    mount = {
-        'target': '/home/user/contiki-ng',
-        'source': '/Users/fernando/contiki-ng',
-        'type': 'bind'
-    }
-    sysctls = {
-        'net.ipv6.conf.all.disable_ipv6': 0
-    }
+    container_controller = ContainerController(
+        cooja_host=args.socket, cooja_port=args.port)
+    # controller = BaseController(cooja_host=args.socket, cooja_port=args.port)
 
-    # Simulation file to run
-    cmd = '/bin/sh -c "cd examples/benchmarks/rl-sdwsn && ./run-cooja.py"'
+    # Create an instance of the environment
+    env = Env(container_controller=container_controller, max_channel_offsets=args.tschmaxchannel,
+              max_slotframe_size=args.tschmaxslotframe)
 
-    ports = {
-        'container': 60001,
-        'host': 60001
-    }
+    # Wrap the environment to limit the max steps per episode
+    env = TimeLimitWrapper(env, max_steps=4)
 
-    socket_file = '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log'
+    # Callback to save the model and replay buffer every N steps.
+    save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
+    event_callback = EveryNTimesteps(n_steps=50, callback=save_model_replay)
 
-    cooja_container = CoojaDocker(
-        'contiker/contiki-ng', cmd, mount, sysctls, ports, socket_file=socket_file)
+    # Create an instance of the RL model to use
+    model = DQN('MlpPolicy', env, verbose=1, learning_starts=100,
+                target_update_interval=8, exploration_fraction=0.2)
 
-    # # Callback to save the model and replay buffer every N steps.
-    # save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
-    # event_callback = EveryNTimesteps(n_steps=50, callback=save_model_replay)
+    model.learn(total_timesteps=int(1e6), callback=event_callback)
 
     # # Create a serial interface instance
     # serial_interface = SerialBus(args.socket, args.port)
