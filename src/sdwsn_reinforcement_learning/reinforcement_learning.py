@@ -2,6 +2,7 @@ import sys
 from time import sleep
 from sdwsn_controller.controller import Controller
 from sdwsn_reinforcement_learning.env import Env
+from stable_baselines3 import DQN
 
 
 class ReinforcementLearning(Controller):
@@ -18,3 +19,18 @@ class ReinforcementLearning(Controller):
     def exec(self):
         # Train the agent
         self.model.learn(total_timesteps=int(1e6), callback=self.callback)
+
+    def continue_learning(self, saved_model, saved_buffer, env):
+        # Here, we load previous save model and buffer to continuo learning
+        self.model = DQN.load(saved_model)
+        print("model")
+        print(self.model)
+        print(f"The loaded_model has {self.model.replay_buffer.size()} transitions in its buffer")
+        print(f'buffer path {saved_buffer}')
+        self.model.load_replay_buffer(saved_buffer)
+        print(f"The loaded_model has {self.model.replay_buffer.size()} transitions in its buffer")
+        # Retrieve the environment
+        # self.env = self.model.get_env()
+        self.model.env = self.env
+        print(self.env)
+        self.exec()

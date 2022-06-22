@@ -32,6 +32,7 @@ class SerialBus(BusABC):
         self.frame_start = 0
         self.frame_length = 0
         self.msg = None
+        self.ser = None
 
     def connect(self):
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -162,7 +163,8 @@ class SerialBus(BusABC):
         """
         Close the serial interface.
         """
-        self.ser.close()
+        if self.ser is not None:
+            self.ser.close()
 
     # def read(self):
     #     while(1):
