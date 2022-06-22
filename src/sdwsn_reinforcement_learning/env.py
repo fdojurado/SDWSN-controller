@@ -33,16 +33,16 @@ class Env(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, packet_dissector, network_reconfiguration, container, ser, max_channel_offsets=3,
+    def __init__(self, controller=None, max_channel_offsets=3,
                  max_slotframe_size=100, processing_window=200):
         super(Env, self).__init__()
-        self.packet_dissector = packet_dissector
-        self.nc = network_reconfiguration
+        # self.packet_dissector = packet_dissector
+        # self.nc = network_reconfiguration
         self.max_channel_offsets = max_channel_offsets
         self.max_slotframe_size = max_slotframe_size
         self.processing_window = processing_window
-        self.container = container
-        self.ser = ser
+        # self.container = container
+        # self.ser = ser
         self._read_ser_thread = threading.Thread(target=self._read_ser)
         # Keep track of the running routes
         self.routes = Routes()

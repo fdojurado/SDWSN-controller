@@ -9,21 +9,8 @@ from bus import BusABC
 from sdwsn_packet.packet import SerialPacket
 
 
-def serial_init(send, rcv, **kwargs):
-    print(f'socket kwargs {kwargs}')
-    host = str(kwargs.get('host', "localhost"))
-    port = kwargs.get('port', 60001)
-    print(f'socket connection to {host} and port {port}')
-    serial = SerialBus(host, port, send, rcv)
-    if serial.result != 0:
-        print("error connecting to socket")
-        return
-    else:
-        return serial
-
-
 class SerialBus(BusABC):
-    def __init__(self, host, port):
+    def __init__(self, host: str = '127.0.0.1', port: int = 60001):
         self.host = host
         self.port = port
         self.byte_msg = bytearray()
@@ -164,6 +151,7 @@ class SerialBus(BusABC):
         Close the serial interface.
         """
         if self.ser is not None:
+            self.ser.shutdown()
             self.ser.close()
 
     # def read(self):

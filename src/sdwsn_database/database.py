@@ -1,6 +1,7 @@
 from audioop import add
 import pymongo
 from pymongo.collation import Collation
+from abc import ABC, abstractmethod
 
 
 PACKETS = "packets"
@@ -13,8 +14,8 @@ USER_REQUIREMENTS = "user_requirements"
 OBSERVATIONS = "observations"
 
 
-class Database():
-    def __init__(self, name, host, port) -> None:
+class Database(ABC):
+    def __init__(self, name: str = 'myDSN', host: str = '127.0.0.1', port: int = 27017) -> None:
         self.name = name
         self.URI = "mongodb://"+host+":"+str(port)
         self.DATABASE = None
@@ -23,8 +24,6 @@ class Database():
         self.client = pymongo.MongoClient(self.URI)
         self.client.drop_database(self.name)
         self.DATABASE = self.client[self.name]
-        # for db in client.list_databases():
-        #     print(db)
 
     def insert(self, collection, data):
         return self.DATABASE[collection].insert_one(data)

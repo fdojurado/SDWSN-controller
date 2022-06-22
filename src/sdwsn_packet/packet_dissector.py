@@ -1,4 +1,7 @@
+# This class allows to read and write from the database
+
 from datetime import datetime
+import imp
 
 import struct
 
@@ -9,7 +12,7 @@ from sdwsn_packet.packet import SerialPacket, SDN_IP_Packet
 from sdwsn_packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload
 from sdwsn_packet.packet import SDN_IPH_LEN, SDN_NAPL_LEN
 
-from sdwsn_common import globals
+from sdwsn_database.db_manager import DatabaseManager
 
 import json
 
@@ -41,11 +44,17 @@ SLOTFRAME_SIZE = NUM_SLOTS * SLOT_DURATION  # Size of the dataplane slotframe
 current_time = 0
 
 
-class PacketDissector():
-    def __init__(self, name, database, ack=None, cycle_sequence=0, sequence=0) -> None:
-        self.name = name
-        self.db = database
-        self.ack_pkt = ack
+class PacketDissector(DatabaseManager):
+    def __init__(
+            self,
+            name: str = 'myDSN',
+            host: str = '127.0.0.1',
+            port: int = 27017,
+            cycle_sequence: int = 0,
+            sequence: int = 0
+    ):
+        super().__init__(name, host, port)
+        self.ack_pkt = None
         self.cycle_sequence = cycle_sequence
         self.sequence = sequence
 
@@ -61,7 +70,7 @@ class PacketDissector():
             print("bad serial packet")
             return
         # Let's first save the packet
-        self.save_serial_packet(serial_pkt)
+        self.save_serial_packet(serial_pkt.toJSON())
         # Check if this is a serial ACK packet
         if serial_pkt.message_type == serial_protocol.ACK:
             self.ack_pkt = serial_pkt
@@ -127,11 +136,6 @@ class PacketDissector():
         # serial packet succeed
         # print("succeed unpacking serial packet")
         return pkt
-
-    def save_serial_packet(self, pkt):
-        data = json.loads(pkt.toJSON())
-        data["timestamp"] = current_time
-        self.db.insert(PACKETS, data)
 
     def process_data_packet(self, pkt):
         # If the reported length in the sdn IP header doesn't match the packet size,
@@ -206,275 +210,3 @@ class PacketDissector():
         # sdn IP packet succeed
         # print("succeed unpacking SDN NA packet")
         return pkt
-
-    def save_energy(self, pkt, na_pkt):
-        data = {
-            "timestamp": current_time,
-            "cycle_seq": na_pkt.cycle_seq,
-            "seq": na_pkt.seq,
-            "ewma_energy": na_pkt.energy
-            # "ewma_energy_normalized": ewma_energy_normalized,
-        }
-        update = {
-            "$push": {
-                "energy": data
-            }
-        }
-        filter = {
-            "node_id": pkt.scrStr
-        }
-        self.db.update_one(NODES_INFO, filter, update, True, None)
-        # Database.update_one(NODES_INFO, filter, update, True, None)
-        # Set the rank
-        update = {
-            "$set": {
-                "rank": na_pkt.rank
-            }
-        }
-        filter = {
-            "node_id": pkt.scrStr
-        }
-        self.db.update_one(NODES_INFO, filter, update, True, None)
-        # Database.update_one(NODES_INFO, filter, update, True, None)
-
-    def save_neighbors(self, pkt, na_pkt):
-        # """ Let's process NA payload """
-        # Process neighbors
-        blocks = len(na_pkt.payload) // SDN_NAPL_LEN
-        idx_start = 0
-        idx_end = 0
-        for x in range(1, blocks+1):
-            idx_end += SDN_NAPL_LEN
-            payload = na_pkt.payload[idx_start:idx_end]
-            idx_start = idx_end
-            payload_unpacked = NA_Packet_Payload.unpack(payload)
-            data = {
-                'timestamp': current_time,
-                'dst': payload_unpacked.addrStr,
-                'rssi': payload_unpacked.rssi,
-                'etx': payload_unpacked.etx,
-            }
-            update = {
-                "$push": {
-                    "neighbors": data
-                }
-            }
-            filter = {
-                "node_id": pkt.scrStr
-            }
-            self.db.update_one(NODES_INFO, filter, update, True, None)
-            # Database.update_one(NODES_INFO, filter, update, True, None)
-
-    def save_pdr(self, pkt, data_pkt):
-        data = {
-            "timestamp": current_time,
-            "cycle_seq": data_pkt.cycle_seq,
-            "seq": data_pkt.seq,
-        }
-        update = {
-            "$push": {
-                "pdr": data
-            }
-        }
-        filter = {
-            "node_id": pkt.scrStr
-        }
-        self.db.update_one(NODES_INFO, filter, update, True, None)
-        # Database.update_one(NODES_INFO, filter, update, True, None)
-
-    def save_delay(self, pkt, data_pkt):
-        sampled_delay = data_pkt.asn * SLOT_DURATION
-        data = {
-            "timestamp": current_time,
-            "cycle_seq": data_pkt.cycle_seq,
-            "seq": data_pkt.seq,
-            "sampled_delay": sampled_delay
-        }
-        update = {
-            "$push": {
-                "delay": data
-            }
-        }
-        filter = {
-            "node_id": pkt.scrStr
-        }
-        self.db.update_one(NODES_INFO, filter, update, True, None)
-        # Database.update_one(NODES_INFO, filter, update, True, None)
-
-    def compute_ewma(self, old_data, new_data):
-        return (old_data * (EWMA_SCALE - EWMA_ALPHA) +
-                new_data * EWMA_ALPHA) / EWMA_SCALE
-
-    def get_rank(self, addr):
-        if(addr == "1.0"):
-            return 0
-        query = {
-            "$and": [
-                {"node_id": addr},
-                {"rank": {"$exists": True}}
-            ]
-        }
-        db = self.db.find_one(NODES_INFO, query)
-        # db = Database.find_one(NODES_INFO, query)
-        if db is None:
-            return
-        else:
-            return db["rank"]
-
-    def get_last_slotframe_len(self):
-        db = self.db.find_one(SLOTFRAME_LEN, {})
-        # db = Database.find_one(SLOTFRAME_LEN, {})
-        if db is None:
-            return None
-        # get last seq in DB
-        db = self.db.find(SLOTFRAME_LEN, {}).sort("_id", -1).limit(1)
-        # db = Database.find(SLOTFRAME_LEN, {}).sort("_id", -1).limit(1)
-        for doc in db:
-            return doc["slotframe_len"]
-
-    def get_last_power_consumption(self, node):
-        query = {
-            "$and": [
-                {"node_id": node},
-                {"energy": {"$exists": True}}
-            ]
-        }
-        db = self.db.find_one(NODES_INFO, query)
-        # db = Database.find_one(NODES_INFO, query)
-        if db is None:
-            return None
-        # get last seq in DB
-        pipeline = [
-            {"$match": {"node_id": node}},
-            {"$unwind": "$energy"},
-            {"$sort": {"energy.timestamp": -1}},
-            {"$limit": 1},
-            {'$project':
-             {
-                 "_id": 1,
-                 'timestamp': '$energy.timestamp',
-                 'ewma_energy': '$energy.ewma_energy',
-                 'ewma_energy_normalized': '$energy.ewma_energy_normalized'
-             }
-             }
-        ]
-        db = self.db.aggregate(NODES_INFO, pipeline)
-        # db = Database.aggregate(NODES_INFO, pipeline)
-        for doc in db:
-            return doc
-
-    def get_last_delay(self, node):
-        query = {
-            "$and": [
-                {"node_id": node},
-                {"delay": {"$exists": True}}
-            ]
-        }
-        db = self.db.find_one(NODES_INFO, query)
-        # db = Database.find_one(NODES_INFO, query)
-        if db is None:
-            return
-        # get last seq in DB
-        pipeline = [
-            {"$match": {"node_id": node}},
-            {"$unwind": "$delay"},
-            {"$sort": {"delay.timestamp": -1}},
-            {"$limit": 1},
-            {'$project':
-             {
-                 "_id": 1,
-                 'timestamp': '$delay.timestamp',
-                 'sampled_delay': '$delay.sampled_delay',
-                 'ewma_delay': '$delay.ewma_delay',
-                 'ewma_delay_normalized': '$delay.ewma_delay_normalized'
-             }
-             }
-        ]
-        db = self.db.aggregate(NODES_INFO, pipeline)
-        # db = Database.aggregate(NODES_INFO, pipeline)
-        for doc in db:
-            return doc
-
-    def get_last_pdr(self, node):
-        query = {
-            "$and": [
-                {"node_id": node},
-                {"pdr": {"$exists": True}}
-            ]
-        }
-        db = self.db.find_one(NODES_INFO, query)
-        if db is None:
-            return None
-        # get last seq in DB
-        pipeline = [
-            {"$match": {"node_id": node}},
-            {"$unwind": "$pdr"},
-            {"$sort": {"pdr.timestamp": -1}},
-            {"$limit": 1},
-            {'$project':
-             {
-                 "_id": 1,
-                 'timestamp': '$pdr.timestamp',
-                 'seq': '$pdr.seq',
-                 "num_seq": '$pdr.num_seq',
-                 'ewma_pdr': '$pdr.ewma_pdr'
-             }
-             }
-        ]
-        db = self.db.aggregate(NODES_INFO, pipeline)
-        for doc in db:
-            return doc
-
-    def get_last_nbr_timestamp(self, node):
-        pipeline = [
-            {"$match": {"node_id": node}},
-            {"$unwind": "$neighbors"},
-            {"$group": {"_id": None, "timestamp": {"$max": "$neighbors.timestamp"}}}
-        ]
-        db = self.db.aggregate(NODES_INFO, pipeline)
-        for doc in db:
-            return doc["timestamp"]
-
-    def get_last_nbr(self, node):
-        query = {
-            "$and": [
-                {"node_id": node},
-                {"neighbors": {"$exists": True}}
-            ]
-        }
-        db = self.db.find_one(NODES_INFO, query)
-        if db is None:
-            return None
-        # We first need to get the last timestamp of neighbors of the given node
-        timestamp = self.get_last_nbr_timestamp(node)
-        # get last links
-        pipeline = [
-            {"$match": {"node_id": node}},
-            {"$unwind": "$neighbors"},
-            {"$match": {"neighbors.timestamp": timestamp}},
-            {'$project':
-             {
-                 "_id": 1,
-                 'timestamp': '$neighbors.timestamp',
-                 'dst': '$neighbors.dst',
-                 'rssi': '$neighbors.rssi',
-                 'etx': '$neighbors.etx'
-             }
-             }
-        ]
-        db = self.db.aggregate(NODES_INFO, pipeline)
-        return db
-
-    def get_number_of_sensors(self):
-        nbr_array = np.array(self.db.distinct(NODES_INFO, "neighbors.dst"))
-        nodes = np.append(nbr_array, self.db.distinct(NODES_INFO, "node_id"))
-        sensors = np.unique(nodes)
-        return sensors.size
-
-    def get_last_index_wsn(self):
-        nbr_array = np.array(self.db.distinct(NODES_INFO, "neighbors.dst"))
-        nodes = np.append(nbr_array, self.db.distinct(NODES_INFO, "node_id"))
-        node_list = [int(elem.split('.')[0]) for elem in nodes]
-        sort = np.sort(node_list)
-        last = sort[-1]
-        return int(last)

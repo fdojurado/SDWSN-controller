@@ -13,7 +13,8 @@ import types
 # Generate random number for ack
 from random import randrange
 import json
-import time
+from sdwsn_controller.controller import BaseController
+from sdwsn_serial.serial import SerialBus
 
 
 """ TODO: Set the maximum routes per node (e.g., 10).
@@ -26,46 +27,14 @@ job_type.TSCH = 0
 job_type.ROUTING = 1
 
 
-def routes_to_deploy(node, routes):
-    """ Remove already deployed routes """
-    for index, route in routes.iterrows():
-        query = {"$and": [
-            {"_id": node},
-            {"routes.scr": route["scr"]},
-            {"routes.dst": route["dst"]},
-            {"routes.via": route["via"]},
-        ]}
-        db = Database.find_one("nodes", query, None)
-        # print("printing db for route")
-        # print(route)
-        # print("printing db for route2")
-        # print(db)
-        if(db is None):
-            data = {
-                "scr": route["scr"],
-                "dst": route["dst"],
-                "via": route["via"],
-                "deployed": 0
-            }
-            Database.push_doc("nodes", node, 'routes', data)
-        else:
-            print("route already exists in deployed")
-
-
-# def compute_routes_nc():
-#     df, G = FWD_TABLE.fwd_get_graph('scr', 'via', None, 0)
-#     length, path = nx.single_source_dijkstra(G, "1.0")
-#     node_list = []
-#     for u, p in path.items():
-#         node_list.extend([str(u)])
-#     return node_list
-
-
-class NetworkReconfig():
-    def __init__(self, serial_interface, packet_dissector):
-        self.ser = serial_interface
-        self.packet_dissector = packet_dissector
-        pass
+class NetworkReconfig(BaseController):
+    def __init__(
+        self,
+        serial_interface: type[SerialBus]
+    ):
+        super().__init__(
+            serial_interface=serial_interface
+        )
 
     def process_json_routes_packets(self, routes):
         # Let's loop into routes
@@ -169,34 +138,7 @@ class NetworkReconfig():
                 print("unknown job type")
                 return None
         # Send NC packet
-        result = self.send(packedData, serial_pkt)
+        result = self.controller_reliable_send(
+            packedData, serial_pkt.reserved0+1)
         # Send notification of job completion
         return result, job_id
-
-    def send(self, data, serial_pkt):
-        print("Sending NC")
-        # set retransmission
-        rtx = 0
-        # Send NC packet through serial interface
-        self.ser.send(data)
-        # self.serial_input_queue.put(data)
-        # Result variable to see if the sending went well
-        result = 0
-        while True:
-            try:
-                sleep(1.2)
-                if (self.packet_dissector.ack_pkt.reserved0 == serial_pkt.reserved0+1):
-                    print("correct ACK received")
-                    result = 1
-                    break
-            except queue.Empty:
-                print("ACK not received")
-                # We stop sending the current NC packet if
-                # we reached the max RTx or we received ACK
-                if(rtx >= 7):
-                    print("ACK never received")
-                    break
-                # We resend the packet if retransmission < 7
-                rtx = rtx + 1
-                self.serial_input_queue.put(data)
-        return result
