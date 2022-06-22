@@ -77,7 +77,8 @@ def main():
     env = Env(myPacketDissector, myNC, cooja_container, serial_interface,
               args.tschmaxchannel, args.tschmaxslotframe, processing_window=200)
     # Wrap the environment to limit the max steps per episode
-    env = TimeLimitWrapper(env, cooja_container, myDB, 'example', max_steps=200)
+    env = TimeLimitWrapper(env, cooja_container, myDB,
+                           'example', max_steps=200)
     # Create an instance of the RL model to use
     model = DQN('MlpPolicy', env, verbose=1, learning_starts=100,
                 target_update_interval=8, exploration_fraction=0.2)
@@ -85,7 +86,11 @@ def main():
     drl = ReinforcementLearning(serial_interface, myNC, myDB, myPacketDissector,
                                 env=env, model=model, callback=event_callback, processing_window=200)
 
-    drl.exec()
+    saved_model = './logs/rl_model_250_steps'
+    saved_buffer = './logs/rl_model_buffer_250_steps'
+
+    # drl.exec()
+    drl.continue_learning(saved_model, saved_buffer, env)
 
 
     # while True:
