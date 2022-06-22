@@ -3,9 +3,10 @@ from time import sleep
 from sdwsn_controller.controller import Controller
 from sdwsn_reinforcement_learning.env import Env
 from stable_baselines3 import DQN
+from sdwsn_reinforcement_learning.rl import BaseReinforcementLearning
 
 
-class ReinforcementLearning(Controller):
+class BaseDQN(BaseReinforcementLearning):
     def __init__(self, serial_interface, network_reconfiguration, database, packet_dissector,
                  env=None, model=None, callback=None, processing_window=100) -> None:
         super().__init__(serial_interface, network_reconfiguration, database, packet_dissector)
