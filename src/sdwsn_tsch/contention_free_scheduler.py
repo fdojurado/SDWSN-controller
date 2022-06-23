@@ -13,7 +13,6 @@ class ContentionFreeScheduler(Schedule):
             channel_offsets)
 
     def run(self, path, current_sf_size):
-        self.schedule_set_sf_size(current_sf_size)
         print("running contention free scheduler")
         for _, p in path.items():
             if(len(p) >= 2):
@@ -31,12 +30,12 @@ class ContentionFreeScheduler(Schedule):
                         print(f'link {tx_node}-{rx_node} does not exists')
                         # Random Tx link to RX if it is available
                         ts = random.randrange(0,
-                                              self.slotframe_size-1)
+                                              current_sf_size-1)
                         ch = random.randrange(0,
                                               self.num_channel_offsets-1)
                         # Let's first check whether this timeslot is already in use in the schedule
                         while(not self.schedule_timeslot_free(ts)):
-                            ts = random.randrange(0, self.slotframe_size-1)
+                            ts = random.randrange(0, current_sf_size-1)
                             print(f"ts already in use, we now try ts={ts}")
                         # We have found an empty timeslot
                         print(f'empty time slot {ts} found for {tx_node}-{rx_node}')

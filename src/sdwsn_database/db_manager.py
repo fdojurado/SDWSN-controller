@@ -3,6 +3,7 @@ from sdwsn_packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
 import json
 from datetime import datetime
 import numpy as np
+from pymongo.collation import Collation
 
 # Network parameters
 H_MAX = 10  # max number of hops
@@ -305,6 +306,18 @@ class DatabaseManager(Database):
         last = sort[-1]
         return int(last)
 
+    def get_sensor_nodes_in_order(self):
+        db = self.find(NODES_INFO, {}).sort("node_id").collation(
+            Collation(locale="en_US", numericOrdering=True))
+        nodes = []
+        if db is None:
+            return None
+        for node in db:
+            nodes.append(node["node_id"])
+        return nodes
+
+    """ Useful Reinforcement Learning Functions """
+
     def save_observations(self, timestamp, alpha, beta, delta,
                           power_wam, power_mean, power_normalized,
                           delay_wam, delay_mean, delay_normalized,
@@ -330,3 +343,157 @@ class DatabaseManager(Database):
             "reward": reward
         }
         self.insert(OBSERVATIONS, data)
+
+    def get_last_observations(self):
+        db = self.find_one(OBSERVATIONS, {})
+        if db is None:
+            return None
+        # get last req in DB
+        db = self.find(
+            OBSERVATIONS, {}).sort("_id", -1).limit(1)
+        for doc in db:
+            alpha = doc["alpha"]
+            beta = doc["beta"]
+            delta = doc["delta"]
+            last_ts_in_schedule = doc['last_ts_in_schedule']
+            current_sf_len = doc['current_sf_len']
+            normalized_ts_in_schedule = doc['normalized_ts_in_schedule']
+            reward = doc['reward']
+            return alpha, beta, delta, last_ts_in_schedule, current_sf_len, normalized_ts_in_schedule, reward
+
+    def get_last_power_consumption(self, node, power_samples, seq):
+        query = {
+            "$and": [
+                {"node_id": node},
+                {"energy": {"$exists": True}}
+            ]
+        }
+        db = self.find_one(NODES_INFO, query)
+        if db is None:
+            return None
+        # Get last n samples after the timestamp
+        pipeline = [
+            {"$match": {"node_id": node}},
+            {"$unwind": "$energy"},
+            {"$match": {
+                "energy.cycle_seq": {
+                    "$eq": seq
+                }
+            }
+            },
+            {"$sort": {"energy.timestamp": -1}},
+            {"$limit": 1},
+            {'$project':
+             {
+                 "_id": 1,
+                 'timestamp': '$energy.timestamp',
+                 'ewma_energy': '$energy.ewma_energy',
+             }
+             }
+        ]
+        db = self.aggregate(NODES_INFO, pipeline)
+
+        energy = 0
+        for doc in db:
+            energy = doc['ewma_energy']
+        # Calculate the avg delay
+        if energy > 0:
+            power_samples.append((node, energy))
+        else:
+            power_samples.append((node, 3000))
+        return
+
+    def get_avg_delay(self, node, delay_samples, seq):
+        query = {
+            "$and": [
+                {"node_id": node},
+                {"delay": {"$exists": True}}
+            ]
+        }
+        db = self.find_one(NODES_INFO, query)
+        if db is None:
+            return None
+        # Get last n samples after the timestamp
+        pipeline = [
+            {"$match": {"node_id": node}},
+            {"$unwind": "$delay"},
+            {"$match": {
+                "delay.cycle_seq": {
+                    "$gte": seq
+                }
+            }
+            },
+            {'$project':
+             {
+                 "_id": 1,
+                 "cycle_seq": '$delay.cycle_seq',
+                 "seq": '$delay.seq',
+                 'sampled_delay': '$delay.sampled_delay',
+             }
+             }
+        ]
+        # Variable to keep track of the number samples
+        num_rcv = 0
+        # Sum of delays
+        sum_delay = 0
+
+        db = self.aggregate(NODES_INFO, pipeline)
+
+        for doc in db:
+            delay = doc["sampled_delay"]
+            num_rcv += 1
+            sum_delay += delay
+
+        # Calculate the avg delay
+        if num_rcv > 0:
+            avg_delay = sum_delay/num_rcv
+        else:
+            avg_delay = 2500
+        delay_samples.append((node, avg_delay))
+        return
+
+    def get_avg_pdr(self, node, pdr_samples, seq):
+        query = {
+            "$and": [
+                {"node_id": node},
+                {"pdr": {"$exists": True}}
+            ]
+        }
+        db = self.find_one(NODES_INFO, query)
+        if db is None:
+            pdr_samples.append(0)
+            return None
+        pipeline = [
+            {"$match": {"node_id": node}},
+            {"$unwind": "$pdr"},
+            {"$match": {
+                "pdr.cycle_seq": {
+                    "$gte": seq
+                }
+            }
+            },
+            {'$project':
+             {
+                 "_id": 1,
+                 "cycle_seq": '$pdr.cycle_seq',
+                 "seq": '$pdr.seq'
+             }
+             }
+        ]
+        db = self.aggregate(NODES_INFO, pipeline)
+        # Variable to keep track of the number rcv packets
+        num_rcv = 0
+        # Last received sequence
+        seq = 0
+        for doc in db:
+            seq = doc['seq']
+            num_rcv += 1
+        # Get the averaged pdr for this period
+        if seq > 0:
+            avg_pdr = num_rcv/seq
+        else:
+            avg_pdr = 0
+        if avg_pdr > 1.0:
+            avg_pdr = 1.0
+        pdr_samples.append((node, avg_pdr))
+        return
