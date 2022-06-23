@@ -11,7 +11,7 @@ from sdwsn_result_analysis.run_analysis import run_analysis
 from sdwsn_database.database import NODES_INFO
 from sdwsn_tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_routes.router import SimpleRouter
-from sdwsn_packet.packet import Cell_Packet_Payload
+from sdwsn_packet.packet import Cell_Packet_Payload, RA_Packet_Payload
 from sdwsn_common import common
 
 import numpy as np
@@ -82,6 +82,12 @@ class BaseController(ABC):
 
     """ TSCH scheduler/schedule functions """
 
+    def get_last_active_ts(self):
+        return self.scheduler.schedule_last_active_ts()
+
+    def get_list_of_active_slots(self):
+        return self.scheduler.schedule_get_list_ts_in_use()
+
     def compute_schedule(self, path, current_sf_size):
         # We clean previous schedule first
         self.scheduler.schedule_clear_schedule()
@@ -112,18 +118,15 @@ class BaseController(ABC):
                         cell_packed = cell_pkt.pack()
                         payload = cell_packed
                         if len(payload) > 90:
+                            print(f'Sending schedule packet {num_pkts}')
                             # We send the current payload
                             num_pkts += 1
-                            print(f'Sending schedule packet {num_pkts}')
-                            cell_pkt = Cell_Packet_Payload(payload=payload, type=int(type),
-                                                           channel=int(channel), timeslot=int(timeslot), scr=addr,
-                                                           dst=dst)
-                            payload = []
                             current_sf_size = 0
                             if num_pkts == 1:
                                 current_sf_size = sf_size
                             packedData, serial_pkt = common.tsch_build_pkt(
                                 payload, current_sf_size, self.increase_cycle_sequence())
+                            payload = []
                             # Send NC packet
                             self.controller_reliable_send(
                                 packedData, serial_pkt.reserved0+1)
@@ -131,9 +134,6 @@ class BaseController(ABC):
         if payload:
             num_pkts += 1
             print(f'Sending schedule packet {num_pkts}')
-            cell_pkt = Cell_Packet_Payload(payload=payload, type=int(type),
-                                           channel=int(channel), timeslot=int(timeslot), scr=addr,
-                                           dst=dst)
             current_sf_size = 0
             if num_pkts == 1:
                 current_sf_size = sf_size
@@ -176,6 +176,9 @@ class BaseController(ABC):
             sleep(1)
         print("cycle finished")
 
+    def save_observations(self, *args):
+        self.packet_dissector.save_observations(*args)
+
     """ Network information methods """
 
     def controller_get_network_links(self):
@@ -200,6 +203,41 @@ class BaseController(ABC):
         return G
 
     """ Routing functions """
+
+    def send_routes(self):
+        print('Sending routes')
+        num_pkts = 0
+        payload = []
+        for _, row in self.router.routes.iterrows():
+            scr = row['scr']
+            dst = row['dst']
+            via = row['via']
+            data = {"scr": scr, "dst": dst, "via": via}
+            print("route")
+            print(data)
+            route_pkt = RA_Packet_Payload(
+                dst=dst, scr=scr, via=via, payload=payload)
+            routed_packed = route_pkt.pack()
+            payload = routed_packed
+            if len(payload) > 90:
+                print(f'Sending routing packet {num_pkts}')
+                # We send the current payload
+                num_pkts += 1
+                packedData, serial_pkt = common.routing_build_pkt(
+                    payload, self.increase_cycle_sequence())
+                payload = []
+                # Send NC packet
+                self.controller_reliable_send(
+                    packedData, serial_pkt.reserved0+1)
+        # Send the remain payload if there is one
+        if payload:
+            num_pkts += 1
+            print(f'Sending routing packet {num_pkts}')
+            packedData, serial_pkt = common.routing_build_pkt(
+                payload, self.increase_cycle_sequence())
+            # Send NC packet
+            self.controller_reliable_send(
+                packedData, serial_pkt.reserved0+1)
 
     def compute_dijkstra(self, G):
         # Clear all previous routes

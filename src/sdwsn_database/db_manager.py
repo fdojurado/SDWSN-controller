@@ -1,4 +1,4 @@
-from sdwsn_database.database import Database, PACKETS, NODES_INFO
+from sdwsn_database.database import Database, PACKETS, NODES_INFO, OBSERVATIONS, SLOTFRAME_LEN
 from sdwsn_packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
 import json
 from datetime import datetime
@@ -25,7 +25,6 @@ NUM_SLOTS = 17
 Q_MAX = 4  # Maximum size of the queue
 R_MAX = 3   # Maximum number of retransmissions
 SLOTFRAME_SIZE = NUM_SLOTS * SLOT_DURATION  # Size of the dataplane slotframe
-
 
 
 class DatabaseManager(Database):
@@ -305,3 +304,29 @@ class DatabaseManager(Database):
         sort = np.sort(node_list)
         last = sort[-1]
         return int(last)
+
+    def save_observations(self, timestamp, alpha, beta, delta,
+                          power_wam, power_mean, power_normalized,
+                          delay_wam, delay_mean, delay_normalized,
+                          pdr_wam, pdr_mean,
+                          last_ts_in_schedule, current_sf_len, normalized_ts_in_schedule,
+                          reward):
+        data = {
+            "timestamp": timestamp,
+            "alpha": alpha,
+            "beta": beta,
+            "delta": delta,
+            "power_wam": power_wam,
+            "power_avg": power_mean,
+            "power_normalized": power_normalized,
+            "delay_wam": delay_wam,
+            "delay_avg": delay_mean,
+            "delay_normalized": delay_normalized,
+            "pdr_wam": pdr_wam,
+            "pdr_mean": pdr_mean,
+            "last_ts_in_schedule": last_ts_in_schedule,
+            "current_sf_len": current_sf_len,
+            "normalized_ts_in_schedule": normalized_ts_in_schedule,
+            "reward": reward
+        }
+        self.insert(OBSERVATIONS, data)

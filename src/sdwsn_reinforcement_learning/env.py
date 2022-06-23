@@ -79,7 +79,7 @@ class Env(gym.Env):
                 # set job id
                 self.packet_dissector.cycle_sequence += 1
                 # Send job with id and wait for reply
-                self.send_job(new_job, self.packet_dissector.cycle_sequence)
+                # self.send_job(new_job, self.packet_dissector.cycle_sequence)
                 self.packet_dissector.sequence = 0
                 del schedules_json['cells']
                 schedules_json['cells'] = extra_cells
@@ -92,7 +92,7 @@ class Env(gym.Env):
             # set job id
             self.packet_dissector.cycle_sequence += 1
             # Send job with id and wait for reply
-            self.send_job(schedules_json, self.packet_dissector.cycle_sequence)
+            # self.send_job(schedules_json, self.packet_dissector.cycle_sequence)
             self.packet_dissector.sequence = 0
             # We now wait for the cycle to complete
             self.container_controller.controller_wait_cycle_finishes()
@@ -538,17 +538,15 @@ class Env(gym.Env):
         slotframe_size = 23
         # We now set the TSCH schedules for the current routing
         self.container_controller.compute_schedule(path, slotframe_size)
-        # contention_free_schedule(self.schedule, path, slotframe_size)
         # We now set and save the user requirements
         select_user_req = [0.8, 0.1, 0.1]
         # Send the entire TSCH schedule
         self.container_controller.send_schedules(slotframe_size)
         # routes_json = self.routes.routes_toJSON()
         self.container_controller.reset_pkt_sequence()
-        # set job id
-        # Send job with id and wait for reply
-        # self.send_job(
-        #     routes_json, self.container_controller.get_cycle_sequence())
+        # Send the entire routes
+        self.container_controller.send_routes()
+        self.container_controller.reset_pkt_sequence()
         # Wait for the network to settle
         sleep(0.5)
         # We now save all the observations
@@ -556,10 +554,9 @@ class Env(gym.Env):
         sample_time = datetime.now().timestamp() * 1000.0
         # We now save the user requirements
         user_requirements = np.array(select_user_req)
-        # We now build the TSCH schedule matrix
-        _, last_ts = common.build_link_schedules_matrix_obs(
-            self.packet_dissector, self.schedule)
-        ts_in_schedule = self.schedule.get_list_ts_in_use()
+        # Last active cell
+        last_ts = self.container_controller.get_last_active_ts()
+        ts_in_schedule = self.container_controller.get_list_of_active_slots()
         sum = 0
         for ts in ts_in_schedule:
             sum += 2**ts
@@ -570,46 +567,12 @@ class Env(gym.Env):
         observation = np.append(user_requirements, last_ts)
         observation = np.append(observation, slotframe_size)
         observation = np.append(observation, normalized_ts_in_schedule)
-        self.save_observations(
-            sample_time, select_user_req[0], select_user_req[1], select_user_req[2],
+        self.container_controller.save_observations(
+            sample_time,
+            select_user_req[0], select_user_req[1], select_user_req[2],
             None, None, None,
             None, None, None,
             None, None,
             last_ts, slotframe_size, normalized_ts_in_schedule,
             None)
         return observation  # reward, done, info can't be included
-
-    # Send to the SDWSN
-    def send_job(self, data, job_id):
-        # Send the job to the NC process
-        result = self.nc.send_nc(data, job_id)
-        if result == 0:
-            print("job did not completed")
-
-    """ Save observations """
-
-    def save_observations(self, timestamp, alpha, beta, delta,
-                          power_wam, power_mean, power_normalized,
-                          delay_wam, delay_mean, delay_normalized,
-                          pdr_wam, pdr_mean,
-                          last_ts_in_schedule, current_sf_len, normalized_ts_in_schedule,
-                          reward):
-        data = {
-            "timestamp": timestamp,
-            "alpha": alpha,
-            "beta": beta,
-            "delta": delta,
-            "power_wam": power_wam,
-            "power_avg": power_mean,
-            "power_normalized": power_normalized,
-            "delay_wam": delay_wam,
-            "delay_avg": delay_mean,
-            "delay_normalized": delay_normalized,
-            "pdr_wam": pdr_wam,
-            "pdr_mean": pdr_mean,
-            "last_ts_in_schedule": last_ts_in_schedule,
-            "current_sf_len": current_sf_len,
-            "normalized_ts_in_schedule": normalized_ts_in_schedule,
-            "reward": reward
-        }
-        self.packet_dissector.db.insert(OBSERVATIONS, data)

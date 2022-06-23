@@ -3,22 +3,24 @@ import multiprocessing as mp
 from sdwsn_serial import serial
 import networkx as nx
 import numpy as np
-from sdwsn_packet.packet import Cell_Packet, SDN_IP_Packet, SerialPacket
-from sdwsn_packet.packet import sdn_protocols, SDN_SAH_LEN, SDN_IPH_LEN
+from sdwsn_packet.packet import Cell_Packet, SDN_IP_Packet, SerialPacket, RA_Packet
+from sdwsn_packet.packet import sdn_protocols, SDN_SAH_LEN, SDN_IPH_LEN, SDN_RAH_LEN
 from random import randrange
 
 
-
+""" Build SA control packet """
 
 
 def tsch_build_pkt(payloadPacked, sf_len, seq):
-    print(f'Sending schedule packet with SF len {sf_len} and seq {seq}')
+    print(f'Building schedule packet with SF len {sf_len} and seq {seq}')
     payload_len = len(payloadPacked)
     # Build schedule packet header
     cell_pkt = Cell_Packet(
         payloadPacked, payload_len=payload_len, sf_len=sf_len, seq=seq)
     # Pack
     cell_packed = cell_pkt.pack()
+    print(repr(cell_pkt))
+    print(cell_packed)
     # Build sdn IP packet
     # 0x24: version 2, protocol SA = 4
     vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_SA
@@ -35,10 +37,40 @@ def tsch_build_pkt(payloadPacked, sf_len, seq):
     print(repr(sdn_ip_pkt))
     # Build serial packet
     serial_pkt = SerialPacket(sdn_ip_packed, addr=0, pkt_chksum=0,
-                       message_type=2, payload_len=length,
-                       reserved0=randrange(1, 254), reserved1=0)
+                              message_type=2, payload_len=length,
+                              reserved0=randrange(1, 254), reserved1=0)
     packedData = serial_pkt.pack()
     print(repr(serial_pkt))
+    return packedData, serial_pkt
+
+
+""" Build RA control packet """
+
+
+def routing_build_pkt(payloadPacked, seq):
+    print(f'Building schedule packet with seq {seq}')
+    payload_len = len(payloadPacked)
+    # Build RA packet
+    ra_pkt = RA_Packet(
+        payloadPacked, payload_len=payload_len, seq=seq)
+    ra_packed = ra_pkt.pack()
+    print(repr(ra_pkt))
+    print(ra_packed)
+    # Build sdn IP packet
+    # 0x23: version 2, protocol RA = 3
+    vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_RA
+    # length of the entire packet
+    length = payload_len+SDN_RAH_LEN+SDN_IPH_LEN
+    ttl = 0x40  # 0x40: Time to live
+    scr = 0x0101  # Controller is sending
+    dest = int(float(0))
+    sdn_ip_pkt = SDN_IP_Packet(ra_packed,
+                               vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
+    sdn_ip_packed = sdn_ip_pkt.pack()
+    serial_pkt = SerialPacket(sdn_ip_packed, addr=0, pkt_chksum=0,
+                              message_type=2, payload_len=length,
+                              reserved0=randrange(1, 254), reserved1=0)
+    packedData = serial_pkt.pack()
     return packedData, serial_pkt
 
 
@@ -83,24 +115,6 @@ def build_link_schedules_matrix_obs(packet_dissector, mySchedule):
     # }
     # Database.insert(SCHEDULES, data)
     return res, last_ts
-
-
-def compute_algo(G, alg, routes):
-    # We first make sure the G is not empty
-    if(nx.is_empty(G) == False):
-        if(G.has_node(1)):  # Maybe use "1.0" instead
-            print("graph has the controller")
-            routes.clear_routes()
-            match alg:
-                case "dijkstra":
-                    print("running dijkstra")
-                    path = dijkstra(G, routes)
-                case "mst":
-                    print("running MST")
-                    path = mst(G)
-    else:
-        print("not able to compute routing, graph empty")
-    return path
 
 
 """ Coprime checks methods """

@@ -337,6 +337,10 @@ def plot_against_sf_size(df, name):
 
 
 def run_analysis(Database, name):
+    db = Database.find_one(OBSERVATIONS, {})
+    if db is None:
+        print("Exiting analysis collection doesn't exist")
+        return None
     # Load observations
     data = Database.find(OBSERVATIONS, {})
 

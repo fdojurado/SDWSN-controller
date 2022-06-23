@@ -188,15 +188,14 @@ class RA_Packet:
     # optional: nice string representation of packet for printing purposes
 
     def __repr__(self):
-        return "RA_Packet(payload_len={}, hop_limit={}, seq={}, pkt_chksum={}, payload={})".format(
-            hex(self.payload_len), self.hop_limit, self.seq,
-            hex(self.pkt_chksum), self.payload)
+        return "RA_Packet(payload_len={}, seq={}, pkt_chksum={}, payload={})".format(
+            hex(self.payload_len), self.seq, hex(self.pkt_chksum), self.payload)
 
     @classmethod
     def unpack(cls, packed_data, length):
-        payload_len, hop_limit, seq, pkt_chksum, payload = struct.unpack(
+        payload_len, seq, pkt_chksum, payload = struct.unpack(
             '!BBHH' + str(length-SDN_RAH_LEN) + 's', packed_data)
-        return cls(payload, payload_len=payload_len, hop_limit=hop_limit, seq=seq, pkt_chksum=pkt_chksum)
+        return cls(payload, payload_len=payload_len, seq=seq, pkt_chksum=pkt_chksum)
 
 
 class RA_Packet_Payload:

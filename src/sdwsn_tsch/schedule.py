@@ -211,6 +211,19 @@ class Schedule(ABC):
                     print("unkown cell type")
                     return None
 
+    def schedule_last_active_ts(self):
+        # Last timeslot offset of the current schedule
+        last_ts = 0
+        for node in self.list_nodes:
+            for rx_cell in node.rx:
+                if rx_cell.timeoffset > last_ts:
+                    last_ts = rx_cell.timeoffset
+            for tx_cell in node.tx:
+                if tx_cell.timeoffset > last_ts:
+                    last_ts = tx_cell.timeoffset
+
+        return last_ts
+
     def schedule_set_sf_size(self, size):
         self.slotframe_size = size
 
