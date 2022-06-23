@@ -3,7 +3,43 @@ import multiprocessing as mp
 from sdwsn_serial import serial
 import networkx as nx
 import numpy as np
-from sdwsn_database.database import NODES_INFO
+from sdwsn_packet.packet import Cell_Packet, SDN_IP_Packet, SerialPacket
+from sdwsn_packet.packet import sdn_protocols, SDN_SAH_LEN, SDN_IPH_LEN
+from random import randrange
+
+
+
+
+
+def tsch_build_pkt(payloadPacked, sf_len, seq):
+    print(f'Sending schedule packet with SF len {sf_len} and seq {seq}')
+    payload_len = len(payloadPacked)
+    # Build schedule packet header
+    cell_pkt = Cell_Packet(
+        payloadPacked, payload_len=payload_len, sf_len=sf_len, seq=seq)
+    # Pack
+    cell_packed = cell_pkt.pack()
+    # Build sdn IP packet
+    # 0x24: version 2, protocol SA = 4
+    vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_SA
+    # length of the entire packet
+    length = payload_len+SDN_SAH_LEN+SDN_IPH_LEN
+    ttl = 0x32  # 0x40: Time to live
+    scr = 0x0101  # Controller is sending
+    dest = int(float(0))
+    # Layer three layer packet
+    sdn_ip_pkt = SDN_IP_Packet(cell_packed,
+                               vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
+    # Pack layer three packet
+    sdn_ip_packed = sdn_ip_pkt.pack()
+    print(repr(sdn_ip_pkt))
+    # Build serial packet
+    serial_pkt = SerialPacket(sdn_ip_packed, addr=0, pkt_chksum=0,
+                       message_type=2, payload_len=length,
+                       reserved0=randrange(1, 254), reserved1=0)
+    packedData = serial_pkt.pack()
+    print(repr(serial_pkt))
+    return packedData, serial_pkt
 
 
 def build_link_schedules_matrix_obs(packet_dissector, mySchedule):
@@ -47,7 +83,6 @@ def build_link_schedules_matrix_obs(packet_dissector, mySchedule):
     # }
     # Database.insert(SCHEDULES, data)
     return res, last_ts
-
 
 
 def compute_algo(G, alg, routes):

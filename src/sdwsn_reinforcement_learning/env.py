@@ -16,15 +16,11 @@ from pymongo.collation import Collation
 import threading
 
 from sdwsn_common import common
-from sdwsn_packet import packet_dissector
-from sdwsn_tsch.schedule import Schedule
 from sdwsn_routes.routes import Routes
 from sdwsn_database.database import NODES_INFO
-from sdwsn_tsch.contention_free_scheduler import contention_free_schedule
 from sdwsn_database.database import OBSERVATIONS
 from sdwsn_database.db_manager import SLOT_DURATION
 from sdwsn_controller.controller import ContainerController
-from sdwsn_docker.docker import CoojaDocker
 
 # These are the size of other schedules in orchestra
 eb_size = 397
@@ -38,19 +34,13 @@ class Env(gym.Env):
 
     def __init__(
             self,
-            container_controller: Type[ContainerController],
-            max_channel_offsets: int = 3,
-            max_slotframe_size: int = 100):
+            container_controller: Type[ContainerController]
+    ):
         super(Env, self).__init__()
         self.container_controller = container_controller
-        self.max_channel_offsets = max_channel_offsets
-        self.max_slotframe_size = max_slotframe_size
         # self.container = container
         # Keep track of the running routes
         self.routes = Routes()
-        # Keep track of schedules
-        self.schedule = Schedule(
-            self.max_slotframe_size, max_channel_offsets)
         # We define the number of actions
         n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
@@ -543,47 +533,22 @@ class Env(gym.Env):
         # We get the network links, useful when calculating the routing
         G = self.container_controller.controller_get_network_links()
         # Run the dijkstra algorithm with the current links
-        path = self.container_controller.compute_dijkstra(G, self.routes)
+        path = self.container_controller.compute_dijkstra(G)
         # Set the slotframe size
         slotframe_size = 23
         # We now set the TSCH schedules for the current routing
-        contention_free_schedule(self.schedule, path, slotframe_size)
+        self.container_controller.compute_schedule(path, slotframe_size)
+        # contention_free_schedule(self.schedule, path, slotframe_size)
         # We now set and save the user requirements
         select_user_req = [0.8, 0.1, 0.1]
-        # Let's prepare the schedule information in the json format
-        schedules_json = self.schedule.schedule_toJSON(slotframe_size)
-        print("json")
-        print(json.dumps(schedules_json, indent=4, sort_keys=True))
-        while len(schedules_json['cells']) > 12:
-            print("fragmentation is required for TSCH schedule job")
-            extra_cells = schedules_json['cells'][12:]
-            del schedules_json['cells'][12:]
-            new_job = json.dumps(schedules_json, indent=4, sort_keys=True)
-            # set job id
-            self.container_controller.increase_cycle_sequence()
-            # Send job with id and wait for reply
-            self.send_job(
-                new_job, self.container_controller.get_cycle_sequence())
-            self.container_controller.reset_pkt_sequence()
-            del schedules_json['cells']
-            schedules_json['cells'] = extra_cells
-            schedules_json["sf_len"] = 0
-
-        schedules_json = json.dumps(schedules_json, indent=4, sort_keys=True)
-        # Let's prepare the routing information in the json format
-        routes_json = self.routes.routes_toJSON()
-        # set job id
-        self.container_controller.increase_cycle_sequence()
-        # Send job with id and wait for reply
-        self.send_job(schedules_json,
-                      self.container_controller.get_cycle_sequence())
+        # Send the entire TSCH schedule
+        self.container_controller.send_schedules(slotframe_size)
+        # routes_json = self.routes.routes_toJSON()
         self.container_controller.reset_pkt_sequence()
         # set job id
-        self.container_controller.increase_cycle_sequence()
         # Send job with id and wait for reply
-        self.send_job(
-            routes_json, self.container_controller.get_cycle_sequence())
-        self.container_controller.reset_pkt_sequence()
+        # self.send_job(
+        #     routes_json, self.container_controller.get_cycle_sequence())
         # Wait for the network to settle
         sleep(0.5)
         # We now save all the observations

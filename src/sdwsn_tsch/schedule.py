@@ -1,8 +1,6 @@
-from ast import Not
-from pickletools import read_uint1
 import types
 import json
-from sdwsn_network_reconfiguration.network_config import job_type
+from abc import ABC, abstractmethod
 # Protocols encapsulated in sdn IP packet
 cell_type = types.SimpleNamespace()
 cell_type.UC_RX = 2
@@ -83,14 +81,14 @@ class Node:
             self.node, self.rx, self.tx)
 
 
-class Schedule:
-    def __init__(self, size, channel_offsets):
-        self.slotframe_size = size
+class Schedule(ABC):
+    def __init__(self, sf_size, channel_offsets):
+        self.slotframe_size = sf_size
         self.num_channel_offsets = channel_offsets
         self.list_nodes = []
-        self.clear_schedule()
+        # self.clear_schedule()
 
-    def add_uc(self, node, type, channeloffset=None, timeoffset=None, destination=None):
+    def schedule_add_uc(self, node, type, channeloffset=None, timeoffset=None, destination=None):
         # print("adding uc link node: ", node, " destination: ", destination, "type: ", type,
         #   " channeloffset: ", channeloffset, " timeoffset: ", timeoffset)
         if(not self.list_nodes):
@@ -117,7 +115,7 @@ class Schedule:
             rx_cell = sensor.add_rx_cell(channeloffset, timeoffset)
             self.schedule[channeloffset][timeoffset].append(rx_cell)
         if(type == cell_type.UC_TX and destination is not None):
-            # channeloffset, timeoffset = self.get_rx_coordinates(
+            # channeloffset, timeoffset = self.schedule_get_rx_coordinates(
             #     destination)
             # if (channeloffset is not None and timeoffset is not None):
             # print("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
@@ -129,7 +127,7 @@ class Schedule:
 
         # self.print_schedule()
 
-    def timeslot_free_in_schedule(self, ts):
+    def schedule_timeslot_free(self, ts):
         # This function checks whether the given timeslot is free
         # in the entire schedule
         for elem in self.list_nodes:
@@ -141,14 +139,14 @@ class Schedule:
                     return 0
         return 1
 
-    def timeslot_empty(self, node, timeslot):
+    def schedule_is_timeslot_empty(self, node, timeslot):
         for elem in self.list_nodes:
             if elem.node == node:
                 return elem.timeslot_empty(timeslot)
         # If this is not found, then it is empty
         return 1
 
-    def get_num_of_cells(self, addr):
+    def schedule_get_num_of_cells(self, addr):
         # Get the total number of all Rx links
         for elem in self.list_nodes:
             if elem.node == addr:
@@ -156,7 +154,7 @@ class Schedule:
                     return len(elem.rx)
         return 0
 
-    def get_rx_cells(self, addr):
+    def schedule_get_rx_cells(self, addr):
         # Get all Rx links in the node
         for elem in self.list_nodes:
             if elem.node == addr:
@@ -164,7 +162,7 @@ class Schedule:
                     return elem.rx
         return None
 
-    def link_exists(self, Tx, Rx):
+    def schedule_link_exists(self, Tx, Rx):
         # It evaluates whether the given Tx-Rx links exists
         for elem in self.list_nodes:
             if elem.node == Tx:
@@ -173,7 +171,7 @@ class Schedule:
                         return 1
         return 0
 
-    def get_rx_coordinates(self, addr):
+    def schedule_get_rx_coordinates(self, addr):
         # Get the time and channel offset from the given addr.
         for node in self.list_nodes:
             if node.rx:
@@ -182,16 +180,15 @@ class Schedule:
                         return rx.channeloffset, rx.timeoffset
         return None, None
 
-    def get_list_ts_in_use(self):
+    def schedule_get_list_ts_in_use(self):
         # This function returns a list of ts currently used
         list_ts = []
         for ts in range(self.slotframe_size):
-            if not self.timeslot_free_in_schedule(ts):
+            if not self.schedule_timeslot_free(ts):
                 list_ts.append(ts)
         return list_ts
 
-
-    def clear_schedule(self):
+    def schedule_clear_schedule(self):
         rows, cols = (self.num_channel_offsets, self.slotframe_size)
         self.schedule = [[0 for i in range(cols)] for j in range(rows)]
         for i in range(rows):
@@ -199,7 +196,7 @@ class Schedule:
                 self.schedule[i][j] = []
         self.list_nodes = []
 
-    def format_printing_cell(self, cell):
+    def schedule_format_printing_cell(self, cell):
         if(cell):
             # infr = "Node {fnode}, I'm {age}".format(fnode = cell.source, age = 36)
             match(cell.type):
@@ -214,7 +211,10 @@ class Schedule:
                     print("unkown cell type")
                     return None
 
-    def print_schedule(self):
+    def schedule_set_sf_size(self, size):
+        self.slotframe_size = size
+
+    def schedule_print(self):
         # print(*self.schedule, sep='\n')
         rows, cols = (self.num_channel_offsets, self.slotframe_size)
         print_schedule = [[0 for i in range(cols)] for j in range(rows)]
@@ -225,55 +225,8 @@ class Schedule:
             for j in range(cols):
                 if (self.schedule[i][j]):
                     for elem in self.schedule[i][j]:
-                        txt = self.format_printing_cell(elem)
+                        txt = self.schedule_format_printing_cell(elem)
                         if(txt is not None):
                             print_schedule[i][j].append(txt)
         # print("printing schedule 2")
         print(*print_schedule, sep='\n')
-
-    def schedule_toJSON(self, sf_len):
-        # Build the schedule in a JSON format to be shared with the NC class
-        # {
-        #   "job_type": "TSCH",
-        #   "sf_len": len
-        #   "cells":[
-        #               {
-        #                   "addr": cell.source,
-        #                   "channel": cell.channel,
-        #                   "timeslot": cell.timeslot,
-        #                   "type": cell.type,
-        #                   "dest": cell.destination
-        #                },
-        #               {
-        #                   "addr": cell.source,
-        #                   "channel": cell.channel,
-        #                   "timeslot": cell.timeslot,
-        #                   "type": cell.type,
-        #                   "dest": cell.destination
-        #                },
-        #       ]
-        #   "hop_limit": "255"
-        # }
-        json_message_format = '{"job_type": ' + \
-            str(job_type.TSCH)+', "cells":[]}'
-        # parsing JSON string:
-        json_message = json.loads(json_message_format)
-        # hop_limit = 0
-        rows, cols = (self.num_channel_offsets, self.slotframe_size)
-        for i in range(rows):
-            for j in range(cols):
-                if (self.schedule[i][j]):
-                    for elem in self.schedule[i][j]:
-                        channel = str(elem.channeloffset)
-                        timeslot = str(elem.timeoffset)
-                        data = {"channel": channel, "timeslot": timeslot, "addr": elem.source, "type": elem.type,
-                                "dest": elem.destination}
-                        json_message["cells"].append(data)
-                        # rank = get_rank(elem.source)
-                        # if (rank > hop_limit):
-                        #     hop_limit = rank
-        # json_message["hop_limit"] = 255
-        json_message["sf_len"] = sf_len
-        # json_dump = json.dumps(json_message, indent=4, sort_keys=True)
-        # print(json_dump)
-        return json_message

@@ -4,12 +4,15 @@ from sdwsn_common import common
 from threading import Thread
 from abc import ABC, abstractmethod
 from sdwsn_serial.serial import SerialBus
-from sdwsn_database.database import Database
 from sdwsn_packet.packet_dissector import PacketDissector
-from typing import Dict, Optional
+from typing import Dict
 from sdwsn_docker.docker import CoojaDocker
 from sdwsn_result_analysis.run_analysis import run_analysis
 from sdwsn_database.database import NODES_INFO
+from sdwsn_tsch.contention_free_scheduler import ContentionFreeScheduler
+from sdwsn_routes.router import SimpleRouter
+from sdwsn_packet.packet import Cell_Packet_Payload
+from sdwsn_common import common
 
 import numpy as np
 import networkx as nx
@@ -24,17 +27,26 @@ class BaseController(ABC):
         db_host: str = '127.0.0.1',
         db_port: int = 27017,
         simulation_name: str = 'mySimulation',
-        processing_window: int = 200
+        processing_window: int = 200,
+        max_channel_offsets: int = 3,
+        max_slotframe_size: int = 100
     ):
         # Save instance of a serial interface
         self.ser = SerialBus(cooja_host, cooja_port)
         # Save instance of packet dissector
         self.packet_dissector = PacketDissector(db_name, db_host, db_port)
+        # Create instance of the scheduler, we now only support contention free
+        self.scheduler = ContentionFreeScheduler(
+            sf_size=max_slotframe_size, channel_offsets=max_channel_offsets)
+        # Create an instance of a routes
+        self.router = SimpleRouter()
         # Variable to check whether the controller is running or not
         self.is_running = False
         self.simulation_name = simulation_name
         self.num_episodes = 0
         self.processing_window = processing_window
+
+    """ Controller primitives """
 
     def controller_start(self):
         # Initialize database
@@ -67,6 +79,69 @@ class BaseController(ABC):
 
     def __controller_serial_stop(self):
         self.ser.shutdown()
+
+    """ TSCH scheduler/schedule functions """
+
+    def compute_schedule(self, path, current_sf_size):
+        # We clean previous schedule first
+        self.scheduler.schedule_clear_schedule()
+        self.scheduler.run(path, current_sf_size)
+
+    def send_schedules(self, sf_size):
+        num_pkts = 0
+        payload = []
+        rows, cols = (self.scheduler.num_channel_offsets,
+                      self.scheduler.slotframe_size)
+        for i in range(rows):
+            for j in range(cols):
+                if (self.scheduler.schedule[i][j]):
+                    for elem in self.scheduler.schedule[i][j]:
+                        channel = elem.channeloffset
+                        timeslot = elem.timeoffset
+                        addr = elem.source
+                        type = elem.type
+                        dst = elem.destination
+                        data = {"channel": channel, "timeslot": timeslot, "addr": addr, "type": type,
+                                "dest": dst}
+                        print("schedule element")
+                        print(data)
+                        # if num_links < 11:
+                        cell_pkt = Cell_Packet_Payload(payload=payload, type=int(type),
+                                                       channel=int(channel), timeslot=int(timeslot), scr=addr,
+                                                       dst=dst)
+                        cell_packed = cell_pkt.pack()
+                        payload = cell_packed
+                        if len(payload) > 90:
+                            # We send the current payload
+                            num_pkts += 1
+                            print(f'Sending schedule packet {num_pkts}')
+                            cell_pkt = Cell_Packet_Payload(payload=payload, type=int(type),
+                                                           channel=int(channel), timeslot=int(timeslot), scr=addr,
+                                                           dst=dst)
+                            payload = []
+                            current_sf_size = 0
+                            if num_pkts == 1:
+                                current_sf_size = sf_size
+                            packedData, serial_pkt = common.tsch_build_pkt(
+                                payload, current_sf_size, self.increase_cycle_sequence())
+                            # Send NC packet
+                            self.controller_reliable_send(
+                                packedData, serial_pkt.reserved0+1)
+        # Send the remain payload if there is one
+        if payload:
+            num_pkts += 1
+            print(f'Sending schedule packet {num_pkts}')
+            cell_pkt = Cell_Packet_Payload(payload=payload, type=int(type),
+                                           channel=int(channel), timeslot=int(timeslot), scr=addr,
+                                           dst=dst)
+            current_sf_size = 0
+            if num_pkts == 1:
+                current_sf_size = sf_size
+            packedData, serial_pkt = common.tsch_build_pkt(
+                payload, current_sf_size, self.increase_cycle_sequence())
+            # Send NC packet
+            self.controller_reliable_send(
+                packedData, serial_pkt.reserved0+1)
 
     """ Serial/socket interface functions """
 
@@ -126,7 +201,9 @@ class BaseController(ABC):
 
     """ Routing functions """
 
-    def compute_dijkstra(self, G, routes):
+    def compute_dijkstra(self, G):
+        # Clear all previous routes
+        self.router.delete_all_routes()
         # TODO: Routes should be part of the controller
         # We want to compute the SP from all nodes to the controller
         path = {}
@@ -140,11 +217,11 @@ class BaseController(ABC):
                     path[node] = node_path
                     # TODO: find a way to avoid forcing the last addr of
                     # sensor nodes to 0.
-                    routes.add_route(
+                    self.router.add_link(
                         str(node)+".0", "1.1", str(node_path[1])+".0")
                 except nx.NetworkXNoPath:
                     print("path not found")
-        routes.print_routes()
+        self.router.print_routes()
         print("total path")
         print(path)
         return path
@@ -153,6 +230,7 @@ class BaseController(ABC):
 
     def increase_cycle_sequence(self):
         self.packet_dissector.cycle_sequence += 1
+        return self.packet_dissector.cycle_sequence
 
     def increase_pkt_sequence(self):
         self.packet_dissector.sequence += 1
@@ -180,19 +258,20 @@ class BaseController(ABC):
         # Result variable to see if the sending went well
         result = 0
         while True:
-            if (self.packet_dissector.ack_pkt.reserved0 == ack):
-                print("correct ACK received")
-                result = 1
-                break
-            print("ACK not received")
-            # We stop sending the current NC packet if
-            # we reached the max RTx or we received ACK
-            if(rtx >= 7):
-                print("ACK never received")
-                break
-            # We resend the packet if retransmission < 7
-            rtx = rtx + 1
-            self.controller_send_data(data)
+            if self.packet_dissector.ack_pkt is not None:
+                if (self.packet_dissector.ack_pkt.reserved0 == ack):
+                    print("correct ACK received")
+                    result = 1
+                    break
+                print("ACK not received")
+                # We stop sending the current NC packet if
+                # we reached the max RTx or we received ACK
+                if(rtx >= 7):
+                    print("ACK never received")
+                    break
+                # We resend the packet if retransmission < 7
+                rtx = rtx + 1
+                self.controller_send_data(data)
             sleep(1.2)
         return result
 
@@ -223,7 +302,9 @@ class ContainerController(BaseController):
             db_host: str = '127.0.0.1',
             db_port: int = 27017,
             simulation_name: str = 'mySimulation',
-            processing_window: int = 200
+            processing_window: int = 200,
+            max_channel_offsets: int = 3,
+            max_slotframe_size: int = 100
     ):
         super().__init__(
             cooja_host,
@@ -232,7 +313,9 @@ class ContainerController(BaseController):
             db_host,
             db_port,
             simulation_name,
-            processing_window)
+            processing_window,
+            max_channel_offsets,
+            max_slotframe_size)
 
         self.container = CoojaDocker(image=image, command=command, mount=mount,
                                      sysctls=sysctls, ports=container_ports, privileged=privileged, detach=detach,

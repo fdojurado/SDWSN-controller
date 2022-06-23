@@ -151,7 +151,7 @@ class SerialBus(BusABC):
         Close the serial interface.
         """
         if self.ser is not None:
-            self.ser.shutdown()
+            self.ser.shutdown(socket.SHUT_RDWR)
             self.ser.close()
 
     # def read(self):

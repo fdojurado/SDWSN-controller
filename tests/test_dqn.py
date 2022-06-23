@@ -7,9 +7,11 @@ from sdwsn_reinforcement_learning.wrappers import TimeLimitWrapper, SaveModelSav
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EveryNTimesteps
 from sdwsn_controller.controller import ContainerController
+import signal
 
 
 def main():
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--socket', type=str, default='127.0.0.1',
                         help='socket address')
@@ -29,12 +31,23 @@ def main():
     print(args)
 
     container_controller = ContainerController(
-        cooja_host=args.socket, cooja_port=args.port)
+        cooja_host=args.socket, cooja_port=args.port,
+        max_channel_offsets=args.tschmaxchannel, max_slotframe_size=args.tschmaxslotframe)
     # controller = BaseController(cooja_host=args.socket, cooja_port=args.port)
 
+    def exit_process(signal_number, frame):
+        # pylint: disable=no-member
+        print('Received %s signal. Exiting...',
+              signal.Signals(signal_number).name)
+        container_controller.container_controller_shutdown()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, exit_process)
+    signal.signal(signal.SIGQUIT, exit_process)
+    signal.signal(signal.SIGTERM, exit_process)
+
     # Create an instance of the environment
-    env = Env(container_controller=container_controller, max_channel_offsets=args.tschmaxchannel,
-              max_slotframe_size=args.tschmaxslotframe)
+    env = Env(container_controller=container_controller)
 
     # Wrap the environment to limit the max steps per episode
     env = TimeLimitWrapper(env, max_steps=4)
@@ -77,7 +90,6 @@ def main():
 
     # # drl.exec()
     # drl.continue_learning(saved_model, saved_buffer, env)
-
 
     # while True:
     #     sleep(0.1)
