@@ -1,12 +1,8 @@
-import re
 import socket
 import sys
 # import logging
-from typing import Optional
-from time import time
-from datetime import datetime
 from bus import BusABC
-from sdwsn_packet.packet import SerialPacket
+import select
 
 
 class SerialBus(BusABC):
@@ -146,13 +142,22 @@ class SerialBus(BusABC):
         else:
             byte_data.extend(data)
 
+    def empty_socket(self):
+        try:
+            while self.recv(60):
+                pass
+        except:
+            pass
+
     def shutdown(self) -> None:
         """
         Close the serial interface.
         """
         if self.ser is not None:
-            self.ser.shutdown(socket.SHUT_RDWR)
+            self.empty_socket()
+            print("socket buffer is now empty, we close ...")
             self.ser.close()
+            # self.ser.shutdown(socket.SHUT_RDWR)
 
     # def read(self):
     #     while(1):

@@ -111,7 +111,7 @@ class PacketDissector(DatabaseManager):
     def process_sdn_ip_packet(self, data):
         # We first check the integrity of the HEADER of the sdn IP packet
         if(self.sdn_ip_checksum(data, SDN_IPH_LEN) != 0xffff):
-            print("bad checksum")
+            print("bad IP checksum")
             return
         # Parse sdn IP packet
         # print("processing IP packet")

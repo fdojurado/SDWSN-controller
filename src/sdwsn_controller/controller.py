@@ -171,6 +171,7 @@ class BaseController(ABC):
     """ Cycle management """
 
     def controller_wait_cycle_finishes(self):
+        print("Waiting for the current cycle to finish")
         while(1):
             if self.packet_dissector.sequence > self.processing_window:
                 break
@@ -577,8 +578,8 @@ class ContainerController(BaseController):
         self.controller_start()
 
     def container_controller_shutdown(self):
-        self.controller_stop()
         self.container.shutdown()
+        self.controller_stop()
 
     def container_reset(self):
         print('Resetting container, controller, etc.')
