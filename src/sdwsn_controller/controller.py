@@ -170,7 +170,6 @@ class BaseController(ABC):
             except TypeError:
                 pass
             if not self.is_running:
-                print("Socket reading exiting due to controller stopped.")
                 break
         print("Socket reading thread exited.")
 
