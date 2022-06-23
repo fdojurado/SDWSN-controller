@@ -458,11 +458,11 @@ class BaseController(ABC):
         path = {}
         for node in list(G.nodes):
             if node != 1 and node != 0:
-                print("sp from node "+str(node))
+                # print("sp from node "+str(node))
                 try:
                     node_path = nx.dijkstra_path(G, node, 1, weight='weight')
-                    print("dijkstra path")
-                    print(node_path)
+                    # print("dijkstra path")
+                    # print(node_path)
                     path[node] = node_path
                     # TODO: find a way to avoid forcing the last addr of
                     # sensor nodes to 0.
@@ -470,7 +470,7 @@ class BaseController(ABC):
                         str(node)+".0", "1.1", str(node_path[1])+".0")
                 except nx.NetworkXNoPath:
                     print("path not found")
-        self.router.print_routes()
+        # self.router.print_routes()
         print("total path")
         print(path)
         return path
