@@ -46,6 +46,7 @@ class BaseController(ABC):
         self.simulation_name = simulation_name
         self.num_episodes = 0
         self.processing_window = processing_window
+        self._read_ser_thread = None
 
     """ Controller primitives """
 
@@ -79,6 +80,9 @@ class BaseController(ABC):
                          self.simulation_name+str(self.num_episodes))
 
     def __controller_serial_stop(self):
+        if self._read_ser_thread is not None:
+            print(f"start to shutdown thread, running flag = {self.is_running}")
+            self._read_ser_thread.join()
         self.ser.shutdown()
 
     """ TSCH scheduler/schedule functions """
@@ -163,10 +167,12 @@ class BaseController(ABC):
                 msg = self.ser.recv(0.1)
                 if(len(msg) > 0):
                     self.packet_dissector.handle_serial_packet(msg)
-                if not self.is_running:
-                    break
             except TypeError:
                 pass
+            if not self.is_running:
+                print("Socket reading exiting due to controller stopped.")
+                break
+        print("Socket reading thread exited.")
 
     """ Cycle management """
 

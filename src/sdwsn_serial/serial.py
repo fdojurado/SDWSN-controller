@@ -144,7 +144,7 @@ class SerialBus(BusABC):
 
     def empty_socket(self):
         try:
-            while self.recv(60):
+            while self.recv(0.1):
                 pass
         except:
             pass
