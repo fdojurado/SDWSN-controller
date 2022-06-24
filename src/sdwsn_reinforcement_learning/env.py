@@ -1,25 +1,15 @@
 """ This is the implementation of the Software-Defined Wireless Sensor Network
 environment """
-import imp
-import random
 # from scipy import rand
-from random import randrange
 from typing import Type
-import networkx as nx
 import gym
 from gym import spaces
 import numpy as np
-import json
 from time import sleep
 from datetime import datetime
-from pymongo.collation import Collation
-import threading
 
 from sdwsn_common import common
 from sdwsn_routes.routes import Routes
-from sdwsn_database.database import NODES_INFO
-from sdwsn_database.database import OBSERVATIONS
-from sdwsn_database.db_manager import SLOT_DURATION
 from sdwsn_controller.controller import ContainerController
 
 # These are the size of other schedules in orchestra
@@ -78,6 +68,8 @@ class Env(gym.Env):
             self.container_controller.send_schedules(sf_len)
             # Reset sequence
             self.container_controller.reset_pkt_sequence()
+            # Delete the current nodes_info collection from the database
+            self.container_controller.delete_info_collection()
             # We now wait until we reach the processing_window
             self.container_controller.controller_wait_cycle_finishes()
             print("process reward")

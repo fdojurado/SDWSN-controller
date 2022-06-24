@@ -28,7 +28,7 @@ class PacketDissector(DatabaseManager):
             print("bad serial packet")
             return
         # Let's first save the packet
-        self.save_serial_packet(serial_pkt.toJSON())
+        # self.save_serial_packet(serial_pkt.toJSON())
         # Check if this is a serial ACK packet
         if serial_pkt.message_type == serial_protocol.ACK:
             self.ack_pkt = serial_pkt

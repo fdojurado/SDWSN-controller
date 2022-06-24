@@ -189,6 +189,9 @@ class BaseController(ABC):
     def get_last_observations(self):
         return self.packet_dissector.get_last_observations()
 
+    def delete_info_collection(self):
+        self.packet_dissector.delete_collection(NODES_INFO)
+
     """ Reward calculation functions """
 
     def calculate_reward(self, alpha, beta, delta):
