@@ -30,7 +30,7 @@ class BaseController(ABC):
         simulation_name: str = 'mySimulation',
         processing_window: int = 200,
         max_channel_offsets: int = 3,
-        max_slotframe_size: int = 100
+        max_slotframe_size: int = 500
     ):
         # Save instance of a serial interface
         self.ser = SerialBus(cooja_host, cooja_port)
@@ -574,7 +574,7 @@ class ContainerController(BaseController):
             simulation_name: str = 'mySimulation',
             processing_window: int = 200,
             max_channel_offsets: int = 3,
-            max_slotframe_size: int = 100
+            max_slotframe_size: int = 500
     ):
         super().__init__(
             cooja_host,
