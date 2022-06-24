@@ -176,12 +176,22 @@ class BaseController(ABC):
     """ Cycle management """
 
     def controller_wait_cycle_finishes(self):
+        # If we have not received any data after looping 10 times
+        # We return
         print("Waiting for the current cycle to finish")
+        count = 0
+        result = -1
         while(1):
+            count += 1
             if self.packet_dissector.sequence > self.processing_window:
+                result = 1
+                break
+            if count > 10 and self.packet_dissector.sequence == 0:
+                result = 0
                 break
             sleep(1)
-        print("cycle finished")
+        print(f"cycle finished, result: {result}")
+        return result
 
     def save_observations(self, *args):
         self.packet_dissector.save_observations(*args)
@@ -510,7 +520,7 @@ class BaseController(ABC):
     """ Send a reliable packet to the SDWSN """
 
     def controller_reliable_send(self, data, ack):
-        # Reliable data transmission
+        # Reliable socket data transmission
         # set retransmission
         rtx = 0
         # Send NC packet through serial interface

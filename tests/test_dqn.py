@@ -35,7 +35,7 @@ def main():
         max_channel_offsets=args.tschmaxchannel, max_slotframe_size=args.tschmaxslotframe)
     # controller = BaseController(cooja_host=args.socket, cooja_port=args.port)
 
-    def exit_process(signal_number, frame):
+    def exit_process(signal_number):
         # pylint: disable=no-member
         print('Received %s signal. Exiting...',
               signal.Signals(signal_number).name)
