@@ -5,7 +5,7 @@ from sdwsn_tsch.schedule import Schedule, cell_type
 class ContentionFreeScheduler(Schedule):
     def __init__(
             self,
-            sf_size: int = 100,
+            sf_size: int = 500,
             channel_offsets: int = 3
     ):
         super().__init__(
