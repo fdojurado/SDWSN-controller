@@ -68,6 +68,10 @@ class Env(gym.Env):
             while (not self.container_controller.controller_wait_cycle_finishes()):
                 print("resending schedules")
                 self.container_controller.send_schedules(sf_len)
+                # Delete the current nodes_info collection from the database
+                self.container_controller.delete_info_collection()
+                # Reset sequence
+                self.container_controller.reset_pkt_sequence()
             print("process reward")
             sleep(1)
             # Build observations

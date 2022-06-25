@@ -370,7 +370,8 @@ class DatabaseManager(Database):
         }
         db = self.find_one(NODES_INFO, query)
         if db is None:
-            return None
+            power_samples.append((node, 3000))
+            return
         # Get last n samples after the timestamp
         pipeline = [
             {"$match": {"node_id": node}},
@@ -412,7 +413,8 @@ class DatabaseManager(Database):
         }
         db = self.find_one(NODES_INFO, query)
         if db is None:
-            return None
+            delay_samples.append((node, 2500))
+            return
         # Get last n samples after the timestamp
         pipeline = [
             {"$match": {"node_id": node}},
@@ -461,8 +463,8 @@ class DatabaseManager(Database):
         }
         db = self.find_one(NODES_INFO, query)
         if db is None:
-            pdr_samples.append(0)
-            return None
+            pdr_samples.append((node, 0))
+            return
         pipeline = [
             {"$match": {"node_id": node}},
             {"$unwind": "$pdr"},
