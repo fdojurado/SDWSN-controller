@@ -13,7 +13,7 @@ class ContentionFreeScheduler(Schedule):
             channel_offsets)
 
     def run(self, path, current_sf_size):
-        print("running contention free scheduler")
+        print(f"running contention free scheduler for sf size {current_sf_size}")
         for _, p in path.items():
             if(len(p) >= 2):
                 # print("try to add uc for ", p)
