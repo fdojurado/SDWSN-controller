@@ -189,7 +189,7 @@ class BaseController(ABC):
             if self.packet_dissector.sequence > self.processing_window:
                 result = 1
                 break
-            if count > 10 and self.packet_dissector.sequence == 0:
+            if count > 10:
                 result = 0
                 break
             sleep(1)
@@ -545,7 +545,7 @@ class BaseController(ABC):
                 # We resend the packet if retransmission < 7
                 rtx = rtx + 1
                 self.controller_send_data(data)
-            sleep(0.3)
+            sleep(0.2)
         return result
 
 
