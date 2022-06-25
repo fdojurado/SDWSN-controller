@@ -18,6 +18,12 @@ def main():
             Then it starts the simulation using the parameters provided.')
     parser.add_argument('-d', '--docker-image', type=str, default='contiker/contiki-ng',
                         help="Name of the docker image ('contiker/contiki-ng')")
+    parser.add_argument('-d', '--docker-command', type=str, default='/bin/sh -c "cd examples/benchmarks/rl-sdwsn && ./run-cooja.py"',
+                        help="Simulation script to run inside the container")
+    parser.add_argument('-dmt', '--docker-mount-target', type=str, default='/home/user/contiki-ng',
+                        help="Docker mount target")
+    parser.add_argument('-dms', '--docker-mount-source', type=str, default='/Users/fernando/contiki-ng',
+                        help="Docker mount source")
     parser.add_argument('-c', '--cooja', type=str, default='127.0.0.1',
                         help='Cooja host address')
     parser.add_argument('-p', '--cooja-port', type=int, default=60001,
@@ -43,7 +49,22 @@ def main():
 
     print(args)
 
+    mount = {
+        'target': args.docker_mount_target,
+        'source': args.docker_mount_source,
+        'type': 'bind'
+    }
+
+    container_ports = {
+        'container': args.cooja_port,
+        'host': args.cooja_port
+    }
+
     container_controller = ContainerController(
+        image=args.docker_image,
+        command=args.docker_command,
+        mount=mount,
+        container_ports=container_ports,
         cooja_host=args.cooja,
         cooja_port=args.cooja_port,
         db_name=args.db_name,
