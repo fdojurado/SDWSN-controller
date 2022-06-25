@@ -75,7 +75,7 @@ def main():
         max_channel_offsets=args.maximum_tsch_channels,
         max_slotframe_size=args.maximum_slotframe_size)
 
-    def exit_process(signal_number):
+    def exit_process(signal_number, frames):
         # pylint: disable=no-member
         print('Received %s signal. Exiting...',
               signal.Signals(signal_number).name)
