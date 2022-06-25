@@ -21,7 +21,7 @@ class SaveModelSaveBuffer(BaseCallback):
         self.model.save(path)
         print(f"Saving model checkpoint to {path}")
         # now save the replay buffer too
-        path = os.path.join(self.save_path, f"{self.name_prefix}_buffer_{self.num_timesteps}_steps")
+        path = os.path.join(self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps_buffer")
         self.model.save_replay_buffer(path)
         print(f"Saving replay buffer checkpoint to {path}")
 

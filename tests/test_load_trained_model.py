@@ -64,11 +64,13 @@ def main():
     loaded_model = DQN.load(args.model, env=env, print_system_info=True)
     print(f"The loaded_model has {loaded_model.replay_buffer.size()} transitions in its buffer")
 
-    # show the save hyperparameters
+    # show the save hyperparameter
     print("loaded:", "gamma =", loaded_model.gamma)
 
-    # load it into the loaded_model
-    loaded_model.load_replay_buffer("logs/rl_model_buffer_300_steps.pkl")
+    # load buffer into the loaded_model
+    buffer_name = args.model.split('.', 1)[0]+"_buffer.pkl"
+    print(f'buffer name: {buffer_name}')
+    loaded_model.load_replay_buffer(buffer_name)
 
     # now the loaded replay is not empty anymore
     print(f"The loaded_model has {loaded_model.replay_buffer.size()} transitions in its buffer")
