@@ -18,7 +18,7 @@ def main():
             Then it starts the simulation using the parameters provided.')
     parser.add_argument('-d', '--docker-image', type=str, default='contiker/contiki-ng',
                         help="Name of the docker image ('contiker/contiki-ng')")
-    parser.add_argument('-d', '--docker-command', type=str, default='/bin/sh -c "cd examples/benchmarks/rl-sdwsn && ./run-cooja.py"',
+    parser.add_argument('-dc', '--docker-command', type=str, default='/bin/sh -c "cd examples/benchmarks/rl-sdwsn && ./run-cooja.py"',
                         help="Simulation script to run inside the container")
     parser.add_argument('-dmt', '--docker-mount-target', type=str, default='/home/user/contiki-ng',
                         help="Docker mount target")
