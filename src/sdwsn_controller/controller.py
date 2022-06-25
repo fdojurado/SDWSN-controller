@@ -87,6 +87,9 @@ class BaseController(ABC):
 
     """ TSCH scheduler/schedule functions """
 
+    def get_max_ts_size(self):
+        return self.scheduler.slotframe_size
+
     def get_last_active_ts(self):
         return self.scheduler.schedule_last_active_ts()
 

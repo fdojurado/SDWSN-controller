@@ -58,18 +58,12 @@ class Env(gym.Env):
             # Lets verify that the SF size is greater than
         # the last slot in the current schedule
         if (sf_len > last_ts_in_schedule):
-            # We get the network links, useful when calculating the routing
-            G = self.container_controller.controller_get_network_links()
-            # Run the dijkstra algorithm with the current links
-            path = self.container_controller.compute_dijkstra(G)
-            # We now set the TSCH schedules for the current routing
-            self.container_controller.compute_schedule(path, sf_len)
             # Send the entire TSCH schedule
             self.container_controller.send_schedules(sf_len)
-            # Reset sequence
-            self.container_controller.reset_pkt_sequence()
             # Delete the current nodes_info collection from the database
             self.container_controller.delete_info_collection()
+            # Reset sequence
+            self.container_controller.reset_pkt_sequence()
             # We now wait until we reach the processing_window
             while (not self.container_controller.controller_wait_cycle_finishes()):
                 print("resending schedules")
@@ -81,10 +75,13 @@ class Env(gym.Env):
             sum = 0
             for ts in ts_in_schedule:
                 sum += 2**ts
-            normalized_ts_in_schedule = sum/(2**23)
+            max_slotframe_size = self.container_controller.get_max_ts_size()
+            normalized_ts_in_schedule = sum / \
+                (2**max_slotframe_size)
             user_requirements = np.array([alpha, beta, delta])
-            observation = np.append(user_requirements, last_ts_in_schedule)
-            observation = np.append(observation, sf_len)
+            observation = np.append(
+                user_requirements, last_ts_in_schedule/max_slotframe_size)
+            observation = np.append(observation, sf_len/max_slotframe_size)
             observation = np.append(observation, normalized_ts_in_schedule)
             # Calculate the reward
             reward, power, delay, pdr = self.container_controller.calculate_reward(
@@ -149,12 +146,13 @@ class Env(gym.Env):
         sum = 0
         for ts in ts_in_schedule:
             sum += 2**ts
-        normalized_ts_in_schedule = sum/(2**slotframe_size)
+        max_slotframe_size = self.container_controller.get_max_ts_size()
+        normalized_ts_in_schedule = sum/(2**max_slotframe_size)
         # We now save the observations with reward None
         # observation = np.zeros(self.n_observations).astype(np.float32)
         # slotframe_size = slotframe_size + 15
-        observation = np.append(user_requirements, last_ts)
-        observation = np.append(observation, slotframe_size)
+        observation = np.append(user_requirements, last_ts/max_slotframe_size)
+        observation = np.append(observation, slotframe_size/max_slotframe_size)
         observation = np.append(observation, normalized_ts_in_schedule)
         self.container_controller.save_observations(
             sample_time,
