@@ -42,6 +42,8 @@ def main():
                         help='Maximum TSCH channel offsets')
     parser.add_argument('-mfs', '--maximum-slotframe-size', type=int, default=500,
                         help='Maximum TSCH slotframe size')
+    parser.add_argument('-te', '--maximum-timesteps-episode', type=int, default=50,
+                        help='Maximum timesteps per episode')
     parser.add_argument('model', type=str,
                         help='Path to the trained model to load')
 
@@ -90,7 +92,7 @@ def main():
     env = Env(container_controller=container_controller)
 
     # Wrap the environment to limit the max steps per episode
-    env = TimeLimitWrapper(env, max_steps=80)
+    env = TimeLimitWrapper(env, max_steps=args.maximum_timesteps_episode)
 
     # Callback to save the model and replay buffer every N steps.
     save_model_replay = SaveModelSaveBuffer(
