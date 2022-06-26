@@ -58,7 +58,7 @@ class Env(gym.Env):
             print("decreasing slotframe size")
             # Lets verify that the SF size is greater than
         # the last slot in the current schedule
-        if (sf_len > last_ts_in_schedule):
+        if (sf_len >= last_ts_in_schedule):
             # Send the entire TSCH schedule
             self.container_controller.send_schedules(sf_len)
             # Delete the current nodes_info collection from the database
@@ -107,12 +107,20 @@ class Env(gym.Env):
             # Penalty for going below the last ts in the schedule
             # Build observations
             user_requirements = np.array([alpha, beta, delta])
-            observation = np.append(user_requirements, last_ts_in_schedule)
-            observation = np.append(observation, sf_len)
+            ts_in_schedule = self.container_controller.get_list_of_active_slots()
+            sum = 0
+            for ts in ts_in_schedule:
+                sum += 2**ts
+            max_slotframe_size = self.container_controller.get_max_ts_size()
+            normalized_ts_in_schedule = sum / \
+                (2**max_slotframe_size)
+            observation = np.append(
+                user_requirements, last_ts_in_schedule/max_slotframe_size)
+            observation = np.append(observation, sf_len/max_slotframe_size)
             observation = np.append(observation, normalized_ts_in_schedule)
             done = False
             info = {}
-            return observation, -3, done, info
+            return observation, -2, done, info
 
     """ Reset the environment, reset the routing and the TSCH schedules """
 
