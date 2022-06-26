@@ -50,7 +50,7 @@ def main():
     env = Env(container_controller=container_controller)
 
     # Wrap the environment to limit the max steps per episode
-    env = TimeLimitWrapper(env, max_steps=80)
+    env = TimeLimitWrapper(env, max_steps=50)
 
     # Callback to save the model and replay buffer every N steps.
     save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
@@ -58,10 +58,10 @@ def main():
 
     # Create an instance of the RL model to use
     model = DQN('MlpPolicy', env, verbose=1, learning_starts=10,
-                target_update_interval=8, exploration_fraction=0.4)
+                target_update_interval=8, exploration_fraction=0.1)
 
-    model.learn(total_timesteps=int(1000),
-                log_interval=2, callback=event_callback)
+    model.learn(total_timesteps=int(50000),
+                log_interval=1, callback=event_callback)
 
 
 if __name__ == '__main__':

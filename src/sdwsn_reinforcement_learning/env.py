@@ -7,6 +7,7 @@ from gym import spaces
 import numpy as np
 from time import sleep
 from datetime import datetime
+import random
 
 from sdwsn_common import common
 from sdwsn_routes.routes import Routes
@@ -129,7 +130,12 @@ class Env(gym.Env):
         # We now set the TSCH schedules for the current routing
         self.container_controller.compute_schedule(path, slotframe_size)
         # We now set and save the user requirements
-        select_user_req = [0.8, 0.1, 0.1]
+        balanced = [0.4, 0.3, 0.3]
+        energy = [0.8, 0.1, 0.1]
+        delay = [0.1, 0.8, 0.1]
+        # reliability = [0.1, 0.1, 0.8]
+        user_req = [balanced, energy, delay]
+        select_user_req = random.choice(user_req)
         # Send the entire TSCH schedule
         self.container_controller.send_schedules(slotframe_size)
         # routes_json = self.routes.routes_toJSON()

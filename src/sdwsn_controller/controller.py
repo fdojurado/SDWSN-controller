@@ -545,7 +545,7 @@ class BaseController(ABC):
                 # We resend the packet if retransmission < 7
                 rtx = rtx + 1
                 self.controller_send_data(data)
-            sleep(0.5)
+            sleep(1.2)
         return result
 
 
