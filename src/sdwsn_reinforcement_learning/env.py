@@ -36,8 +36,8 @@ class Env(gym.Env):
         n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
-        # They will be the user requirements, last ts, SF size and normalized ts in schedule
-        self.n_observations = 6
+        # They will be the user requirements, last ts, SF size, normalized ts in schedule, power, delay, pdr
+        self.n_observations = 9
         self.observation_space = spaces.Box(low=0, high=1,
                                             shape=(self.n_observations, ), dtype=np.float32)
 
@@ -91,6 +91,10 @@ class Env(gym.Env):
             # Calculate the reward
             reward, power, delay, pdr = self.container_controller.calculate_reward(
                 alpha, beta, delta)
+            # Append to the observations
+            observation = np.append(observation, power[2])
+            observation = np.append(observation, delay[2])
+            observation = np.append(observation, pdr[1])
             print(f'Reward {reward}')
             self.container_controller.save_observations(
                 sample_time,
@@ -150,9 +154,11 @@ class Env(gym.Env):
         self.container_controller.reset_pkt_sequence()
         # Send the entire routes
         self.container_controller.send_routes()
+        # Delete the current nodes_info collection from the database
+        self.container_controller.delete_info_collection()
         self.container_controller.reset_pkt_sequence()
         # Wait for the network to settle
-        sleep(0.5)
+        self.container_controller.controller_wait_cycle_finishes()
         # We now save all the observations
         # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
         sample_time = datetime.now().timestamp() * 1000.0
@@ -172,6 +178,12 @@ class Env(gym.Env):
         observation = np.append(user_requirements, last_ts/max_slotframe_size)
         observation = np.append(observation, slotframe_size/max_slotframe_size)
         observation = np.append(observation, normalized_ts_in_schedule)
+        cycle_reward, cycle_power, cycle_delay, cycle_pdr = self.container_controller.calculate_reward(
+            select_user_req[0], select_user_req[1], select_user_req[2])
+        # Append to the observations
+        observation = np.append(observation, cycle_power[2])
+        observation = np.append(observation, cycle_delay[2])
+        observation = np.append(observation, cycle_pdr[1])
         self.container_controller.save_observations(
             sample_time,
             select_user_req[0], select_user_req[1], select_user_req[2],
