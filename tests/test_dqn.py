@@ -58,7 +58,7 @@ def main():
     env = Env(container_controller=container_controller)
 
     # Wrap the environment to limit the max steps per episode
-    env = gym.wrappers.TimeLimit(env, max_episode_steps=2)
+    env = gym.wrappers.TimeLimit(env, max_episode_steps=50)
 
     env = Monitor(env, log_dir)
 
@@ -68,7 +68,7 @@ def main():
 
     # Create an instance of the RL model to use
     model = DQN('MlpPolicy', env, verbose=1, learning_starts=10,
-                target_update_interval=8, exploration_fraction=0.1)
+                target_update_interval=50, exploration_fraction=0.1)
 
     model.learn(total_timesteps=int(50000),
                 log_interval=1, callback=event_callback)
