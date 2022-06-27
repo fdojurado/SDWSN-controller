@@ -8,6 +8,7 @@ import math
 from numpy import arange
 from scipy.optimize import curve_fit
 from sdwsn_database.database import OBSERVATIONS
+from stable_baselines3.common.results_plotter import load_results, ts2xy
 
 
 #######################################################
@@ -331,12 +332,45 @@ def plot_against_sf_size(df, name):
     pl.savefig(name+'_sf_size.pdf'.format(
         alpha_weight, beta_weight, delta_weight, last_ts), bbox_inches='tight')
     pl.close()
+#######################################################
 
+
+def plot_training_progress(log_dir, title="learning_curve"):
+
+    title_font_size = 8
+    x_axis_font_size = 8
+    y_axis_font_size = 8
+    ticks_font_size = 7
+    data_marker_size = 1.5
+    legend_font_size = 6
+    title_fontweight = 'bold'
+    axis_labels_fontstyle = 'italic'
+
+    fig, axs = pl.subplots(layout='constrained')
+
+    x, y = ts2xy(load_results(log_dir), 'timesteps')
+
+    # Truncate x
+    x = x[len(x) - len(y):]
+
+    axs.set_title('Reward vs. timesteps',
+                  fontsize=title_font_size, fontweight=title_fontweight)
+    axs.set_xlabel('Timesteps', fontsize=x_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+    axs.set_ylabel('Reward', fontsize=y_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+    axs.tick_params(axis='both', which='major',
+                    labelsize=ticks_font_size)
+
+    axs.plot(x, y, 'b-o', markersize=data_marker_size)
+
+    pl.savefig(title+'.pdf', bbox_inches='tight')
+    pl.close()
 #######################################################
 # Run the application
 
 
-def run_analysis(Database, name):
+def run_analysis(Database, name, log_dir):
     db = Database.find_one(OBSERVATIONS, {})
     if db is None:
         print("Exiting analysis collection doesn't exist")
@@ -352,6 +386,9 @@ def run_analysis(Database, name):
 
     # Plot chars against the SF size
     plot_against_sf_size(df, name)
+
+    # Plot training progress
+    plot_training_progress(log_dir, name+"training")
 
     # Fit curves for power, delay, PDR.
     # plot_fit_curves(df)

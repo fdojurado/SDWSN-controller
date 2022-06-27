@@ -1,7 +1,6 @@
 from numpy import save
 import gym
 import os
-from sdwsn_result_analysis.run_analysis import run_analysis
 from stable_baselines3.common.callbacks import BaseCallback
 
 

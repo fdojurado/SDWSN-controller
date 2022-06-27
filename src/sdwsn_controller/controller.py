@@ -30,7 +30,8 @@ class BaseController(ABC):
         simulation_name: str = 'mySimulation',
         processing_window: int = 200,
         max_channel_offsets: int = 3,
-        max_slotframe_size: int = 500
+        max_slotframe_size: int = 500,
+        log_dir: str = "./monitor/"
     ):
         # Save instance of a serial interface
         self.ser = SerialBus(cooja_host, cooja_port)
@@ -47,6 +48,7 @@ class BaseController(ABC):
         self.num_episodes = 0
         self.processing_window = processing_window
         self._read_ser_thread = None
+        self.log_dir = log_dir
 
     """ Controller primitives """
 
@@ -77,7 +79,7 @@ class BaseController(ABC):
         # This function plots and save the charts in pdf format
         if self.packet_dissector.DATABASE is not None:
             run_analysis(self.packet_dissector,
-                         self.simulation_name+str(self.num_episodes))
+                         self.simulation_name+str(self.num_episodes), self.log_dir)
 
     def __controller_serial_stop(self):
         if self._read_ser_thread is not None:
@@ -577,7 +579,8 @@ class ContainerController(BaseController):
             simulation_name: str = 'mySimulation',
             processing_window: int = 200,
             max_channel_offsets: int = 3,
-            max_slotframe_size: int = 500
+            max_slotframe_size: int = 500,
+            log_dir: str = './monitor/'
     ):
         super().__init__(
             cooja_host,
@@ -588,7 +591,8 @@ class ContainerController(BaseController):
             simulation_name,
             processing_window,
             max_channel_offsets,
-            max_slotframe_size)
+            max_slotframe_size,
+            log_dir)
 
         self.container = CoojaDocker(image=image, command=command, mount=mount,
                                      sysctls=sysctls, ports=container_ports, privileged=privileged, detach=detach,

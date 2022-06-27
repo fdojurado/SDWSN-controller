@@ -1,12 +1,15 @@
 import sys
 import argparse
+import gym
+import os
 
-
+from stable_baselines3.common.monitor import Monitor
 from sdwsn_reinforcement_learning.env import Env
-from sdwsn_reinforcement_learning.wrappers import TimeLimitWrapper, SaveModelSaveBuffer
+from sdwsn_reinforcement_learning.wrappers import SaveModelSaveBuffer
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EveryNTimesteps
 from sdwsn_controller.controller import ContainerController
+from stable_baselines3.common.logger import configure
 import signal
 
 
@@ -30,9 +33,14 @@ def main():
 
     print(args)
 
+    # Monitor the environment
+    log_dir = "./monitor/"
+    os.makedirs(log_dir, exist_ok=True)
+
     container_controller = ContainerController(
         cooja_host=args.socket, cooja_port=args.port,
-        max_channel_offsets=args.tschmaxchannel, max_slotframe_size=args.tschmaxslotframe)
+        max_channel_offsets=args.tschmaxchannel, max_slotframe_size=args.tschmaxslotframe,
+        log_dir=log_dir)
     # controller = BaseController(cooja_host=args.socket, cooja_port=args.port)
 
     def exit_process(signal_number, frames):
@@ -50,7 +58,9 @@ def main():
     env = Env(container_controller=container_controller)
 
     # Wrap the environment to limit the max steps per episode
-    env = TimeLimitWrapper(env, max_steps=50)
+    env = gym.wrappers.TimeLimit(env, max_episode_steps=2)
+
+    env = Monitor(env, log_dir)
 
     # Callback to save the model and replay buffer every N steps.
     save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
