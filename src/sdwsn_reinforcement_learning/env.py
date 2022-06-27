@@ -122,6 +122,13 @@ class Env(gym.Env):
                 user_requirements, last_ts_in_schedule/max_slotframe_size)
             observation = np.append(observation, sf_len/max_slotframe_size)
             observation = np.append(observation, normalized_ts_in_schedule)
+            # Calculate the reward
+            reward, power, delay, pdr = self.container_controller.calculate_reward(
+                alpha, beta, delta)    
+            # Append to the observations
+            observation = np.append(observation, power[2])
+            observation = np.append(observation, delay[2])
+            observation = np.append(observation, pdr[1])
             done = False
             info = {}
             return observation, -2, done, info
@@ -148,12 +155,10 @@ class Env(gym.Env):
         # reliability = [0.1, 0.1, 0.8]
         user_req = [balanced, energy, delay]
         select_user_req = random.choice(user_req)
-        # Send the entire TSCH schedule
-        self.container_controller.send_schedules(slotframe_size)
-        # routes_json = self.routes.routes_toJSON()
-        self.container_controller.reset_pkt_sequence()
         # Send the entire routes
         self.container_controller.send_routes()
+        # Send the entire TSCH schedule
+        self.container_controller.send_schedules(slotframe_size)
         # Delete the current nodes_info collection from the database
         self.container_controller.delete_info_collection()
         self.container_controller.reset_pkt_sequence()
