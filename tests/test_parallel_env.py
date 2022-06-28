@@ -142,7 +142,7 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
 
     # The different number of processes that will be used
-    PROCESSES_TO_TEST = 4
+    PROCESSES_TO_TEST = 2
 
     env_kwargs = generate_cooja_environments(
         args.docker_command, args.docker_mount_source, PROCESSES_TO_TEST)
