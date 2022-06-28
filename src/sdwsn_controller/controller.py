@@ -556,18 +556,20 @@ class ContainerController(BaseController):
             self,
             image: str = 'contiker/contiki-ng',
             command: str = '/bin/sh -c "cd examples/benchmarks/rl-sdwsn && ./run-cooja.py"',
-            mount: Dict = {
-                'target': '/home/user/contiki-ng',
-                'source': '/Users/fernando/contiki-ng',
-                'type': 'bind'
-            },
+            target: str = '/home/user/contiki-ng',
+            source: str = '/Users/fernando/contiki-ng',
+            # mount: Dict = {
+            #     'target': '/home/user/contiki-ng',
+            #     'source': '/Users/fernando/contiki-ng',
+            #     'type': 'bind'
+            # },
             sysctls: Dict = {
                 'net.ipv6.conf.all.disable_ipv6': 0
             },
-            container_ports: Dict = {
-                'container': 60001,
-                'host': 60001
-            },
+            # container_ports: Dict = {
+            #     'container': 60001,
+            #     'host': 60001
+            # },
             privileged: bool = True,
             detach: bool = True,
             socket_file: str = '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log',
@@ -594,9 +596,24 @@ class ContainerController(BaseController):
             max_slotframe_size,
             log_dir)
 
+
+        container_ports = {
+            'container': cooja_port,
+            'host': cooja_port
+        }
+
+        mount = {
+            'target': target,
+            'source': source,
+            'type': 'bind'
+        }
+
+
         self.container = CoojaDocker(image=image, command=command, mount=mount,
                                      sysctls=sysctls, ports=container_ports, privileged=privileged, detach=detach,
                                      socket_file=socket_file)
+
+        print("after cooja docker")
 
     def container_controller_start(self):
         self.container.start_container()

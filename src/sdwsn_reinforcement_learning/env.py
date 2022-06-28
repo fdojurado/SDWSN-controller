@@ -25,10 +25,25 @@ class Env(gym.Env):
 
     def __init__(
             self,
-            container_controller: Type[ContainerController]
+            target,
+            source,
+            simulation_command,
+            host,
+            port,
+            socket_file,
+            db_name,
+            simulation_name
     ):
         super(Env, self).__init__()
-        self.container_controller = container_controller
+        self.container_controller = ContainerController(
+            target=target,
+            source=source,
+            command=simulation_command,
+            cooja_host=host,
+            cooja_port=port,
+            socket_file=socket_file,
+            db_name=db_name,
+            simulation_name=simulation_name)
         # self.container = container
         # Keep track of the running routes
         self.routes = Routes()
@@ -124,7 +139,7 @@ class Env(gym.Env):
             observation = np.append(observation, normalized_ts_in_schedule)
             # Calculate the reward
             reward, power, delay, pdr = self.container_controller.calculate_reward(
-                alpha, beta, delta)    
+                alpha, beta, delta)
             # Append to the observations
             observation = np.append(observation, power[2])
             observation = np.append(observation, delay[2])

@@ -40,7 +40,7 @@ class CoojaDocker():
         # self.container.wait(timeout=10)
 
     def start_container(self):
-        self.client.containers.prune()  # Remove previous containers
+        # self.client.containers.prune()  # Remove previous containers
         self.__run_container()
         sleep(3)
         self.__wait_socket_running()
@@ -71,7 +71,7 @@ class CoojaDocker():
             cooja_socket_active, fatal_error = self.__cooja_socket_status()
             if fatal_error:
                 print("Simulation compilation error, starting over ...")
-                self.client.containers.prune()  # Remove previous containers
+                # self.client.containers.prune()  # Remove previous containers
                 self.start_container()
 
         print("Cooja socket interface is up and running")
