@@ -42,7 +42,7 @@ class CoojaDocker():
     def start_container(self):
         # self.client.containers.prune()  # Remove previous containers
         self.__run_container()
-        sleep(3)
+        sleep(7)
         self.__wait_socket_running()
 
     def __cooja_socket_status(self):

@@ -596,7 +596,6 @@ class ContainerController(BaseController):
             max_slotframe_size,
             log_dir)
 
-
         container_ports = {
             'container': cooja_port,
             'host': cooja_port
@@ -608,12 +607,13 @@ class ContainerController(BaseController):
             'type': 'bind'
         }
 
+        print(f"Building a containerized controller.\n image: {image}, \n command: {command}, \n target: {target}, \n source: {source}, \n socket file: {socket_file}, \n cooja port: {cooja_port}, \n DB name: {db_name}, \n simulation name: {simulation_name}")
 
         self.container = CoojaDocker(image=image, command=command, mount=mount,
                                      sysctls=sysctls, ports=container_ports, privileged=privileged, detach=detach,
                                      socket_file=socket_file)
 
-        print("after cooja docker")
+        # print("after cooja docker")
 
     def container_controller_start(self):
         self.container.start_container()

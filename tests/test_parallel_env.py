@@ -48,7 +48,7 @@ def generate_cooja_environments(simulation_path, contiki_path, num_env=1):
         new_contiki_path = contiki_path+str(i)
         print(new_contiki_path)
         new_dir = new_contiki_path+'/'+simulation_path+'/'
-        # copy_tree(contiki_path, new_contiki_path)
+        copy_tree(contiki_path, new_contiki_path)
         # Change the port in the csc file
         replacement = '<port>'+str(port)+'</port>'
         replace_line(new_dir+'cooja.csc', "<port>60001</port>", replacement)
@@ -124,11 +124,6 @@ def main():
 
     args = parser.parse_args()
 
-    # envs = generate_cooja_environments(
-    #     args.docker_command, args.docker_mount_source, 2)
-
-    # print(envs)
-
     # Example for the CartPole environment
     register(
         # unique identifier for the env `name-version`
@@ -147,7 +142,7 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
 
     # The different number of processes that will be used
-    PROCESSES_TO_TEST = 8
+    PROCESSES_TO_TEST = 4
 
     env_kwargs = generate_cooja_environments(
         args.docker_command, args.docker_mount_source, PROCESSES_TO_TEST)
