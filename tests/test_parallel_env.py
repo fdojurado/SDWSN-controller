@@ -15,14 +15,14 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EveryNTimesteps
 from sdwsn_controller.controller import ContainerController
 import signal
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecMonitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.utils import set_random_seed
 from gym.envs.registration import register
 
 
 def replace_line(file, replace, replacement):
-    print(f"replacing {replace} in file: {file} to {replacement}")
+    # print(f"replacing {replace} in file: {file} to {replacement}")
     with open(file, "r") as f:
         newline = []
         for word in f.readlines():
@@ -37,39 +37,23 @@ def replace_line(file, replace, replacement):
 def generate_cooja_environments(simulation_path, contiki_path, num_env=1):
     print(f'generating env for {simulation_path},{contiki_path},{num_env}')
     environments = []
-    simulation_commands = []
-    simulation_commands.append(simulation_path)
-    cooja_csc_file = contiki_path+'/'+simulation_path+'/cooja.csc'
-    cooja_logger_file = contiki_path+'/'+simulation_path+'/coojalogger.js'
-    cooja_run_file = contiki_path+'/'+simulation_path+'/run-cooja.py'
-    cooja_running_file = contiki_path+'/'+simulation_path+'/COOJA.log'
-    print(f'cooja csc file: {cooja_csc_file}')
     # Create num_env-1 copies of the simulation example (path)
     for i in range(1, num_env+1):
         # Increase port number
         port = 60000+i
-        name = simulation_path
         db_name = 'mySDN'+str(i)
         simulation_name = 'mySimulation'+str(i)
-        simulation_commands.append(name)
-        # Lets make the dir in the given path
-        dir = contiki_path+'/'+name+'/'
-        print(f'dir: {dir}')
-        os.makedirs(dir, exist_ok=True)
         # Copy contiki to the new folder
         print("copying to folder")
         new_contiki_path = contiki_path+str(i)
         print(new_contiki_path)
-        new_dir = new_contiki_path+'/'+name+'/'
-        copy_tree(contiki_path, new_contiki_path)
-        # st = os.stat(new_dir+'run-cooja.py')
-        # os.chmod(new_dir+'run-cooja.py', st.st_mode | stat.S_IEXEC)
+        new_dir = new_contiki_path+'/'+simulation_path+'/'
+        # copy_tree(contiki_path, new_contiki_path)
         # Change the port in the csc file
         replacement = '<port>'+str(port)+'</port>'
         replace_line(new_dir+'cooja.csc', "<port>60001</port>", replacement)
         # Simulation command
-        simulation_command = '/bin/sh -c '+'"cd '+name+' && ./run-cooja.py"'
-        print(f'simulation command: {simulation_command}')
+        simulation_command = '/bin/sh -c '+'"cd '+simulation_path+' && ./run-cooja.py"'
         env_kwargs = {
             'target': '/home/user/contiki-ng',
             'source': new_contiki_path,
@@ -80,7 +64,6 @@ def generate_cooja_environments(simulation_path, contiki_path, num_env=1):
             'db_name': db_name,
             'simulation_name': simulation_name
         }
-        # env = gym.wrappers.TimeLimit(env, max_episode_steps=50)
         environments.append(env_kwargs)
 
     return environments
@@ -163,8 +146,11 @@ def main():
     log_dir = "./monitor/"
     os.makedirs(log_dir, exist_ok=True)
 
+    # The different number of processes that will be used
+    PROCESSES_TO_TEST = 8
+
     env_kwargs = generate_cooja_environments(
-        args.docker_command, args.docker_mount_source, 2)
+        args.docker_command, args.docker_mount_source, PROCESSES_TO_TEST)
 
     print("environment kwargs")
     print(env_kwargs)
@@ -173,45 +159,30 @@ def main():
     save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
     event_callback = EveryNTimesteps(n_steps=50, callback=save_model_replay)
 
-    # The different number of processes that will be used
-    PROCESSES_TO_TEST = [2]
-    # RL algorithms can often be unstable, so we run several experiments (see https://arxiv.org/abs/1709.06560)
-    NUM_EXPERIMENTS = 3
-    TRAIN_STEPS = 5000
+    TRAIN_STEPS = 50000
     env_id = 'sdwsn-v1'
-    reward_averages = []
-    reward_std = []
-    training_times = []
-    total_procs = 0
-    for n_procs in PROCESSES_TO_TEST:
-        total_procs += n_procs
-        print('Running for n_procs = {}'.format(n_procs))
-        # Here we use the "fork" method for launching the processes, more information is available in the doc
-        # This is equivalent to make_vec_env(env_id, n_envs=n_procs, vec_env_cls=SubprocVecEnv, vec_env_kwargs=dict(start_method='fork'))
-        train_env = SubprocVecEnv([make_env(env_id, i+total_procs, env_kwargs=env_kwargs[i])
-                                  for i in range(n_procs)], start_method='fork')
-        # train_env = SubprocVecEnv(
-        #     generate_cooja_environments(env_id, args.docker_command, args.docker_mount_source, num_env=2,
-        #                                 env_kwargs=env_kwargs), start_method='fork')
-        rewards = []
-        times = []
-        for experiment in range(NUM_EXPERIMENTS):
-            # it is recommended to run several experiments due to variability in results
-            # train_env.reset()
-            # Create an instance of the RL model to use
-            model = DQN('MlpPolicy', train_env, verbose=1, learning_starts=10,
-                        target_update_interval=50, exploration_fraction=0.1)
-            model.learn(total_timesteps=int(50000),
-                        log_interval=1)
-            # mean_reward, _ = evaluate_policy(
-            #     model, eval_env, n_eval_episodes=EVAL_EPS)
-            # rewards.append(mean_reward)
-        # Important: when using subprocess, don't forget to close them
-        # otherwise, you may have memory issues when running a lot of experiments
-        train_env.close()
-        # reward_averages.append(np.mean(rewards))
-        # reward_std.append(np.std(rewards))
-        # training_times.append(np.mean(times))
+    n_procs = PROCESSES_TO_TEST
+    # for n_procs in PROCESSES_TO_TEST:
+    # total_procs += n_procs
+    print('Running for n_procs = {}'.format(PROCESSES_TO_TEST))
+    # Here we use the "fork" method for launching the processes, more information is available in the doc
+    # This is equivalent to make_vec_env(env_id, n_envs=n_procs, vec_env_cls=SubprocVecEnv, vec_env_kwargs=dict(start_method='fork'))
+    train_env = SubprocVecEnv([make_env(env_id, i, env_kwargs=env_kwargs[i])
+                               for i in range(n_procs)], start_method='fork')
+
+    # Wrap with a VecMonitor to collect stats and avoid errors
+    venv = VecMonitor(train_env, log_dir)
+
+    model = DQN('MlpPolicy', venv, verbose=1, learning_starts=10,
+                target_update_interval=50, exploration_fraction=0.1)
+    model.learn(total_timesteps=TRAIN_STEPS,
+                log_interval=1, callback=event_callback)
+    # Important: when using subprocess, don't forget to close them
+    # otherwise, you may have memory issues when running a lot of experiments
+    venv.close()
+    # reward_averages.append(np.mean(rewards))
+    # reward_std.append(np.std(rewards))
+    # training_times.append(np.mean(times))
 
 
 if __name__ == '__main__':

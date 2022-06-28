@@ -44,9 +44,6 @@ class Env(gym.Env):
             socket_file=socket_file,
             db_name=db_name,
             simulation_name=simulation_name)
-        # self.container = container
-        # Keep track of the running routes
-        self.routes = Routes()
         # We define the number of actions
         n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
