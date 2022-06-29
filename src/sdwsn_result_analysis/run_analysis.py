@@ -583,7 +583,7 @@ def run_analysis(Database, name):
     plot(df, name)
 
     # Plot chars against the SF size
-    plot_against_sf_size(df, name)
+    # plot_against_sf_size(df, name)
 
     # Plot cumulative reward
     plot_episode_reward(df, name+"_reward")

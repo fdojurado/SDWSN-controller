@@ -9,6 +9,7 @@ import random
 
 from sdwsn_common import common
 from sdwsn_packet.packet_dissector import PacketDissector
+from sdwsn_result_analysis.run_analysis import run_analysis
 
 # These are the size of other schedules in orchestra
 eb_size = 397
@@ -78,15 +79,17 @@ class Env(gym.Env):
             last_ts_in_schedule=10,
             reward=reward
         )
-        # print(f'Reward {reward}')
-        if (sf_len >= last_ts_in_schedule):
-            done = False
-            info = {}
-            return observation, reward, done, info
-        else:
+        if (sf_len < last_ts_in_schedule):
             done = True
             info = {}
-            return observation, -2, done, info
+            return observation, -10, done, info
+        if (sf_len > 50):
+            done = True
+            info = {}
+            return observation, -10, done, info
+        done = False
+        info = {}
+        return observation, reward, done, info
 
     def __calculate_reward(self, alpha, beta, delta, sf_size):
         """
@@ -118,6 +121,8 @@ class Env(gym.Env):
     """ Reset the environment, reset the routing and the TSCH schedules """
 
     def reset(self):
+        # Initialize database
+        self.packet_dissector.initialise_db()
         # Set the slotframe size
         slotframe_size = 23
         # We now set and save the user requirements
@@ -149,3 +154,13 @@ class Env(gym.Env):
             reward=None
         )
         return observation  # reward, done, info can't be included
+
+    def render(self, mode='console'):
+        print(f"mode: {mode}")
+        # if mode != 'console':
+        #     raise NotImplementedError()
+        # agent is represented as a cross, rest as a dot
+        print('rendering')
+        number = random.randint(0, 100)
+        run_analysis(self.packet_dissector,
+                     'mysimulation'+str(number))
