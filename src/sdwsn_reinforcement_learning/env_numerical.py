@@ -74,22 +74,6 @@ class Env(gym.Env):
             # Lets verify that the SF size is greater than
         # the last slot in the current schedule
         if (sf_len >= last_ts_in_schedule):
-            # Send the entire TSCH schedule
-            self.container_controller.send_schedules(sf_len)
-            # Delete the current nodes_info collection from the database
-            self.container_controller.delete_info_collection()
-            # Reset sequence
-            self.container_controller.reset_pkt_sequence()
-            # We now wait until we reach the processing_window
-            while (not self.container_controller.controller_wait_cycle_finishes()):
-                print("resending schedules")
-                self.container_controller.send_schedules(sf_len)
-                # Delete the current nodes_info collection from the database
-                self.container_controller.delete_info_collection()
-                # Reset sequence
-                self.container_controller.reset_pkt_sequence()
-            print("process reward")
-            sleep(1)
             # Build observations
             ts_in_schedule = self.container_controller.get_list_of_active_slots()
             sum = 0
@@ -104,19 +88,19 @@ class Env(gym.Env):
             observation = np.append(observation, sf_len/max_slotframe_size)
             observation = np.append(observation, normalized_ts_in_schedule)
             # Calculate the reward
-            reward, power, delay, pdr = self.container_controller.calculate_reward(
-                alpha, beta, delta)
+            reward, power, delay, pdr = self.__calculate_reward(
+                alpha, beta, delta, sf_len)
             # Append to the observations
-            observation = np.append(observation, power[2])
-            observation = np.append(observation, delay[2])
-            observation = np.append(observation, pdr[1])
+            observation = np.append(observation, power)
+            observation = np.append(observation, delay)
+            observation = np.append(observation, pdr)
             print(f'Reward {reward}')
             self.container_controller.save_observations(
                 sample_time,
                 alpha, beta, delta,
-                power[0], power[1], power[2],
-                delay[0], delay[1], delay[2],
-                pdr[0], pdr[1],
+                None, power, None,
+                None, delay, None,
+                None, pdr,
                 last_ts_in_schedule, sf_len, normalized_ts_in_schedule,
                 reward)
             done = False
@@ -138,15 +122,42 @@ class Env(gym.Env):
             observation = np.append(observation, sf_len/max_slotframe_size)
             observation = np.append(observation, normalized_ts_in_schedule)
             # Calculate the reward
-            reward, power, delay, pdr = self.container_controller.calculate_reward(
-                alpha, beta, delta)
+            reward, power, delay, pdr = self.__calculate_reward(
+                alpha, beta, delta, sf_len)
             # Append to the observations
-            observation = np.append(observation, power[2])
-            observation = np.append(observation, delay[2])
-            observation = np.append(observation, pdr[1])
+            observation = np.append(observation, power)
+            observation = np.append(observation, delay)
+            observation = np.append(observation, pdr)
             done = False
             info = {}
             return observation, -2, done, info
+
+    def __calculate_reward(self, alpha, beta, delta, sf_size):
+        """
+        Function to calculate the reward given the SF size 
+        """
+        # Power polynomials coefficients
+        power_trend = np.array(
+            [-2.34925404e-06,  2.38160571e-04, -8.87979911e-03, 3.25046326e-01])
+        power_trendpoly = np.poly1d(power_trend)
+        # delay polynomials coefficients
+        delay_trend = np.array(
+            [-3.52867079e-06, 2.68498049e-04, -2.37508338e-03, 4.84268817e-02])
+        delay_trendpoly = np.poly1d(delay_trend)
+        # PDR polynomials coefficients
+        pdr_trend = np.array(
+            [-0.00121819, 0.88141225])
+        pdr_trendpoly = np.poly1d(pdr_trend)
+        # Calculate power consumption
+        power = power_trendpoly(sf_size)
+        # Calculate delay consumption
+        delay = delay_trendpoly(sf_size)
+        # Calculate pdr consumption
+        pdr = pdr_trendpoly(sf_size)
+        # Calculate the reward
+        reward = -1*(alpha*power+beta * delay-delta*pdr)
+        print(f"reward: {reward}")
+        return reward, power, delay, pdr
 
     """ Reset the environment, reset the routing and the TSCH schedules """
 

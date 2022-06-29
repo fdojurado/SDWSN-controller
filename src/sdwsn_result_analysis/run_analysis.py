@@ -589,4 +589,4 @@ def run_analysis(Database, name):
     plot_episode_reward(df, name+"_reward")
 
     # Fit curves for power, delay, PDR.
-    plot_fit_curves(df, name+"_fitted_curves")
+    # plot_fit_curves(df, name+"_fitted_curves")
