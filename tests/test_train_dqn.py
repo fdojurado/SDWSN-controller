@@ -53,7 +53,7 @@ def main():
         # Note: entry_point also accept a class as input (and not only a string)
         entry_point="sdwsn_reinforcement_learning.env:Env",
         # Max number of steps per episode, using a `TimeLimitWrapper`
-        max_episode_steps=5
+        max_episode_steps=50
     )
 
     # Monitor the environment
@@ -88,7 +88,8 @@ def main():
         'port': args.cooja_port,
         'socket_file': args.docker_mount_source+'/'+args.docker_command+'/'+'COOJA.log',
         'db_name': args.db_name,
-        'simulation_name': args.simulation_name
+        'simulation_name': args.simulation_name,
+        'tsch_scheduler': 'Unique Schedule'
     }
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
@@ -99,15 +100,15 @@ def main():
     # env = Monitor(env, log_dir)
 
     # Callback to save the model and replay buffer every N steps.
-    save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
-    event_callback = EveryNTimesteps(n_steps=50, callback=save_model_replay)
+    # save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
+    # event_callback = EveryNTimesteps(n_steps=50, callback=save_model_replay)
 
     # Create an instance of the RL model to use
     model = DQN('MlpPolicy', env, verbose=1, learning_starts=10, tensorboard_log=log_dir,
                 target_update_interval=50, exploration_fraction=0.1)
 
     model.learn(total_timesteps=int(50000),
-                log_interval=1, callback=event_callback)
+                log_interval=1)
 
 
 if __name__ == '__main__':

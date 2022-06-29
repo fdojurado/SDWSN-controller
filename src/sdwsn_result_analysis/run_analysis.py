@@ -568,7 +568,7 @@ def plot_fit_curves(df, title="fitted curved"):
 # Run the application
 
 
-def run_analysis(Database, name):
+def run_analysis(Database, name, plot_sf_size: bool = False):
     db = Database.find_one(OBSERVATIONS, {})
     if db is None:
         print("Exiting analysis collection doesn't exist")
@@ -583,7 +583,8 @@ def run_analysis(Database, name):
     plot(df, name)
 
     # Plot chars against the SF size
-    # plot_against_sf_size(df, name)
+    if plot_sf_size:
+        plot_against_sf_size(df, name)
 
     # Plot cumulative reward
     plot_episode_reward(df, name+"_reward")
