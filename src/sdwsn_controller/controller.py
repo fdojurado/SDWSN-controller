@@ -80,7 +80,7 @@ class BaseController(ABC):
         self.packet_dissector.cycle_sequence = 0
         self.packet_dissector.sequence = 0
         # Run the data analysis script if there is data in the DB
-        self.run_data_analysis()
+        # self.run_data_analysis()
 
     def run_data_analysis(self):
         self.num_episodes += 1
@@ -206,8 +206,8 @@ class BaseController(ABC):
         print(f"cycle finished, result: {result}")
         return result
 
-    def save_observations(self, *args):
-        self.packet_dissector.save_observations(*args)
+    def save_observations(self, **env_kwargs):
+        self.packet_dissector.save_observations(**env_kwargs)
 
     def get_last_observations(self):
         return self.packet_dissector.get_last_observations()

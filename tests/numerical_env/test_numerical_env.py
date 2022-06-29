@@ -14,6 +14,14 @@ def main():
     parser = argparse.ArgumentParser(
         description='Loads previous trained model and evaluate it.')
 
+    parser.add_argument('-dbn', '--db-name', type=str, default='mySDN',
+                        help='Give a name to your DB')
+    parser.add_argument('-dbp', '--db-port', type=int, default=27017,
+                        help='Database port')
+    parser.add_argument('-db', '--db', type=str, default='127.0.0.1',
+                        help='Database host address')
+    parser.add_argument('-ms', '--simulation-name', type=str, default='training',
+                        help='Name of your simulation')
     parser.add_argument('model', type=str,
                         help='Path to the trained model to load')
 
@@ -34,18 +42,19 @@ def main():
     log_dir = "./tensorlog/"
     os.makedirs(log_dir, exist_ok=True)
 
+    env_kwargs = {
+        'db_name': args.db,
+        'db_host': args.db_host,
+        'db_port': args.db_port,
+        'simulation_name': args.simulation_name
+    }
+
     # Create an instance of the environment
-    env = gym.make('sdwsn-v2')
+    env = gym.make('sdwsn-v2', **env_kwargs)
 
     env = Monitor(env, log_dir)
 
     loaded_model = DQN.load(args.model, env=env)
-
-    # # Evaluate the trained agent
-    # mean_reward, std_reward = evaluate_policy(
-    #     loaded_model, env, n_eval_episodes=1, deterministic=True, render=True)
-
-    # print(f"after training mean_reward={mean_reward:.2f} +/- {std_reward}")
 
     # Test the trained agent
     for i in range(10):

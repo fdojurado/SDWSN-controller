@@ -11,6 +11,20 @@ from gym.envs.registration import register
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description='This trains the numerical environment based on the polynomial \
+        coefficients found for the hard coded schedule.')
+    parser.add_argument('-dbn', '--db-name', type=str, default='mySDN',
+                        help='Give a name to your DB')
+    parser.add_argument('-dbp', '--db-port', type=int, default=27017,
+                        help='Database port')
+    parser.add_argument('-db', '--db', type=str, default='127.0.0.1',
+                        help='Database host address')
+    parser.add_argument('-ms', '--simulation-name', type=str, default='training',
+                        help='Name of your simulation')
+
+    args = parser.parse_args()
+
     # Example for the CartPole environment
     register(
         # unique identifier for the env `name-version`
@@ -26,8 +40,15 @@ def main():
     log_dir = "./tensorlog/"
     os.makedirs(log_dir, exist_ok=True)
 
+    env_kwargs = {
+        'db_name': args.db,
+        'db_host': args.db_host,
+        'db_port': args.db_port,
+        'simulation_name': args.simulation_name
+    }
+
     # Create an instance of the environment
-    env = gym.make('sdwsn-v2')
+    env = gym.make('sdwsn-v2', **env_kwargs)
 
     # Wrap the environment to limit the max steps per episode
     # env = gym.wrappers.TimeLimit(env, max_episode_steps=5)

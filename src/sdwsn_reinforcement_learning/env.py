@@ -1,6 +1,5 @@
 """ This is the implementation of the Software-Defined Wireless Sensor Network
 environment """
-# from scipy import rand
 from typing import Type
 import gym
 from gym import spaces
@@ -10,8 +9,9 @@ from datetime import datetime
 import random
 
 from sdwsn_common import common
-from sdwsn_routes.routes import Routes
 from sdwsn_controller.controller import ContainerController
+from sdwsn_result_analysis.run_analysis import run_analysis
+
 
 # These are the size of other schedules in orchestra
 eb_size = 397
@@ -47,12 +47,13 @@ class Env(gym.Env):
             simulation_name=simulation_name,
             tsch_scheduler=tsch_scheduler
         )
+        self.simulation_name = simulation_name
         # We define the number of actions
         n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
         # They will be the user requirements, last ts, SF size, normalized ts in schedule, power, delay, pdr
-        self.n_observations = 9
+        self.n_observations = 6
         self.observation_space = spaces.Box(low=0, high=1,
                                             shape=(self.n_observations, ), dtype=np.float32)
 
@@ -61,92 +62,66 @@ class Env(gym.Env):
     def step(self, action):
         sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
-        alpha, beta, delta, last_ts_in_schedule, current_sf_len, normalized_ts_in_schedule, _ = self.container_controller.get_last_observations()
+        alpha, beta, delta, last_ts_in_schedule, current_sf_len, _, _ = self.container_controller.get_last_observations()
         # Get the current slotframe size
         sf_len = current_sf_len
-        print("Performing action "+str(action))
+        print(f"Performing action {action} (current sf: {sf_len})")
         if action == 0:
             print("increasing slotframe size")
             sf_len = common.next_coprime(sf_len)
         if action == 1:
-            sf_len = common.previous_coprime(sf_len)
             print("decreasing slotframe size")
+            sf_len = common.previous_coprime(sf_len)
             # Lets verify that the SF size is greater than
+        user_requirements = np.array([alpha, beta, delta])
         # the last slot in the current schedule
-        if (sf_len >= last_ts_in_schedule):
-            # Send the entire TSCH schedule
+        # Send the entire TSCH schedule
+        self.container_controller.send_schedules(sf_len)
+        # Delete the current nodes_info collection from the database
+        self.container_controller.delete_info_collection()
+        # Reset sequence
+        self.container_controller.reset_pkt_sequence()
+        # We now wait until we reach the processing_window
+        while (not self.container_controller.controller_wait_cycle_finishes()):
+            print("resending schedules")
             self.container_controller.send_schedules(sf_len)
             # Delete the current nodes_info collection from the database
             self.container_controller.delete_info_collection()
             # Reset sequence
             self.container_controller.reset_pkt_sequence()
-            # We now wait until we reach the processing_window
-            while (not self.container_controller.controller_wait_cycle_finishes()):
-                print("resending schedules")
-                self.container_controller.send_schedules(sf_len)
-                # Delete the current nodes_info collection from the database
-                self.container_controller.delete_info_collection()
-                # Reset sequence
-                self.container_controller.reset_pkt_sequence()
-            print("process reward")
-            sleep(1)
-            # Build observations
-            ts_in_schedule = self.container_controller.get_list_of_active_slots()
-            sum = 0
-            for ts in ts_in_schedule:
-                sum += 2**ts
-            max_slotframe_size = self.container_controller.get_max_ts_size()
-            normalized_ts_in_schedule = sum / \
-                (2**max_slotframe_size)
-            user_requirements = np.array([alpha, beta, delta])
-            observation = np.append(
-                user_requirements, last_ts_in_schedule/max_slotframe_size)
-            observation = np.append(observation, sf_len/max_slotframe_size)
-            observation = np.append(observation, normalized_ts_in_schedule)
-            # Calculate the reward
-            reward, power, delay, pdr = self.container_controller.calculate_reward(
-                alpha, beta, delta)
-            # Append to the observations
-            observation = np.append(observation, power[2])
-            observation = np.append(observation, delay[2])
-            observation = np.append(observation, pdr[1])
-            print(f'Reward {reward}')
-            self.container_controller.save_observations(
-                sample_time,
-                alpha, beta, delta,
-                power[0], power[1], power[2],
-                delay[0], delay[1], delay[2],
-                pdr[0], pdr[1],
-                last_ts_in_schedule, sf_len, normalized_ts_in_schedule,
-                reward)
-            done = False
+        print("process reward")
+        sleep(1)
+        # Calculate the reward
+        reward, cycle_power, cycle_delay, cycle_pdr = self.container_controller.calculate_reward(
+            alpha, beta, delta)
+        # Append to the observations
+        sample_time = datetime.now().timestamp() * 1000.0
+        observation = np.append(user_requirements, cycle_power[2])
+        observation = np.append(observation, cycle_delay[2])
+        observation = np.append(observation, cycle_pdr[1])
+        self.container_controller.save_observations(
+            timestamp=sample_time,
+            alpha=alpha,
+            beta=beta,
+            delta=delta,
+            power_mean=cycle_power[2],
+            delay_mean=cycle_delay[2],
+            pdr_mean=cycle_pdr[1],
+            current_sf_len=sf_len,
+            last_ts_in_schedule=10,
+            reward=reward
+        )
+        if (sf_len < last_ts_in_schedule):
+            done = True
             info = {}
-            return observation, reward, done, info
-        else:
-            # Penalty for going below the last ts in the schedule
-            # Build observations
-            user_requirements = np.array([alpha, beta, delta])
-            ts_in_schedule = self.container_controller.get_list_of_active_slots()
-            sum = 0
-            for ts in ts_in_schedule:
-                sum += 2**ts
-            max_slotframe_size = self.container_controller.get_max_ts_size()
-            normalized_ts_in_schedule = sum / \
-                (2**max_slotframe_size)
-            observation = np.append(
-                user_requirements, last_ts_in_schedule/max_slotframe_size)
-            observation = np.append(observation, sf_len/max_slotframe_size)
-            observation = np.append(observation, normalized_ts_in_schedule)
-            # Calculate the reward
-            reward, power, delay, pdr = self.container_controller.calculate_reward(
-                alpha, beta, delta)
-            # Append to the observations
-            observation = np.append(observation, power[2])
-            observation = np.append(observation, delay[2])
-            observation = np.append(observation, pdr[1])
-            done = False
+            return observation, -10, done, info
+        if (sf_len > 50):
+            done = True
             info = {}
-            return observation, -2, done, info
+            return observation, -10, done, info
+        done = False
+        info = {}
+        return observation, reward, done, info
 
     """ Reset the environment, reset the routing and the TSCH schedules """
 
@@ -184,32 +159,34 @@ class Env(gym.Env):
         sample_time = datetime.now().timestamp() * 1000.0
         # We now save the user requirements
         user_requirements = np.array(select_user_req)
-        # Last active cell
-        last_ts = self.container_controller.get_last_active_ts()
-        ts_in_schedule = self.container_controller.get_list_of_active_slots()
-        sum = 0
-        for ts in ts_in_schedule:
-            sum += 2**ts
-        max_slotframe_size = self.container_controller.get_max_ts_size()
-        normalized_ts_in_schedule = sum/(2**max_slotframe_size)
         # We now save the observations with reward None
-        # observation = np.zeros(self.n_observations).astype(np.float32)
-        # slotframe_size = slotframe_size + 15
-        observation = np.append(user_requirements, last_ts/max_slotframe_size)
-        observation = np.append(observation, slotframe_size/max_slotframe_size)
-        observation = np.append(observation, normalized_ts_in_schedule)
-        cycle_reward, cycle_power, cycle_delay, cycle_pdr = self.container_controller.calculate_reward(
+        _, cycle_power, cycle_delay, cycle_pdr = self.container_controller.calculate_reward(
             select_user_req[0], select_user_req[1], select_user_req[2])
-        # Append to the observations
-        observation = np.append(observation, cycle_power[2])
+       # Append to the observations
+        sample_time = datetime.now().timestamp() * 1000.0
+        observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
         self.container_controller.save_observations(
-            sample_time,
-            select_user_req[0], select_user_req[1], select_user_req[2],
-            None, None, None,
-            None, None, None,
-            None, None,
-            last_ts, slotframe_size, normalized_ts_in_schedule,
-            None)
+            timestamp=sample_time,
+            alpha=select_user_req[0],
+            beta=select_user_req[1],
+            delta=select_user_req[2],
+            power_mean=cycle_power[2],
+            delay_mean=cycle_delay[2],
+            pdr_mean=cycle_pdr[1],
+            current_sf_len=slotframe_size,
+            last_ts_in_schedule=10,
+            reward=None
+        )
         return observation  # reward, done, info can't be included
+
+    def render(self, mode='console'):
+        print(f"mode: {mode}")
+        # if mode != 'console':
+        #     raise NotImplementedError()
+        # agent is represented as a cross, rest as a dot
+        print('rendering')
+        number = random.randint(0, 100)
+        run_analysis(self.container_controller.packet_dissector,
+                     self.simulation_name+str(number))
