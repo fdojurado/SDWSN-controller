@@ -43,8 +43,8 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
 
     env_kwargs = {
-        'db_name': args.db,
-        'db_host': args.db_host,
+        'db_name': args.db_name,
+        'db_host': args.db,
         'db_port': args.db_port,
         'simulation_name': args.simulation_name
     }
