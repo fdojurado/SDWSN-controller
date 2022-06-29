@@ -79,7 +79,7 @@ class BaseController(ABC):
         # This function plots and save the charts in pdf format
         if self.packet_dissector.DATABASE is not None:
             run_analysis(self.packet_dissector,
-                         self.simulation_name+str(self.num_episodes), self.log_dir)
+                         self.simulation_name+str(self.num_episodes))
 
     def __controller_serial_stop(self):
         if self._read_ser_thread is not None:

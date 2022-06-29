@@ -106,17 +106,20 @@ def plot(df, name):
     axis_labels_fontstyle = 'italic'
     # Drop first row
     df.drop(0, inplace=True)
+
+    reward = df.copy(deep=True)
+    values = reward['reward'].astype(float)
+    episode_reward = values.sum()
+
     fig, axs = pl.subplots(2, 2, layout='constrained')
     alpha_weight = df['alpha'].iloc[0]
     beta_weight = df['beta'].iloc[0]
     delta_weight = df['delta'].iloc[0]
     last_ts = df['last_ts_in_schedule'].iloc[0]
-    fig.suptitle(r'$\alpha={},\beta={},\delta={},last~ts={}$'.format(
-        alpha_weight, beta_weight, delta_weight, last_ts), fontsize=title_font_size)
+    fig.suptitle(r'$\alpha={},\beta={},\delta={},last~ts={}, reward={}$'.format(
+        alpha_weight, beta_weight, delta_weight, last_ts, episode_reward), fontsize=title_font_size)
     # $\alpha=0.8,\beta=0.1,\delta=0.1$
     # First char is the reward and slotframe size over time
-    reward = df.copy(deep=True)
-    values = reward['reward'].astype(float)
     # values = values * -1
     axs[0, 0].set_title('Reward and SF size over time',
                         fontsize=title_font_size, fontweight=title_fontweight)
@@ -240,17 +243,19 @@ def plot_against_sf_size(df, name):
     title_fontweight = 'bold'
     axis_labels_fontstyle = 'italic'
     # Drop first row
+    reward = df.copy(deep=True)
+    values = reward['reward'].astype(float)
+    episode_reward = values.sum()
+
     fig, axs = pl.subplots(2, 2, layout='constrained')
     alpha_weight = df['alpha'].iloc[0]
     beta_weight = df['beta'].iloc[0]
     delta_weight = df['delta'].iloc[0]
     last_ts = df['last_ts_in_schedule'].iloc[0]
-    fig.suptitle(r'$\alpha={},\beta={},\delta={},last~ts={}$'.format(
-        alpha_weight, beta_weight, delta_weight, last_ts), fontsize=title_font_size)
+    fig.suptitle(r'$\alpha={},\beta={},\delta={},last~ts={}, reward={}$'.format(
+        alpha_weight, beta_weight, delta_weight, last_ts, episode_reward), fontsize=title_font_size)
     # $\alpha=0.8,\beta=0.1,\delta=0.1$
     # First plot is the reward vs. slotframe size
-    reward = df.copy(deep=True)
-    values = reward['reward'].astype(float)
     axs[0, 0].set_title('Reward vs SF size',
                         fontsize=title_font_size, fontweight=title_fontweight)
     axs[0, 0].set_xlabel('SF size', fontsize=x_axis_font_size,
@@ -367,10 +372,55 @@ def plot_training_progress(log_dir, title="learning_curve"):
     pl.savefig(title+'.pdf', bbox_inches='tight')
     pl.close()
 #######################################################
+
+
+def plot_episode_reward(df, title="Episode Reward"):
+
+    title_font_size = 8
+    x_axis_font_size = 8
+    y_axis_font_size = 8
+    ticks_font_size = 7
+    data_marker_size = 1.5
+    legend_font_size = 6
+    title_fontweight = 'bold'
+    axis_labels_fontstyle = 'italic'
+
+    fig, (ax1, ax2) = pl.subplots(1, 2, layout='constrained')
+
+    ax1.set_title('Reward vs. timesteps',
+                  fontsize=title_font_size, fontweight=title_fontweight)
+    ax1.set_xlabel('Timesteps', fontsize=x_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+    ax1.set_ylabel('Reward', fontsize=y_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+    ax1.tick_params(axis='both', which='major',
+                    labelsize=ticks_font_size)
+    x = range(len(df['timestamp']))
+    y = df['reward'].astype(float)
+
+    ax1.plot(x, y, 'b-o', markersize=data_marker_size)
+
+    # Cumulative reward
+    y = y.cumsum()
+
+    ax2.set_title('Cumulative Reward vs. timesteps',
+                  fontsize=title_font_size, fontweight=title_fontweight)
+    ax2.set_xlabel('Timesteps', fontsize=x_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+    ax2.set_ylabel('Reward', fontsize=y_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+    ax2.tick_params(axis='both', which='major',
+                    labelsize=ticks_font_size)
+
+    ax2.plot(x, y, 'b-o', markersize=data_marker_size)
+
+    pl.savefig(title+'.pdf', bbox_inches='tight')
+    pl.close()
+#######################################################
 # Run the application
 
 
-def run_analysis(Database, name, log_dir):
+def run_analysis(Database, name):
     db = Database.find_one(OBSERVATIONS, {})
     if db is None:
         print("Exiting analysis collection doesn't exist")
@@ -387,8 +437,8 @@ def run_analysis(Database, name, log_dir):
     # Plot chars against the SF size
     plot_against_sf_size(df, name)
 
-    # Plot training progress
-    plot_training_progress(log_dir, name+"training")
+    # Plot cumulative reward
+    plot_episode_reward(df, name+"_reward")
 
     # Fit curves for power, delay, PDR.
     # plot_fit_curves(df)
