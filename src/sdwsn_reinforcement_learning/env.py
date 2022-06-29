@@ -32,7 +32,8 @@ class Env(gym.Env):
             port,
             socket_file,
             db_name,
-            simulation_name
+            simulation_name,
+            tsch_scheduler
     ):
         super(Env, self).__init__()
         self.container_controller = ContainerController(
@@ -43,7 +44,9 @@ class Env(gym.Env):
             cooja_port=port,
             socket_file=socket_file,
             db_name=db_name,
-            simulation_name=simulation_name)
+            simulation_name=simulation_name,
+            tsch_scheduler=tsch_scheduler
+        )
         # We define the number of actions
         n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)

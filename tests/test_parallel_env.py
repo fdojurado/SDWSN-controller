@@ -34,7 +34,7 @@ def replace_line(file, replace, replacement):
             f.writelines(line)
 
 
-def generate_cooja_environments(simulation_path, contiki_path, num_env=1):
+def generate_cooja_environments(simulation_path, contiki_path, tsch_scheduler, num_env=1):
     print(f'generating env for {simulation_path},{contiki_path},{num_env}')
     environments = []
     # Create num_env-1 copies of the simulation example (path)
@@ -62,7 +62,8 @@ def generate_cooja_environments(simulation_path, contiki_path, num_env=1):
             'port': port,
             'socket_file': new_dir+'COOJA.log',
             'db_name': db_name,
-            'simulation_name': simulation_name
+            'simulation_name': simulation_name,
+            'tsch_scheduler': tsch_scheduler
         }
         environments.append(env_kwargs)
 
@@ -119,6 +120,8 @@ def main():
                         help='Maximum TSCH slotframe size')
     parser.add_argument('-te', '--maximum-timesteps-episode', type=int, default=50,
                         help='Maximum timesteps per episode')
+    parser.add_argument('-tss', '--tsch-scheduler', type=str, default='Unique Schedule',
+                        help='tsch_scheduler')
     # parser.add_argument('model', type=str,
     #                     help='Path to the trained model to load')
 
@@ -145,7 +148,7 @@ def main():
     PROCESSES_TO_TEST = 2
 
     env_kwargs = generate_cooja_environments(
-        args.docker_command, args.docker_mount_source, PROCESSES_TO_TEST)
+        args.docker_command, args.docker_mount_source, args.tsch_scheduler, PROCESSES_TO_TEST)
 
     print("environment kwargs")
     print(env_kwargs)

@@ -53,7 +53,7 @@ def main():
         # Note: entry_point also accept a class as input (and not only a string)
         entry_point="sdwsn_reinforcement_learning.env_numerical:Env",
         # Max number of steps per episode, using a `TimeLimitWrapper`
-        max_episode_steps=5
+        max_episode_steps=50
     )
 
     # Monitor the environment
