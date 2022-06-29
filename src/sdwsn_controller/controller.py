@@ -5,11 +5,12 @@ from threading import Thread
 from abc import ABC, abstractmethod
 from sdwsn_serial.serial import SerialBus
 from sdwsn_packet.packet_dissector import PacketDissector
-from typing import Dict
+from typing import Dict, Optional
 from sdwsn_docker.docker import CoojaDocker
 from sdwsn_result_analysis.run_analysis import run_analysis
 from sdwsn_database.database import NODES_INFO
 from sdwsn_tsch.contention_free_scheduler import ContentionFreeScheduler
+from sdwsn_tsch.hard_coded_schedule import HardCodedScheduler
 from sdwsn_routes.router import SimpleRouter
 from sdwsn_packet.packet import Cell_Packet_Payload, RA_Packet_Payload
 from sdwsn_common import common
@@ -31,6 +32,7 @@ class BaseController(ABC):
         processing_window: int = 200,
         max_channel_offsets: int = 3,
         max_slotframe_size: int = 500,
+        tsch_scheduler: Optional[str] = 'Contention Free',
         log_dir: str = "./monitor/"
     ):
         # Save instance of a serial interface
@@ -38,8 +40,14 @@ class BaseController(ABC):
         # Save instance of packet dissector
         self.packet_dissector = PacketDissector(db_name, db_host, db_port)
         # Create instance of the scheduler, we now only support contention free
-        self.scheduler = ContentionFreeScheduler(
-            sf_size=max_slotframe_size, channel_offsets=max_channel_offsets)
+        if tsch_scheduler == 'Contention Free':
+            print('Loading contention free scheduler')
+            self.scheduler = ContentionFreeScheduler(
+                sf_size=max_slotframe_size, channel_offsets=max_channel_offsets)
+        if tsch_scheduler == 'Unique Schedule':
+            print('Loading hard coded scheduler')
+            self.scheduler = HardCodedScheduler(
+                sf_size=max_slotframe_size, channel_offsets=max_channel_offsets)
         # Create an instance of a routes
         self.router = SimpleRouter()
         # Variable to check whether the controller is running or not
@@ -558,18 +566,9 @@ class ContainerController(BaseController):
             command: str = '/bin/sh -c "cd examples/benchmarks/rl-sdwsn && ./run-cooja.py"',
             target: str = '/home/user/contiki-ng',
             source: str = '/Users/fernando/contiki-ng',
-            # mount: Dict = {
-            #     'target': '/home/user/contiki-ng',
-            #     'source': '/Users/fernando/contiki-ng',
-            #     'type': 'bind'
-            # },
             sysctls: Dict = {
                 'net.ipv6.conf.all.disable_ipv6': 0
             },
-            # container_ports: Dict = {
-            #     'container': 60001,
-            #     'host': 60001
-            # },
             privileged: bool = True,
             detach: bool = True,
             socket_file: str = '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log',
@@ -582,6 +581,7 @@ class ContainerController(BaseController):
             processing_window: int = 200,
             max_channel_offsets: int = 3,
             max_slotframe_size: int = 500,
+            tsch_scheduler: Optional[str] = None,
             log_dir: str = './monitor/'
     ):
         super().__init__(
@@ -594,6 +594,7 @@ class ContainerController(BaseController):
             processing_window,
             max_channel_offsets,
             max_slotframe_size,
+            tsch_scheduler,
             log_dir)
 
         container_ports = {
