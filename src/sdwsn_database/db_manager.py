@@ -318,12 +318,24 @@ class DatabaseManager(Database):
 
     """ Useful Reinforcement Learning Functions """
 
-    def save_observations(self, timestamp, alpha, beta, delta,
-                          power_wam, power_mean, power_normalized,
-                          delay_wam, delay_mean, delay_normalized,
-                          pdr_wam, pdr_mean,
-                          last_ts_in_schedule, current_sf_len, normalized_ts_in_schedule,
-                          reward):
+    def save_observations(self,
+                          timestamp=None,
+                          alpha=None,
+                          beta=None,
+                          delta=None,
+                          power_wam=None,
+                          power_mean=None,
+                          power_normalized=None,
+                          delay_wam=None,
+                          delay_mean=None,
+                          delay_normalized=None,
+                          pdr_wam=None,
+                          pdr_mean=None,
+                          last_ts_in_schedule=None,
+                          current_sf_len=None,
+                          normalized_ts_in_schedule=None,
+                          reward=None
+                          ):
         data = {
             "timestamp": timestamp,
             "alpha": alpha,
