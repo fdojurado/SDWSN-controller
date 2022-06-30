@@ -10,6 +10,7 @@ import random
 from sdwsn_common import common
 from sdwsn_packet.packet_dissector import PacketDissector
 from sdwsn_result_analysis.run_analysis import run_analysis
+from random import randrange
 
 # These are the size of other schedules in orchestra
 eb_size = 397
@@ -125,14 +126,16 @@ class Env(gym.Env):
     def reset(self):
         # Initialize database
         self.packet_dissector.initialise_db()
+        # Set the last active timeslot
+        last_ts_in_schedule = randrange(10, 15)
         # Set the slotframe size
-        slotframe_size = 23
+        slotframe_size = randrange(last_ts_in_schedule+1, 45)
         # We now set and save the user requirements
         balanced = [0.4, 0.3, 0.3]
         energy = [0.8, 0.1, 0.1]
         delay = [0.1, 0.8, 0.1]
-        # reliability = [0.1, 0.1, 0.8]
-        user_req = [balanced, energy, delay]
+        reliability = [0.1, 0.1, 0.8]
+        user_req = [balanced, energy, delay, reliability]
         select_user_req = random.choice(user_req)
         # We now save the user requirements
         user_requirements = np.array(select_user_req)
@@ -152,7 +155,7 @@ class Env(gym.Env):
             delay_mean=cycle_delay,
             pdr_mean=cycle_pdr,
             current_sf_len=slotframe_size,
-            last_ts_in_schedule=10,
+            last_ts_in_schedule=last_ts_in_schedule,
             reward=None
         )
         return observation  # reward, done, info can't be included

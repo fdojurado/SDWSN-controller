@@ -22,6 +22,8 @@ def main():
                         help='Database host address')
     parser.add_argument('-ms', '--simulation-name', type=str, default='training',
                         help='Name of your simulation')
+    parser.add_argument('-t', '--tensorboard', type=str, default='./tensorlog/',
+                        help='Path to log TensorBoard logging')
     parser.add_argument('model', type=str,
                         help='Path to the trained model to load')
 
@@ -39,7 +41,7 @@ def main():
     )
 
     # Monitor the environment
-    log_dir = "./tensorlog/"
+    log_dir = args.tensorboard
     os.makedirs(log_dir, exist_ok=True)
 
     env_kwargs = {

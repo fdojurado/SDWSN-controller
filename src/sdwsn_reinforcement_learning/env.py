@@ -11,7 +11,7 @@ import random
 from sdwsn_common import common
 from sdwsn_controller.controller import ContainerController
 from sdwsn_result_analysis.run_analysis import run_analysis
-
+from random import randrange
 
 # These are the size of other schedules in orchestra
 eb_size = 397
@@ -134,16 +134,18 @@ class Env(gym.Env):
         G = self.container_controller.controller_get_network_links()
         # Run the dijkstra algorithm with the current links
         path = self.container_controller.compute_dijkstra(G)
+        # Set the last active timeslot
+        last_ts_in_schedule = randrange(10, 15)
         # Set the slotframe size
-        slotframe_size = 23
+        slotframe_size = randrange(last_ts_in_schedule+1, 45)
         # We now set the TSCH schedules for the current routing
         self.container_controller.compute_schedule(path, slotframe_size)
         # We now set and save the user requirements
         balanced = [0.4, 0.3, 0.3]
         energy = [0.8, 0.1, 0.1]
         delay = [0.1, 0.8, 0.1]
-        # reliability = [0.1, 0.1, 0.8]
-        user_req = [balanced, energy, delay]
+        reliability = [0.1, 0.1, 0.8]
+        user_req = [balanced, energy, delay, reliability]
         select_user_req = random.choice(user_req)
         # Send the entire routes
         self.container_controller.send_routes()
@@ -176,7 +178,7 @@ class Env(gym.Env):
             delay_mean=cycle_delay[2],
             pdr_mean=cycle_pdr[1],
             current_sf_len=slotframe_size,
-            last_ts_in_schedule=10,
+            last_ts_in_schedule=last_ts_in_schedule,
             reward=None
         )
         return observation  # reward, done, info can't be included

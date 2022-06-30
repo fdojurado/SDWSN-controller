@@ -22,6 +22,10 @@ def main():
                         help='Database host address')
     parser.add_argument('-ms', '--simulation-name', type=str, default='training',
                         help='Name of your simulation')
+    parser.add_argument('-t', '--tensorboard', type=str, default='./tensorlog/',
+                        help='Path to log TensorBoard logging')
+    parser.add_argument('-svm', '--save-model', type=str, default='./logs/',
+                        help='Path to save the trained model')
 
     args = parser.parse_args()
 
@@ -37,7 +41,7 @@ def main():
     )
 
     # Monitor the environment
-    log_dir = "./tensorlog/"
+    log_dir = args.tensorboard
     os.makedirs(log_dir, exist_ok=True)
 
     env_kwargs = {
@@ -56,14 +60,15 @@ def main():
     # env = Monitor(env, log_dir)
 
     # Callback to save the model and replay buffer every N steps.
-    save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
+    save_model_replay = SaveModelSaveBuffer(save_path=args.save_model)
     event_callback = EveryNTimesteps(n_steps=10000, callback=save_model_replay)
 
     # Create an instance of the RL model to use
     model = DQN('MlpPolicy', env, verbose=1, batch_size=256,
                 tensorboard_log=log_dir, exploration_fraction=0.1)
 
-    model.learn(total_timesteps=int(1e6), callback=event_callback)
+    model.learn(total_timesteps=int(1e6),
+                tb_log_name=args.simulation_name, callback=event_callback)
 
 
 if __name__ == '__main__':
