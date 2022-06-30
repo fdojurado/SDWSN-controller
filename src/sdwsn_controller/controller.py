@@ -80,7 +80,7 @@ class BaseController(ABC):
         self.packet_dissector.cycle_sequence = 0
         self.packet_dissector.sequence = 0
         # Run the data analysis script if there is data in the DB
-        self.run_data_analysis()
+        # self.run_data_analysis()
 
     def run_data_analysis(self):
         self.num_episodes += 1

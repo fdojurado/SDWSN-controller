@@ -165,4 +165,4 @@ class Env(gym.Env):
         print('rendering')
         number = random.randint(0, 100)
         run_analysis(self.packet_dissector,
-                     self.simulation_name+str(number))
+                     self.simulation_name+str(number), False)
