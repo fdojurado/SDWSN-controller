@@ -80,14 +80,14 @@ class BaseController(ABC):
         self.packet_dissector.cycle_sequence = 0
         self.packet_dissector.sequence = 0
         # Run the data analysis script if there is data in the DB
-        # self.run_data_analysis()
+        self.run_data_analysis()
 
     def run_data_analysis(self):
         self.num_episodes += 1
         # This function plots and save the charts in pdf format
         if self.packet_dissector.DATABASE is not None:
             run_analysis(self.packet_dissector,
-                         self.simulation_name+str(self.num_episodes))
+                         self.simulation_name+str(self.num_episodes), True)
 
     def __controller_serial_stop(self):
         if self._read_ser_thread is not None:
