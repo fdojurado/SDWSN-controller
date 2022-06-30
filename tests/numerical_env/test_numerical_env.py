@@ -22,8 +22,10 @@ def main():
                         help='Database host address')
     parser.add_argument('-ms', '--simulation-name', type=str, default='training',
                         help='Name of your simulation')
-    parser.add_argument('-t', '--tensorboard', type=str, default='./tensorlog/',
-                        help='Path to log TensorBoard logging')
+    parser.add_argument('-t', '--monitor-log', type=str, default='./tensorlog/',
+                        help='Path to log monitor data')
+    parser.add_argument('-fp', '--figures-path', type=str, default='./figures/',
+                        help='Path to save results')
     parser.add_argument('model', type=str,
                         help='Path to the trained model to load')
 
@@ -40,15 +42,20 @@ def main():
         max_episode_steps=50
     )
 
+    # Create figure folder
+    log_dir = args.figures_path
+    os.makedirs(log_dir, exist_ok=True)
+
     # Monitor the environment
-    log_dir = args.tensorboard
+    log_dir = args.monitor_log
     os.makedirs(log_dir, exist_ok=True)
 
     env_kwargs = {
         'db_name': args.db_name,
         'db_host': args.db,
         'db_port': args.db_port,
-        'simulation_name': args.simulation_name
+        'simulation_name': args.simulation_name,
+        'fig_dir': args.figures_path
     }
 
     # Create an instance of the environment

@@ -27,9 +27,11 @@ class Env(gym.Env):
             db_name: str = 'mySDN',
             db_host: str = '127.0.0.1',
             db_port: int = 27017,
-            simulation_name: str = 'myNumericalSimulation'
+            simulation_name: str = 'myNumericalSimulation',
+            fig_dir: str = './figures/'
     ):
         super(Env, self).__init__()
+        self.fig_dir = fig_dir
         self.simulation_name = simulation_name
         # Save instance of packet dissector
         self.packet_dissector = PacketDissector(db_name, db_host, db_port)
@@ -168,4 +170,4 @@ class Env(gym.Env):
         print('rendering')
         number = random.randint(0, 100)
         run_analysis(self.packet_dissector,
-                     self.simulation_name+str(number), False)
+                     self.simulation_name+str(number), self.fig_dir, False)

@@ -95,7 +95,7 @@ def reward_plot(df, reward, values):
 
 
 #######################################################
-def plot(df, name):
+def plot(df, name, path):
     title_font_size = 8
     x_axis_font_size = 8
     y_axis_font_size = 8
@@ -200,7 +200,7 @@ def plot(df, name):
     axs2.legend([l1, l2], ['PDR', 'SF size'],
                 fontsize=legend_font_size, loc='lower center')
 
-    pl.savefig(name+'.pdf'.format(
+    pl.savefig(path+name+'.pdf'.format(
         alpha_weight, beta_weight, delta_weight, last_ts), bbox_inches='tight')
     pl.close()
 #######################################################
@@ -233,7 +233,7 @@ def calculate_confidence_interval(df, x_name, y_name):
 #######################################################
 
 
-def plot_against_sf_size(df, name):
+def plot_against_sf_size(df, name, path):
     title_font_size = 8
     x_axis_font_size = 8
     y_axis_font_size = 8
@@ -334,7 +334,7 @@ def plot_against_sf_size(df, name):
 
     # Save plot
 
-    pl.savefig(name+'_sf_size.pdf'.format(
+    pl.savefig(path+name+'_sf_size.pdf'.format(
         alpha_weight, beta_weight, delta_weight, last_ts), bbox_inches='tight')
     pl.close()
 #######################################################
@@ -374,7 +374,7 @@ def plot_training_progress(log_dir, title="learning_curve"):
 #######################################################
 
 
-def plot_episode_reward(df, title="Episode Reward"):
+def plot_episode_reward(df, title, path):
 
     title_font_size = 8
     x_axis_font_size = 8
@@ -414,7 +414,7 @@ def plot_episode_reward(df, title="Episode Reward"):
 
     ax2.plot(x, y, 'b-o', markersize=data_marker_size)
 
-    pl.savefig(title+'.pdf', bbox_inches='tight')
+    pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.close()
 #######################################################
 
@@ -568,7 +568,7 @@ def plot_fit_curves(df, title="fitted curved"):
 # Run the application
 
 
-def run_analysis(Database, name, plot_sf_size: bool = False):
+def run_analysis(Database, name, path, plot_sf_size: bool = False):
     db = Database.find_one(OBSERVATIONS, {})
     if db is None:
         print("Exiting analysis collection doesn't exist")
@@ -580,14 +580,14 @@ def run_analysis(Database, name, plot_sf_size: bool = False):
     df = pd.DataFrame(data)
 
     # Plots in 4 axis
-    plot(df, name)
+    plot(df, name, path)
 
     # Plot chars against the SF size
     if plot_sf_size:
-        plot_against_sf_size(df, name)
+        plot_against_sf_size(df, name, path)
 
     # Plot cumulative reward
-    plot_episode_reward(df, name+"_reward")
+    plot_episode_reward(df, name+"_reward", path)
 
     # Fit curves for power, delay, PDR.
     # plot_fit_curves(df, name+"_fitted_curves")

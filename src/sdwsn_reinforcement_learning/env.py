@@ -25,15 +25,16 @@ class Env(gym.Env):
 
     def __init__(
             self,
-            target,
-            source,
-            simulation_command,
-            host,
-            port,
-            socket_file,
-            db_name,
-            simulation_name,
-            tsch_scheduler
+            target: str,
+            source: str,
+            simulation_command: str,
+            host: str,
+            port: int,
+            socket_file: str,
+            db_name: str,
+            simulation_name: str,
+            tsch_scheduler: str,
+            fig_dir: str = './figures/'
     ):
         super(Env, self).__init__()
         self.container_controller = ContainerController(
@@ -47,6 +48,7 @@ class Env(gym.Env):
             simulation_name=simulation_name,
             tsch_scheduler=tsch_scheduler
         )
+        self.fig_dir = fig_dir
         self.simulation_name = simulation_name
         # We define the number of actions
         n_actions = 2  # increase and decrease slotframe size
@@ -191,4 +193,4 @@ class Env(gym.Env):
         print('rendering')
         number = random.randint(0, 100)
         run_analysis(self.container_controller.packet_dissector,
-                     self.simulation_name+str(number), True)
+                     self.simulation_name+str(number), self.fig_dir, True)
