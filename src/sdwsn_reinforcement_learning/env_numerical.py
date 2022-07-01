@@ -84,16 +84,14 @@ class Env(gym.Env):
             last_ts_in_schedule=10,
             reward=reward
         )
-        if (sf_len < last_ts_in_schedule):
-            done = True
-            info = {}
-            return observation, -10, done, info
-        if (sf_len > 50):
-            done = True
-            info = {}
-            return observation, -10, done, info
         done = False
         info = {}
+        # 50 is the maximum slotframe size
+        # TODO: Set the maximum slotframe size at the creation
+        # of the environment
+        if (sf_len < last_ts_in_schedule or sf_len > 50):
+            done = True
+            reward = -10
         return observation, reward, done, info
 
     def __calculate_reward(self, alpha, beta, delta, sf_size):
