@@ -42,6 +42,10 @@ def main():
                         help='Maximum TSCH slotframe size')
     parser.add_argument('-te', '--maximum-timesteps-episode', type=int, default=50,
                         help='Maximum timesteps per episode')
+    parser.add_argument('-t', '--monitor-log', type=str, default='./monitorlog/',
+                        help='Path to log monitor data')
+    parser.add_argument('-fp', '--figures-path', type=str, default='./figures/',
+                        help='Path to save results')
     parser.add_argument('model', type=str,
                         help='Path to the trained model to load')
 
@@ -58,8 +62,12 @@ def main():
         max_episode_steps=50
     )
 
+    # Create figure folder
+    log_dir = args.figures_path
+    os.makedirs(log_dir, exist_ok=True)
+
     # Monitor the environment
-    log_dir = "./tensorlog/"
+    log_dir = args.monitor_log
     os.makedirs(log_dir, exist_ok=True)
 
     simulation_command = '/bin/sh -c '+'"cd ' + \
