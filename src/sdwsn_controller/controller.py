@@ -35,19 +35,14 @@ class BaseController(ABC):
         tsch_scheduler: Optional[str] = 'Contention Free',
         log_dir: str = "./monitor/"
     ):
+        self.max_slotframe_size = max_slotframe_size
+        self.max_channel_offsets = max_channel_offsets
         # Save instance of a serial interface
         self.ser = SerialBus(cooja_host, cooja_port)
         # Save instance of packet dissector
         self.packet_dissector = PacketDissector(db_name, db_host, db_port)
         # Create instance of the scheduler, we now only support contention free
-        if tsch_scheduler == 'Contention Free':
-            print('Loading contention free scheduler')
-            self.scheduler = ContentionFreeScheduler(
-                sf_size=max_slotframe_size, channel_offsets=max_channel_offsets)
-        if tsch_scheduler == 'Unique Schedule':
-            print('Loading hard coded scheduler')
-            self.scheduler = HardCodedScheduler(
-                sf_size=max_slotframe_size, channel_offsets=max_channel_offsets)
+        self.scheduler = tsch_scheduler
         # Create an instance of a routes
         self.router = SimpleRouter()
         # Variable to check whether the controller is running or not
@@ -57,6 +52,20 @@ class BaseController(ABC):
         self.processing_window = processing_window
         self._read_ser_thread = None
         self.log_dir = log_dir
+
+    @property
+    def scheduler(self):
+        return self._scheduler
+
+    @scheduler.setter
+    def scheduler(self, type_scheduler: str = 'Contention Free'):
+        if type_scheduler == 'Contention Free':
+            self._scheduler = ContentionFreeScheduler(
+                sf_size=self.max_slotframe_size, channel_offsets=self.max_channel_offsets)
+        if type_scheduler == 'Unique Schedule':
+            self._scheduler = HardCodedScheduler(
+                sf_size=self.max_slotframe_size, channel_offsets=self.max_channel_offsets)
+        print(f"scheduler set to {type_scheduler}")
 
     """ Controller primitives """
 

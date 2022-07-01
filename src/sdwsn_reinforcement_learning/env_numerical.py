@@ -81,7 +81,7 @@ class Env(gym.Env):
             delay_mean=cycle_delay,
             pdr_mean=cycle_pdr,
             current_sf_len=sf_len,
-            last_ts_in_schedule=10,
+            last_ts_in_schedule=last_ts_in_schedule,
             reward=reward
         )
         done = False

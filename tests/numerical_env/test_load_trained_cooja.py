@@ -82,7 +82,8 @@ def main():
         'socket_file': args.docker_mount_source+'/'+args.docker_command+'/'+'COOJA.log',
         'db_name': args.db_name,
         'simulation_name': args.simulation_name,
-        'tsch_scheduler': 'Unique Schedule'
+        'tsch_scheduler': 'Unique Schedule',
+        'fig_dir': args.figures_path
     }
 
     # Create an instance of the environment

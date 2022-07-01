@@ -110,7 +110,7 @@ class Env(gym.Env):
             delay_mean=cycle_delay[2],
             pdr_mean=cycle_pdr[1],
             current_sf_len=sf_len,
-            last_ts_in_schedule=10,
+            last_ts_in_schedule=last_ts_in_schedule,
             reward=reward
         )
         done = False
@@ -134,10 +134,13 @@ class Env(gym.Env):
         G = self.container_controller.controller_get_network_links()
         # Run the dijkstra algorithm with the current links
         path = self.container_controller.compute_dijkstra(G)
-        # Set the last active timeslot
-        last_ts_in_schedule = randrange(10, 15)
+        # Lets set the type of scheduler
+        types_scheduler = ['Contention Free', 'Unique Schedule']
+        # type_scheduler = random.choice(types_scheduler)
+        # self.container_controller.scheduler = type_scheduler
+        self.container_controller.scheduler = 'Contention Free'
         # Set the slotframe size
-        slotframe_size = randrange(last_ts_in_schedule+1, 45)
+        slotframe_size = 23
         # We now set the TSCH schedules for the current routing
         self.container_controller.compute_schedule(path, slotframe_size)
         # We now set and save the user requirements
@@ -157,6 +160,10 @@ class Env(gym.Env):
         # Wait for the network to settle
         self.container_controller.controller_wait_cycle_finishes()
         # We now save all the observations
+        # Get last active ts
+        last_ts_in_schedule = self.container_controller.get_last_active_ts()
+        # Set the slotframe size
+        slotframe_size = randrange(last_ts_in_schedule+1, 45)
         # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
         sample_time = datetime.now().timestamp() * 1000.0
         # We now save the user requirements
