@@ -54,8 +54,8 @@ class Env(gym.Env):
         n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
-        # They will be the user requirements, last ts, SF size, normalized ts in schedule, power, delay, pdr
-        self.n_observations = 6
+        # They will be the user requirements, power, delay, pdr, last ts active in schedule
+        self.n_observations = 7
         self.observation_space = spaces.Box(low=0, high=1,
                                             shape=(self.n_observations, ), dtype=np.float32)
 
@@ -101,6 +101,7 @@ class Env(gym.Env):
         observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
+        observation = np.append(observation, last_ts_in_schedule/15)
         self.container_controller.save_observations(
             timestamp=sample_time,
             alpha=alpha,
@@ -140,7 +141,7 @@ class Env(gym.Env):
         # self.container_controller.scheduler = type_scheduler
         self.container_controller.scheduler = 'Contention Free'
         # Set the slotframe size
-        slotframe_size = 23
+        slotframe_size = 15
         # We now set the TSCH schedules for the current routing
         self.container_controller.compute_schedule(path, slotframe_size)
         # We now set and save the user requirements
@@ -176,6 +177,7 @@ class Env(gym.Env):
         observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
+        observation = np.append(observation, last_ts_in_schedule/15)
         self.container_controller.save_observations(
             timestamp=sample_time,
             alpha=select_user_req[0],
