@@ -65,16 +65,15 @@ class Env(gym.Env):
         sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
         alpha, beta, delta, last_ts_in_schedule, current_sf_len, _, _ = self.container_controller.get_last_observations()
-        # Get the current slotframe size
-        sf_len = current_sf_len
-        print(f"Performing action {action} (current sf: {sf_len})")
+        print(f"Performing action {action} (current sf: {current_sf_len})")
         if action == 0:
             print("increasing slotframe size")
-            sf_len = common.next_coprime(sf_len)
+            sf_len = common.next_coprime(current_sf_len)
         if action == 1:
             print("decreasing slotframe size")
-            sf_len = common.previous_coprime(sf_len)
-            # Lets verify that the SF size is greater than
+            sf_len = common.previous_coprime(current_sf_len)
+        if action == 2:
+            sf_len = current_sf_len
         user_requirements = np.array([alpha, beta, delta])
         # the last slot in the current schedule
         # Send the entire TSCH schedule

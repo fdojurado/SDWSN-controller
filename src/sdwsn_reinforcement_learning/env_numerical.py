@@ -38,7 +38,7 @@ class Env(gym.Env):
         # Initialize database
         self.packet_dissector.initialise_db()
         # We define the number of actions
-        n_actions = 2  # increase and decrease slotframe size
+        n_actions = 3  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
         # They will be the user requirements, power, delay, pdr, last ts active in schedule
@@ -52,17 +52,15 @@ class Env(gym.Env):
         sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
         alpha, beta, delta, last_ts_in_schedule, current_sf_len, _, _ = self.packet_dissector.get_last_observations()
-        # Get the current slotframe size
-        sf_len = current_sf_len
         # print("Performing action "+str(action))
         if action == 0:
             # print("increasing slotframe size")
-            sf_len = common.next_coprime(sf_len)
+            sf_len = common.next_coprime(current_sf_len)
         if action == 1:
-            sf_len = common.previous_coprime(sf_len)
+            sf_len = common.previous_coprime(current_sf_len)
             # print("decreasing slotframe size")
-            # Lets verify that the SF size is greater than
-        # the last slot in the current schedule
+        if action == 2:
+            sf_len = current_sf_len
         user_requirements = np.array([alpha, beta, delta])
         # Calculate the reward
         reward, cycle_power, cycle_delay, cycle_pdr = self.__calculate_reward(
