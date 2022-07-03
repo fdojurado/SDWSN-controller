@@ -3,11 +3,11 @@ import argparse
 import gym
 import os
 
-from sdwsn_reinforcement_learning.wrappers import SaveModelSaveBuffer
+from sdwsn_reinforcement_learning.wrappers import SaveModelSaveBuffer, SaveOnBestTrainingRewardCallback
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EveryNTimesteps
 from gym.envs.registration import register
-# import signal
+from stable_baselines3.common.monitor import Monitor
 
 
 def main():
@@ -40,9 +40,13 @@ def main():
         max_episode_steps=50
     )
 
+    # Tensorboard the environment
+    tensor_log_dir = args.tensorboard
+    os.makedirs(tensor_log_dir, exist_ok=True)
+
     # Monitor the environment
-    log_dir = args.tensorboard
-    os.makedirs(log_dir, exist_ok=True)
+    monitor_log_dir = args.save_model
+    os.makedirs(monitor_log_dir, exist_ok=True)
 
     env_kwargs = {
         'db_name': args.db_name,
@@ -57,18 +61,21 @@ def main():
     # Wrap the environment to limit the max steps per episode
     # env = gym.wrappers.TimeLimit(env, max_episode_steps=5)
 
-    # env = Monitor(env, log_dir)
+    env = Monitor(env, monitor_log_dir)
 
     # Callback to save the model and replay buffer every N steps.
-    save_model_replay = SaveModelSaveBuffer(save_path=args.save_model)
-    event_callback = EveryNTimesteps(n_steps=10000, callback=save_model_replay)
+    # save_model_replay = SaveModelSaveBuffer(save_path=args.save_model)
+    # event_callback = EveryNTimesteps(n_steps=10000, callback=save_model_replay)
+    # Create the callback: check every 1000 steps
+    best_model = SaveOnBestTrainingRewardCallback(
+        check_freq=1000, log_dir=monitor_log_dir)
 
     # Create an instance of the RL model to use
     model = DQN('MlpPolicy', env, verbose=1, batch_size=256,
-                tensorboard_log=log_dir, exploration_fraction=0.1)
+                tensorboard_log=tensor_log_dir, exploration_fraction=0.1)
 
     model.learn(total_timesteps=int(1e6),
-                tb_log_name=args.simulation_name, callback=event_callback)
+                tb_log_name=args.simulation_name, callback=best_model)
 
 
 if __name__ == '__main__':
