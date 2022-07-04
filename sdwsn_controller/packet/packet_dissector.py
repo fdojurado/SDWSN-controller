@@ -1,10 +1,10 @@
 # This class allows to read and write from the database
 import struct
-from sdwsn_packet.packet import serial_protocol, sdn_protocols
-from sdwsn_packet.packet import SerialPacket, SDN_IP_Packet
-from sdwsn_packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload
-from sdwsn_packet.packet import SDN_IPH_LEN, SDN_NAPL_LEN
-from sdwsn_database.db_manager import DatabaseManager
+from sdwsn_controller.packet.packet import serial_protocol, sdn_protocols
+from sdwsn_controller.packet.packet import SerialPacket, SDN_IP_Packet
+from sdwsn_controller.packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload
+from sdwsn_controller.packet.packet import SDN_IPH_LEN, SDN_NAPL_LEN
+from sdwsn_controller.database.db_manager import DatabaseManager
 
 
 class PacketDissector(DatabaseManager):

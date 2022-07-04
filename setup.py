@@ -14,7 +14,7 @@ if os.path.isfile(requirement_path):
 
 print(f'requirements: {requirements}')
 
-SRC_ROOT = "src"
+SRC_ROOT = "sdwsn_controller"
 
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -22,7 +22,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 
 setup(
-    name='sdn-controller-package',
+    name='sdwsn_controller',
     version='1.0',
     description='An open source implementation of an SDWSN controller',
     author='Fernando Jurado-Lasso',
@@ -35,7 +35,7 @@ setup(
     },
     # packages=['elise'],  # same as name
     install_requires=requirements,
-    packages=find_packages(),
+    packages=find_packages(include=['sdwsn_controller', 'sdwsn_controller.*']),
     package_dir={'': SRC_ROOT},
     keywords='SDWSN controller SDN WSN',
     python_requires='>=3.10'

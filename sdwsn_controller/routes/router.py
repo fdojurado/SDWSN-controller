@@ -1,5 +1,5 @@
 from requests import delete
-from sdwsn_routes.routes import Routes
+from sdwsn_controller.routes.routes import Routes
 
 
 class SimpleRouter(Routes):

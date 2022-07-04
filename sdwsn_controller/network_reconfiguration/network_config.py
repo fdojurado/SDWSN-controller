@@ -1,10 +1,9 @@
 from logging import exception
 # from src.sdwsn_forwarding_table.forwarding_table import FWD_TABLE
 # from controller.routing.routing import *
-from sdwsn_database.database import Database
 # from src.sdwsn_network_reconfiguration.queue import Queue
-from sdwsn_packet.packet_dissector import *
-from sdwsn_packet.packet import SerialPacket, Cell_Packet, Cell_Packet_Payload, SDN_SAH_LEN, SDN_RAH_LEN, RA_Packet, RA_Packet_Payload
+from sdwsn_controller.packet.packet_dissector import *
+from sdwsn_controller.packet.packet import SerialPacket, Cell_Packet, Cell_Packet_Payload, SDN_SAH_LEN, SDN_RAH_LEN, RA_Packet, RA_Packet_Payload
 import networkx as nx
 from time import sleep
 import pandas as pd
@@ -14,7 +13,7 @@ import types
 from random import randrange
 import json
 from sdwsn_controller.controller import BaseController
-from sdwsn_serial.serial import SerialBus
+from sdwsn_controller.serial.serial import SerialBus
 
 
 """ TODO: Set the maximum routes per node (e.g., 10).

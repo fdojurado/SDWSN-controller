@@ -1,5 +1,5 @@
-from sdwsn_database.database import Database, PACKETS, NODES_INFO, OBSERVATIONS, SLOTFRAME_LEN
-from sdwsn_packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
+from sdwsn_controller.database.database import Database, PACKETS, NODES_INFO, OBSERVATIONS, SLOTFRAME_LEN
+from sdwsn_controller.packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
 import json
 from datetime import datetime
 import numpy as np

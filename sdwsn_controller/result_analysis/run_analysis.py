@@ -7,7 +7,7 @@ import matplotlib.pyplot as pl
 import math
 from numpy import arange
 from scipy.optimize import curve_fit
-from sdwsn_database.database import OBSERVATIONS
+from sdwsn_controller.database.database import OBSERVATIONS
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 
 

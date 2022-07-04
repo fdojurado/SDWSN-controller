@@ -1,20 +1,20 @@
 import threading
 from time import sleep
-from sdwsn_common import common
+from sdwsn_controller.common import common
 from threading import Thread
 from abc import ABC, abstractmethod
-from sdwsn_serial.serial import SerialBus
-from sdwsn_packet.packet_dissector import PacketDissector
+from sdwsn_controller.serial import SerialBus
+from sdwsn_controller.packet.packet_dissector import PacketDissector
 from typing import Dict, Optional
-from sdwsn_docker.docker import CoojaDocker
-from sdwsn_result_analysis.run_analysis import run_analysis
-from sdwsn_database.database import NODES_INFO
-from sdwsn_tsch.contention_free_scheduler import ContentionFreeScheduler
-from sdwsn_tsch.hard_coded_schedule import HardCodedScheduler
-from sdwsn_routes.router import SimpleRouter
-from sdwsn_packet.packet import Cell_Packet_Payload, RA_Packet_Payload
-from sdwsn_common import common
-from sdwsn_database.db_manager import SLOT_DURATION
+from sdwsn_controller.docker.docker import CoojaDocker
+from sdwsn_controller.result_analysis.run_analysis import run_analysis
+from sdwsn_controller.database.database import NODES_INFO
+from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
+from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
+from sdwsn_controller.routes.router import SimpleRouter
+from sdwsn_controller.packet.packet import Cell_Packet_Payload, RA_Packet_Payload
+from sdwsn_controller.common import common
+from sdwsn_controller.database.db_manager import SLOT_DURATION
 
 import numpy as np
 import networkx as nx

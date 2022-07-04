@@ -8,9 +8,9 @@ from time import sleep
 from datetime import datetime
 import random
 
-from sdwsn_common import common
-from sdwsn_controller.controller import ContainerController
-from sdwsn_result_analysis.run_analysis import run_analysis
+from sdwsn_controller.common.common import common
+from sdwsn_controller.controller.controller import ContainerController
+from sdwsn_controller.result_analysis.run_analysis import run_analysis
 from random import randrange
 
 # These are the size of other schedules in orchestra
@@ -120,7 +120,7 @@ class Env(gym.Env):
         # of the environment
         if (sf_len < last_ts_in_schedule or sf_len > 50):
             done = True
-            reward = -10
+            reward = -4
         return observation, reward, done, info
 
     """ Reset the environment, reset the routing and the TSCH schedules """

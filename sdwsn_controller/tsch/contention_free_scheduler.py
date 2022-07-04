@@ -1,5 +1,5 @@
 import random
-from sdwsn_tsch.schedule import Schedule, cell_type
+from sdwsn_controller.tsch.schedule import Schedule, cell_type
 
 
 class ContentionFreeScheduler(Schedule):
