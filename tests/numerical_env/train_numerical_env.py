@@ -3,7 +3,7 @@ import argparse
 import gym
 import os
 
-from sdwsn_reinforcement_learning.wrappers import SaveModelSaveBuffer, SaveOnBestTrainingRewardCallback
+from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer, SaveOnBestTrainingRewardCallback
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import EveryNTimesteps
 from gym.envs.registration import register

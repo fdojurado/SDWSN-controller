@@ -3,7 +3,7 @@ import argparse
 import gym
 import os
 
-from sdwsn_reinforcement_learning.wrappers import SaveModelSaveBuffer
+from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer
 from stable_baselines3 import DQN
 from stable_baselines3.common.evaluation import evaluate_policy
 from gym.envs.registration import register
