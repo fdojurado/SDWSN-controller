@@ -7,7 +7,7 @@ import numpy as np
 from datetime import datetime
 import random
 
-from sdwsn_controller.common.common import common
+from sdwsn_controller.common import common
 from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.result_analysis.run_analysis import run_analysis
 from random import randrange

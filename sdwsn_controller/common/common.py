@@ -1,10 +1,8 @@
 """ This python script holds common functions used across the controller """
-import multiprocessing as mp
-from sdwsn_controller.serial import serial
 import networkx as nx
 import numpy as np
-from sdwsn_controller.packet import Cell_Packet, SDN_IP_Packet, SerialPacket, RA_Packet
-from sdwsn_controller.packet import sdn_protocols, SDN_SAH_LEN, SDN_IPH_LEN, SDN_RAH_LEN
+from sdwsn_controller.packet.packet import Cell_Packet, SDN_IP_Packet, SerialPacket, RA_Packet
+from sdwsn_controller.packet.packet import sdn_protocols, SDN_SAH_LEN, SDN_IPH_LEN, SDN_RAH_LEN
 from random import randrange
 
 

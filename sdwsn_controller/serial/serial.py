@@ -1,7 +1,7 @@
 import socket
 import sys
 # import logging
-from bus import BusABC
+from sdwsn_controller.bus import BusABC
 import select
 
 
