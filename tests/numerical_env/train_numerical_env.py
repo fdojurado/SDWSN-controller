@@ -70,8 +70,23 @@ def main():
     best_model = SaveOnBestTrainingRewardCallback(
         check_freq=1000, log_dir=monitor_log_dir)
 
+    # Params:
+    # gamma: 0.98
+    # learning_rate: 5.832985636420814e-05
+    # batch_size: 256
+    # buffer_size: 1000000
+    # exploration_final_eps: 0.06038208749247105
+    # exploration_fraction: 0.45629838266368317
+    # target_update_interval: 20000
+    # learning_starts: 5000
+    # train_freq: 1000
+    # subsample_steps: 1
+    # net_arch: medium
+    # Writing report to logs/dqn/report_sdwsn-v2_1000-trials-50000-tpe-median_1656979123
     # Create an instance of the RL model to use
-    model = DQN('MlpPolicy', env, verbose=1, batch_size=256,
+    model = DQN('MlpPolicy', env, verbose=1, gamma=0.98, learning_rate=5.832985636420814e-05, batch_size=256,
+                buffer_size=1000000, exploration_final_eps=0.06038208749247105, exploration_fraction=0.45629838266368317, target_update_interval=20000,
+                learning_starts=5000, train_freq=1000, subsample_steps=1, net_arch='medium',
                 tensorboard_log=tensor_log_dir, exploration_fraction=0.1)
 
     model.learn(total_timesteps=int(1e6),
