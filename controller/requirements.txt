@@ -1,9 +1,0 @@
-pymongo
-plac
-paho-mqtt
-pandas
-python-daemon
-plotly==5.5.0
-networkx
-matplotlib
-graphviz

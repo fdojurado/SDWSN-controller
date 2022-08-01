@@ -1,0 +1,6 @@
+pymongo
+plac
+pandas
+python-daemon
+networkx
+docker
