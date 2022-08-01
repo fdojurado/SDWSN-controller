@@ -36,7 +36,8 @@ setup(
     # packages=['elise'],  # same as name
     install_requires=requirements,
     packages=find_packages(include=['sdwsn_controller', 'sdwsn_controller.*']),
-    package_dir={'': SRC_ROOT},
+    # packages=['sdwsn_controller', 'sdwsn_controller.tests'],
+    # package_dir={'': SRC_ROOT},
     keywords='SDWSN controller SDN WSN',
     python_requires='>=3.10'
 )

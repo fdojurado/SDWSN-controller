@@ -106,8 +106,13 @@ class Env(gym.Env):
             alpha=alpha,
             beta=beta,
             delta=delta,
-            power_mean=cycle_power[2],
-            delay_mean=cycle_delay[2],
+            power_wam=cycle_power[0],
+            power_mean=cycle_power[1],
+            power_normalized=cycle_power[2],
+            delay_wam=cycle_delay[0],
+            delay_mean=cycle_delay[1],
+            delay_normalized=cycle_delay[2],
+            pdr_wam=cycle_pdr[0],
             pdr_mean=cycle_pdr[1],
             current_sf_len=sf_len,
             last_ts_in_schedule=last_ts_in_schedule,
@@ -138,7 +143,7 @@ class Env(gym.Env):
         types_scheduler = ['Contention Free', 'Unique Schedule']
         # type_scheduler = random.choice(types_scheduler)
         # self.container_controller.scheduler = type_scheduler
-        self.container_controller.scheduler = 'Contention Free'
+        self.container_controller.scheduler = 'Unique Schedule'
         # Set the slotframe size
         slotframe_size = 15
         # We now set the TSCH schedules for the current routing
@@ -163,7 +168,8 @@ class Env(gym.Env):
         # Get last active ts
         last_ts_in_schedule = self.container_controller.get_last_active_ts()
         # Set the slotframe size
-        slotframe_size = randrange(last_ts_in_schedule+1, 45)
+        # slotframe_size = randrange(last_ts_in_schedule+1, 45)
+        slotframe_size = last_ts_in_schedule
         # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
         sample_time = datetime.now().timestamp() * 1000.0
         # We now save the user requirements
@@ -182,8 +188,13 @@ class Env(gym.Env):
             alpha=select_user_req[0],
             beta=select_user_req[1],
             delta=select_user_req[2],
-            power_mean=cycle_power[2],
-            delay_mean=cycle_delay[2],
+            power_wam=cycle_power[0],
+            power_mean=cycle_power[1],
+            power_normalized=cycle_power[2],
+            delay_wam=cycle_delay[0],
+            delay_mean=cycle_delay[1],
+            delay_normalized=cycle_delay[2],
+            pdr_wam=cycle_pdr[0],
             pdr_mean=cycle_pdr[1],
             current_sf_len=slotframe_size,
             last_ts_in_schedule=last_ts_in_schedule,

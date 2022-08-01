@@ -1,13 +1,9 @@
 import sys
-import argparse
 import gym
 import os
-
-from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer
-from stable_baselines3 import DQN
-from stable_baselines3.common.callbacks import EveryNTimesteps
+import argparse
 from gym.envs.registration import register
-# import signal
+import sdwsn_controller
 
 
 def main():
@@ -42,6 +38,8 @@ def main():
                         help='Maximum TSCH slotframe size')
     parser.add_argument('-te', '--maximum-timesteps-episode', type=int, default=50,
                         help='Maximum timesteps per episode')
+    parser.add_argument('-fp', '--figures-path', type=str, default='./figures/',
+                        help='Path to save results')
 
     args = parser.parse_args()
 
@@ -51,31 +49,14 @@ def main():
         id="sdwsn-v1",
         # path to the class for creating the env
         # Note: entry_point also accept a class as input (and not only a string)
-        entry_point="sdwsn_reinforcement_learning.env:Env",
+        entry_point="sdwsn_controller.reinforcement_learning.env:Env",
         # Max number of steps per episode, using a `TimeLimitWrapper`
-        max_episode_steps=50
+        # max_episode_steps=50
     )
 
-    # Monitor the environment
-    log_dir = "./tensorlog/"
+    # Create figure folder
+    log_dir = args.figures_path
     os.makedirs(log_dir, exist_ok=True)
-
-    # container_controller = ContainerController(
-    #     cooja_host=args.socket, cooja_port=args.port,
-    #     max_channel_offsets=args.tschmaxchannel, max_slotframe_size=args.tschmaxslotframe,
-    #     log_dir=log_dir)
-    # controller = BaseController(cooja_host=args.socket, cooja_port=args.port)
-
-    # def exit_process(signal_number, frames):
-    #     # pylint: disable=no-member
-    #     print('Received %s signal. Exiting...',
-    #           signal.Signals(signal_number).name)
-    #     container_controller.container_controller_shutdown()
-    #     sys.exit(0)
-
-    # signal.signal(signal.SIGINT, exit_process)
-    # signal.signal(signal.SIGQUIT, exit_process)
-    # signal.signal(signal.SIGTERM, exit_process)
 
     simulation_command = '/bin/sh -c '+'"cd ' + \
         args.docker_command+' && ./run-cooja.py"'
@@ -89,26 +70,43 @@ def main():
         'socket_file': args.docker_mount_source+'/'+args.docker_command+'/'+'COOJA.log',
         'db_name': args.db_name,
         'simulation_name': args.simulation_name,
-        'tsch_scheduler': 'Unique Schedule'
+        'tsch_scheduler': 'Unique Schedule',
+        'fig_dir': args.figures_path
     }
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
 
-    # Wrap the environment to limit the max steps per episode
-    # env = gym.wrappers.TimeLimit(env, max_episode_steps=5)
+    obs = env.reset()
+    # Get last observations including the SF size
+    observations = env.container_controller.get_last_observations()
+    # Current SF size
+    sf_size = observations[4]
+    last_ts_in_schedule = observations[3]
+    increase = 1
+    for i in range(50*3):
+        # action, _state = model.predict(obs, deterministic=True)
+        if increase:
+            if sf_size < 50 - 1:
+                action = 0
+            else:
+                increase = 0
+        else:
+            if sf_size > last_ts_in_schedule + 1:
+                action = 1
+            else:
+                increase = 1
+                # done = True
+                # obs = env.reset()
 
-    # env = Monitor(env, log_dir)
+        obs, reward, done, info = env.step(action)
+        print(f'Observations: {obs}, reward: {reward}, done: {done}, info: {info}')
+        # Get last observations including the SF size
+        observations = env.container_controller.get_last_observations()
+        # Current SF size
+        sf_size = observations[4]
+        print(f'current SF size: {sf_size}')
 
-    # Callback to save the model and replay buffer every N steps.
-    # save_model_replay = SaveModelSaveBuffer(save_path='./logs/')
-    # event_callback = EveryNTimesteps(n_steps=50, callback=save_model_replay)
-
-    # Create an instance of the RL model to use
-    model = DQN('MlpPolicy', env, verbose=1, learning_starts=10, tensorboard_log=log_dir,
-                target_update_interval=50, exploration_fraction=0.1)
-
-    model.learn(total_timesteps=int(50000),
-                log_interval=1)
+    env.render()
 
 
 if __name__ == '__main__':

@@ -590,4 +590,6 @@ def run_analysis(Database, name, path, plot_sf_size: bool = False):
     plot_episode_reward(df, name+"_reward", path)
 
     # Fit curves for power, delay, PDR.
-    # plot_fit_curves(df, name+"_fitted_curves")
+    print("df before fitted curves")
+    print(df.to_string())
+    plot_fit_curves(df, name+"_fitted_curves")

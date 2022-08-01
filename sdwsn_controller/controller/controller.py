@@ -3,7 +3,7 @@ from time import sleep
 from sdwsn_controller.common import common
 from threading import Thread
 from abc import ABC, abstractmethod
-from sdwsn_controller.serial import SerialBus
+from sdwsn_controller.serial.serial import SerialBus
 from sdwsn_controller.packet.packet_dissector import PacketDissector
 from typing import Dict, Optional
 from sdwsn_controller.docker.docker import CoojaDocker
