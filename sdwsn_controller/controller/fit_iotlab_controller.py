@@ -31,7 +31,7 @@ class FitIoTLABController(CommonController):
         # Stop main controller
         self.stop()
 
-    def fit_iot_lab_reset(self):
+    def reset(self):
         print('Resetting FIT IoT LAB controller')
         self.fit_iot_lab_stop()
         self.fit_iot_lab_start()
