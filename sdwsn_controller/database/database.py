@@ -15,58 +15,48 @@ OBSERVATIONS = "observations"
 
 
 class Database(ABC):
-    def __init__(self, name: str = 'myDSN', host: str = '127.0.0.1', port: int = 27017) -> None:
-        self.name = name
-        self.URI = "mongodb://"+host+":"+str(port)
-        self.DATABASE = None
+    def __init__(self):
+        pass
 
-    def initialise(self):
-        self.client = pymongo.MongoClient(self.URI)
-        self.client.drop_database(self.name)
-        self.DATABASE = self.client[self.name]
+    @abstractmethod
+    def initialize(self):
+        pass
 
-    def insert(self, collection, data):
+    @property
+    @abstractmethod
+    def DATABASE(self):
+        pass
+
+    @abstractmethod
+    def save_serial_packet(self):
+        pass
+
+    @abstractmethod
+    def save_energy(self):
+        pass
+
+    @abstractmethod
+    def save_neighbors(self):
+        pass
+
+    @abstractmethod
+    def save_pdr(self):
+        pass
+
+    @abstractmethod
+    def save_delay(self):
+        pass
+
+    @abstractmethod
+    def save_observations(self):
+        pass
+
+    @abstractmethod
+    def get_last_observations(self):
+        pass
+
+    def insert_one(self, collection, data):
         return self.DATABASE[collection].insert_one(data)
-
-    def exist(self, collection, addr):
-        return self.DATABASE[collection].count_documents({"_id": addr}, limit=1) > 0
-
-    def push_doc(self, collection, addr, field, data):
-        self.DATABASE[collection].update_one(
-            {"_id": addr},
-            {"$push": {field: data}},
-            upsert=True
-        )
-
-    def push_links(self, collection, data):
-        self.DATABASE[collection].update_one(
-            {
-                "$or": [
-                    {"$and": [{"scr": data['scr']},
-                              {"dst": data['dst']}]},
-                    {"$and": [{"scr": data['dst']}, {"dst": data['scr']}]}
-                ]
-            },
-            {"$set": {"time": data['time'],
-                      "scr": data['scr'],
-                      "dst": data['dst'],
-                      "rssi": data['rssi']}},
-            upsert=True
-        )
-
-    def update_energy(self, collection, addr, data):
-        self.DATABASE[collection].update_one(
-            {"_id": addr},
-            {"$set": {"time": data['time'],
-                      "energy": data['energy']}}
-        )
-
-    def update_pdr(self, collection, addr, data):
-        self.DATABASE[collection].update_one(
-            {"_id": addr},
-            {"$set": {"time": data['time'],
-                      "pdr": data['pdr']}}
-        )
 
     def update_one(self, collection, filter, update, upsert, arrayFilters):
         return self.DATABASE[collection].update_one(filter, update, upsert=upsert, array_filters=arrayFilters)
@@ -96,3 +86,43 @@ class Database(ABC):
     def list_collections(self):
         for collection in self.DATABASE.list_collections():
             print(collection)
+
+    # def exist(self, collection, addr):
+    #     return self.DATABASE[collection].count_documents({"_id": addr}, limit=1) > 0
+
+    # def push_doc(self, collection, addr, field, data):
+    #     self.DATABASE[collection].update_one(
+    #         {"_id": addr},
+    #         {"$push": {field: data}},
+    #         upsert=True
+    #     )
+
+    # def push_links(self, collection, data):
+    #     self.DATABASE[collection].update_one(
+    #         {
+    #             "$or": [
+    #                 {"$and": [{"scr": data['scr']},
+    #                           {"dst": data['dst']}]},
+    #                 {"$and": [{"scr": data['dst']}, {"dst": data['scr']}]}
+    #             ]
+    #         },
+    #         {"$set": {"time": data['time'],
+    #                   "scr": data['scr'],
+    #                   "dst": data['dst'],
+    #                   "rssi": data['rssi']}},
+    #         upsert=True
+    #     )
+
+    # def update_energy(self, collection, addr, data):
+    #     self.DATABASE[collection].update_one(
+    #         {"_id": addr},
+    #         {"$set": {"time": data['time'],
+    #                   "energy": data['energy']}}
+    #     )
+
+    # def update_pdr(self, collection, addr, data):
+    #     self.DATABASE[collection].update_one(
+    #         {"_id": addr},
+    #         {"$set": {"time": data['time'],
+    #                   "pdr": data['pdr']}}
+    #     )

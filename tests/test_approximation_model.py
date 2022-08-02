@@ -1,4 +1,7 @@
+# This test obtains the chart for the approximation model in Cooja (Docker).
 import sys
+from sdwsn_controller.controller.controller import ContainerController
+from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 import gym
 import os
 import argparse
@@ -61,16 +64,22 @@ def main():
     simulation_command = '/bin/sh -c '+'"cd ' + \
         args.docker_command+' && ./run-cooja.py"'
 
+    tsch_scheduler = HardCodedScheduler(
+        sf_size=args.maximum_slotframe_size, channel_offsets=args.maximum_tsch_channels)
+
+    controller = ContainerController(
+        image=args.docker_image,
+        command=simulation_command,
+        target=args.docker_mount_target,
+        source=args.docker_mount_source,
+        socket_file=args.docker_mount_source+'/'+args.docker_command+'/'+'COOJA.log',
+        db_name=args.db_name,
+        tsch_scheduler=tsch_scheduler
+    )
+
     env_kwargs = {
-        'target': args.docker_mount_target,
-        'source': args.docker_mount_source,
-        'simulation_command': simulation_command,
-        'host': args.cooja,
-        'port': args.cooja_port,
-        'socket_file': args.docker_mount_source+'/'+args.docker_command+'/'+'COOJA.log',
-        'db_name': args.db_name,
         'simulation_name': args.simulation_name,
-        'tsch_scheduler': 'Unique Schedule',
+        'controller': controller,
         'fig_dir': args.figures_path
     }
     # Create an instance of the environment
@@ -78,12 +87,12 @@ def main():
 
     obs = env.reset()
     # Get last observations including the SF size
-    observations = env.container_controller.get_last_observations()
+    observations = controller.get_last_observations()
     # Current SF size
     sf_size = observations[4]
     last_ts_in_schedule = observations[3]
     increase = 1
-    for i in range(50*3):
+    for i in range(5):
         # action, _state = model.predict(obs, deterministic=True)
         if increase:
             if sf_size < 50 - 1:
@@ -101,7 +110,7 @@ def main():
         obs, reward, done, info = env.step(action)
         print(f'Observations: {obs}, reward: {reward}, done: {done}, info: {info}')
         # Get last observations including the SF size
-        observations = env.container_controller.get_last_observations()
+        observations = controller.get_last_observations()
         # Current SF size
         sf_size = observations[4]
         print(f'current SF size: {sf_size}')

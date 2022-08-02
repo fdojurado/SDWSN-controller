@@ -25,29 +25,12 @@ class Env(gym.Env):
 
     def __init__(
             self,
-            target: str,
-            source: str,
-            simulation_command: str,
-            host: str,
-            port: int,
-            socket_file: str,
-            db_name: str,
             simulation_name: str,
-            tsch_scheduler: str,
+            controller: object,
             fig_dir: str = './figures/'
     ):
         super(Env, self).__init__()
-        self.container_controller = ContainerController(
-            target=target,
-            source=source,
-            command=simulation_command,
-            cooja_host=host,
-            cooja_port=port,
-            socket_file=socket_file,
-            db_name=db_name,
-            simulation_name=simulation_name,
-            tsch_scheduler=tsch_scheduler
-        )
+        self.controller = controller
         self.fig_dir = fig_dir
         self.simulation_name = simulation_name
         # We define the number of actions
@@ -64,7 +47,7 @@ class Env(gym.Env):
     def step(self, action):
         sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
-        alpha, beta, delta, last_ts_in_schedule, current_sf_len, _, _ = self.container_controller.get_last_observations()
+        alpha, beta, delta, last_ts_in_schedule, current_sf_len, _, _ = self.controller.get_last_observations()
         print(f"Performing action {action} (current sf: {current_sf_len})")
         if action == 0:
             print("increasing slotframe size")
@@ -77,23 +60,23 @@ class Env(gym.Env):
         user_requirements = np.array([alpha, beta, delta])
         # the last slot in the current schedule
         # Send the entire TSCH schedule
-        self.container_controller.send_schedules(sf_len)
+        self.controller.send_tsch_schedules(sf_len)
         # Delete the current nodes_info collection from the database
-        self.container_controller.delete_info_collection()
+        self.controller.delete_info_collection()
         # Reset sequence
-        self.container_controller.reset_pkt_sequence()
+        self.controller.reset_pkt_sequence()
         # We now wait until we reach the processing_window
-        while (not self.container_controller.controller_wait_cycle_finishes()):
+        while (not self.controller.wait()):
             print("resending schedules")
-            self.container_controller.send_schedules(sf_len)
+            self.controller.send_tsch_schedules(sf_len)
             # Delete the current nodes_info collection from the database
-            self.container_controller.delete_info_collection()
+            self.controller.delete_info_collection()
             # Reset sequence
-            self.container_controller.reset_pkt_sequence()
+            self.controller.reset_pkt_sequence()
         print("process reward")
         sleep(1)
         # Calculate the reward
-        reward, cycle_power, cycle_delay, cycle_pdr = self.container_controller.calculate_reward(
+        reward, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
             alpha, beta, delta)
         # Append to the observations
         sample_time = datetime.now().timestamp() * 1000.0
@@ -101,7 +84,7 @@ class Env(gym.Env):
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
         observation = np.append(observation, last_ts_in_schedule/15)
-        self.container_controller.save_observations(
+        self.controller.save_observations(
             timestamp=sample_time,
             alpha=alpha,
             beta=beta,
@@ -132,22 +115,22 @@ class Env(gym.Env):
 
     def reset(self):
         # Reset the container controller
-        self.container_controller.container_reset()
+        self.controller.reset()
         # We now wait until we reach the processing_window
-        self.container_controller.controller_wait_cycle_finishes()
+        self.controller.wait()
         # We get the network links, useful when calculating the routing
-        G = self.container_controller.controller_get_network_links()
+        G = self.controller.get_network_links()
         # Run the dijkstra algorithm with the current links
-        path = self.container_controller.compute_dijkstra(G)
+        path = self.controller.compute_dijkstra(G)
         # Lets set the type of scheduler
-        types_scheduler = ['Contention Free', 'Unique Schedule']
+        # types_scheduler = ['Contention Free', 'Unique Schedule']
         # type_scheduler = random.choice(types_scheduler)
-        # self.container_controller.scheduler = type_scheduler
-        self.container_controller.scheduler = 'Unique Schedule'
+        # self.controller.scheduler = type_scheduler
+        # self.controller.scheduler = 'Unique Schedule'
         # Set the slotframe size
         slotframe_size = 15
         # We now set the TSCH schedules for the current routing
-        self.container_controller.compute_schedule(path, slotframe_size)
+        self.controller.compute_tsch_schedule(path, slotframe_size)
         # We now set and save the user requirements
         balanced = [0.4, 0.3, 0.3]
         energy = [0.8, 0.1, 0.1]
@@ -156,17 +139,17 @@ class Env(gym.Env):
         user_req = [balanced, energy, delay, reliability]
         select_user_req = random.choice(user_req)
         # Send the entire routes
-        self.container_controller.send_routes()
+        self.controller.send_routes()
         # Send the entire TSCH schedule
-        self.container_controller.send_schedules(slotframe_size)
+        self.controller.send_tsch_schedules(slotframe_size)
         # Delete the current nodes_info collection from the database
-        self.container_controller.delete_info_collection()
-        self.container_controller.reset_pkt_sequence()
+        self.controller.delete_info_collection()
+        self.controller.reset_pkt_sequence()
         # Wait for the network to settle
-        self.container_controller.controller_wait_cycle_finishes()
+        self.controller.wait()
         # We now save all the observations
         # Get last active ts
-        last_ts_in_schedule = self.container_controller.get_last_active_ts()
+        last_ts_in_schedule = self.controller.last_active_tsch_slot()
         # Set the slotframe size
         # slotframe_size = randrange(last_ts_in_schedule+1, 45)
         slotframe_size = last_ts_in_schedule
@@ -175,7 +158,7 @@ class Env(gym.Env):
         # We now save the user requirements
         user_requirements = np.array(select_user_req)
         # We now save the observations with reward None
-        _, cycle_power, cycle_delay, cycle_pdr = self.container_controller.calculate_reward(
+        _, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
             select_user_req[0], select_user_req[1], select_user_req[2])
        # Append to the observations
         sample_time = datetime.now().timestamp() * 1000.0
@@ -183,7 +166,7 @@ class Env(gym.Env):
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
         observation = np.append(observation, last_ts_in_schedule/15)
-        self.container_controller.save_observations(
+        self.controller.save_observations(
             timestamp=sample_time,
             alpha=select_user_req[0],
             beta=select_user_req[1],
@@ -209,5 +192,5 @@ class Env(gym.Env):
         # agent is represented as a cross, rest as a dot
         print('rendering')
         number = random.randint(0, 100)
-        run_analysis(self.container_controller.packet_dissector,
+        run_analysis(self.controller.db,
                      self.simulation_name+str(number), self.fig_dir, True)
