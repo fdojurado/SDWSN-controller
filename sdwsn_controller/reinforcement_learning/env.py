@@ -1,6 +1,5 @@
 """ This is the implementation of the Software-Defined Wireless Sensor Network
 environment """
-from typing import Type
 import gym
 from gym import spaces
 import numpy as np
@@ -9,9 +8,7 @@ from datetime import datetime
 import random
 
 from sdwsn_controller.common import common
-from sdwsn_controller.controller.controller import ContainerController
 from sdwsn_controller.result_analysis.run_analysis import run_analysis
-from random import randrange
 
 # These are the size of other schedules in orchestra
 eb_size = 397

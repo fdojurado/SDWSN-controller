@@ -1,6 +1,6 @@
 # This test obtains the chart for the approximation model in Cooja (Docker).
 import sys
-from sdwsn_controller.controller.controller import ContainerController
+from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 import gym
 import os
