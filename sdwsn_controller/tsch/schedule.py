@@ -88,6 +88,10 @@ class Schedule(ABC):
         self.list_nodes = []
         # self.clear_schedule()
 
+    @abstractmethod
+    def run(self):
+        pass
+
     def schedule_add_uc(self, node, type, channeloffset=None, timeoffset=None, destination=None):
         # print("adding uc link node: ", node, " destination: ", destination, "type: ", type,
         #   " channeloffset: ", channeloffset, " timeoffset: ", timeoffset)
