@@ -190,7 +190,7 @@ class CommonController(BaseController):
     def comm_interface_start(self):
         # Connect serial
         if self.__socket.connect() != 0:
-            print('unsuccessful serial connection')
+            print(f'unsuccessful serial connection (host:{self.__socket.host}, port: {self.__socket.port})')
             return 0
         print("Socket up and running")
         # Read serial

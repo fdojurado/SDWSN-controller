@@ -27,7 +27,7 @@ class FitIoTLABController(CommonController):
         self.start()
 
     def fit_iot_lab_stop(self):
-        print('starting FIT IoT LAB controller')
+        print('stopping FIT IoT LAB controller')
         # Stop main controller
         self.stop()
 
