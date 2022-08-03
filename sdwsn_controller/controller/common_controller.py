@@ -11,8 +11,6 @@ from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeSchedu
 from sdwsn_controller.packet.packet import Cell_Packet_Payload
 
 
-
-
 import numpy as np
 import networkx as nx
 import threading
@@ -57,7 +55,6 @@ class CommonController(BaseController):
 
         # Initialize some variables
         self.__is_running = False
-        self.__processing_window = processing_window
 
         super().__init__()
 
@@ -89,27 +86,6 @@ class CommonController(BaseController):
         # Run the data analysis script if there is data in the DB
         # self.run_data_analysis()
 
-    def wait(self):
-        """
-         We wait for the current cycle to finish
-         """
-        # If we have not received any data after looping 10 times
-        # We return
-        print("Waiting for the current cycle to finish")
-        count = 0
-        result = -1
-        while(1):
-            count += 1
-            if self.sequence > self.__processing_window:
-                result = 1
-                break
-            if count > 10:
-                result = 0
-                break
-            sleep(1)
-        print(f"cycle finished, result: {result}")
-        return result
-
     def send(self, data):
         if self.__is_running:
             print("sending serial packet")
@@ -117,32 +93,6 @@ class CommonController(BaseController):
             self.__socket.send(data)
         else:
             print("Couldn't send data, controller is Not running")
-
-    def reliable_send(self, data, ack):
-        # Reliable socket data transmission
-        # set retransmission
-        rtx = 0
-        # Send NC packet through serial interface
-        self.send(data)
-        # Result variable to see if the sending went well
-        result = 0
-        while True:
-            if self.packet_dissector.ack_pkt is not None:
-                if (self.packet_dissector.ack_pkt.reserved0 == ack):
-                    print("correct ACK received")
-                    result = 1
-                    break
-                print("ACK not received")
-                # We stop sending the current NC packet if
-                # we reached the max RTx or we received ACK
-                if(rtx >= 7):
-                    print("ACK never received")
-                    break
-                # We resend the packet if retransmission < 7
-                rtx = rtx + 1
-                self.send(data)
-            sleep(1.2)
-        return result
 
     """ Packet dissector related functionalities """
 
