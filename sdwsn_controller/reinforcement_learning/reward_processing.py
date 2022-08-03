@@ -16,9 +16,17 @@ class RewardProcessing(ABC):
 class EmulatedRewardProcessing(RewardProcessing):
     def __init__(
         self,
-        database: object = DatabaseManager()
+        database: object = DatabaseManager(),
+        power_min: int = 0,
+        power_max: int = 5000,
+        delay_min: int = SLOT_DURATION,
+        delay_max: int = 15000,
     ):
         self.db = database
+        self.__power_min = power_min
+        self.__power_max = power_max
+        self.__delay_min = delay_min
+        self.__delay_max = delay_max
         super().__init__()
 
     def calculate_reward(self, alpha, beta, delta, sequence):
@@ -41,10 +49,6 @@ class EmulatedRewardProcessing(RewardProcessing):
         return reward, power, delay, pdr
 
     def __get_network_power_consumption(self, nodes, sequence):
-        # Min power
-        p_min = 0
-        # Max power
-        p_max = 3000
         # Variable to keep track of the number of energy consumption samples
         power_samples = []
         # We first loop through all sensor nodes
@@ -58,7 +62,8 @@ class EmulatedRewardProcessing(RewardProcessing):
         power_wam, power_mean = self.__power_weighted_arithmetic_mean(
             power_samples)
         # We now need to normalize the power WAM
-        normalized_power = (power_wam - p_min)/(p_max-p_min)
+        normalized_power = (power_wam - self.__power_min) / \
+            (self.__power_max-self.__power_min)
         print(f'normalized power {normalized_power}')
         return power_wam, power_mean, normalized_power
 
@@ -107,10 +112,6 @@ class EmulatedRewardProcessing(RewardProcessing):
         return weight
 
     def __get_network_delay(self, nodes, sequence):
-        # Min power
-        delay_min = SLOT_DURATION
-        # Max power
-        delay_max = 2500
         # Variable to keep track of the number of delay samples
         delay_samples = []
         # We first loop through all sensor nodes
@@ -124,7 +125,8 @@ class EmulatedRewardProcessing(RewardProcessing):
         delay_wam, delay_mean = self.__delay_weighted_arithmetic_mean(
             delay_samples)
         # We now need to normalize the power WAM
-        normalized_delay = (delay_wam - delay_min)/(delay_max-delay_min)
+        normalized_delay = (delay_wam - self.__delay_min) / \
+            (self.__delay_max-self.__delay_min)
         print(f'normalized delay {normalized_delay}')
         return delay_wam, delay_mean, normalized_delay
 

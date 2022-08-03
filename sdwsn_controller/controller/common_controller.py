@@ -9,6 +9,7 @@ from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.reinforcement_learning.reward_processing import EmulatedRewardProcessing
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.packet.packet import Cell_Packet_Payload
+from sdwsn_controller.database.db_manager import SLOT_DURATION
 
 
 import numpy as np
@@ -28,7 +29,10 @@ class CommonController(BaseController):
         db_port: int = 27017,
         router: object = SimpleRouter(),
         tsch_scheduler: object = ContentionFreeScheduler(500, 3),
-        processing_window: int = 200
+        power_min: int = 0,
+        power_max: int = 5000,
+        delay_min: int = SLOT_DURATION,
+        delay_max: int = 15000,
     ):
         # Create a socket communication
         self.__socket = SerialBus(host, port)
@@ -45,7 +49,13 @@ class CommonController(BaseController):
         self.__packet_dissector = PacketDissector(database=self.__db)
 
         # Create reward module
-        self.__reward_processing = EmulatedRewardProcessing(database=self.__db)
+        self.__reward_processing = EmulatedRewardProcessing(
+            database=self.__db,
+            power_min=power_min,
+            power_max=power_max,
+            delay_min=delay_min,
+            delay_max=delay_max
+        )
 
         # Create TSCH scheduler module
         self.__tsch_scheduler = tsch_scheduler
