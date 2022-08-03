@@ -19,7 +19,6 @@ class FitIoTLABController(CommonController):
             db_name=db_name,
             db_host=db_host,
             db_port=db_port,
-            processing_window=processing_window,
             tsch_scheduler=tsch_scheduler,
         )
 
