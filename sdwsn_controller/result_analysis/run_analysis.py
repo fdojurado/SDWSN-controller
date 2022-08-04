@@ -419,7 +419,7 @@ def plot_episode_reward(df, title, path):
 #######################################################
 
 
-def plot_fit_curves(df, title="fitted curved"):
+def plot_fit_curves(df, title, path):
     """ 
     We try to fit the curves for power, delay and
     PDR.
@@ -561,7 +561,7 @@ def plot_fit_curves(df, title="fitted curved"):
 
     axs[0, 0].plot(x, y)
 
-    pl.savefig(title+'.pdf', bbox_inches='tight')
+    pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.close()
 
 #######################################################
@@ -592,4 +592,4 @@ def run_analysis(Database, name, path, plot_sf_size: bool = False):
     # Fit curves for power, delay, PDR.
     print("df before fitted curves")
     print(df.to_string())
-    plot_fit_curves(df, name+"_fitted_curves")
+    plot_fit_curves(df, name+"_fitted_curves", path)
