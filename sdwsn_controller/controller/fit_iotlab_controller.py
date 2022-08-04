@@ -69,7 +69,7 @@ class FitIoTLABController(CommonController):
         return result
 
     def fit_iot_lab_start(self):
-        sleep(120)
+        sleep(10)
         print('starting FIT IoT LAB controller')
         # Initialize main controller
         self.start()
