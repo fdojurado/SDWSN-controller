@@ -1,9 +1,11 @@
+from abc import abstractclassmethod
 from sdwsn_controller.database.database import Database, PACKETS, NODES_INFO, OBSERVATIONS, SLOTFRAME_LEN
 from sdwsn_controller.packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
 import json
 from datetime import datetime
 import numpy as np
 from pymongo.collation import Collation
+import pymongo
 
 # Network parameters
 H_MAX = 10  # max number of hops
@@ -35,16 +37,26 @@ class DatabaseManager(Database):
         host: str = '127.0.0.1',
         port: int = 27017
     ):
-        super().__init__(name, host, port)
+        self.name = name
+        self.host = host
+        self.port = port
+        self.URI = "mongodb://"+host+":"+str(port)
+        self.DATABASE = None
+        super().__init__()
 
-    def initialise_db(self):
-        self.initialise()
+    def initialize(self):
+        self.client = pymongo.MongoClient(self.URI)
+        self.client.drop_database(self.name)
+        self.DATABASE = self.client[self.name]
+
+    def DATABASE(self):
+        return self.DATABASE
 
     def save_serial_packet(self, pkt):
         # The incoming format should be JSON
         data = json.loads(pkt)
         data["timestamp"] = datetime.now().timestamp() * 1000.0
-        self.insert(PACKETS, data)
+        self.insert_one(PACKETS, data)
 
     def save_energy(self, pkt, na_pkt):
         current_time = datetime.now().timestamp() * 1000.0
@@ -354,7 +366,7 @@ class DatabaseManager(Database):
             "normalized_ts_in_schedule": normalized_ts_in_schedule,
             "reward": reward
         }
-        self.insert(OBSERVATIONS, data)
+        self.insert_one(OBSERVATIONS, data)
 
     def get_last_observations(self):
         db = self.find_one(OBSERVATIONS, {})

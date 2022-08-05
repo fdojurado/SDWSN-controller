@@ -1,4 +1,3 @@
-import random
 from sdwsn_controller.tsch.schedule import Schedule, cell_type
 
 

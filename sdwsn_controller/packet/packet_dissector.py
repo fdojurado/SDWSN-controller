@@ -7,19 +7,17 @@ from sdwsn_controller.packet.packet import SDN_IPH_LEN, SDN_NAPL_LEN
 from sdwsn_controller.database.db_manager import DatabaseManager
 
 
-class PacketDissector(DatabaseManager):
+class PacketDissector():
     def __init__(
             self,
-            name: str = 'myDSN',
-            host: str = '127.0.0.1',
-            port: int = 27017,
             cycle_sequence: int = 0,
-            sequence: int = 0
+            sequence: int = 0,
+            database: object = DatabaseManager()
     ):
-        super().__init__(name, host, port)
         self.ack_pkt = None
         self.cycle_sequence = cycle_sequence
         self.sequence = sequence
+        self.db = database
 
     def handle_serial_packet(self, data):
         # Let's parse serial packet
@@ -28,7 +26,7 @@ class PacketDissector(DatabaseManager):
             print("bad serial packet")
             return
         # Let's first save the packet
-        # self.save_serial_packet(serial_pkt.toJSON())
+        # self.db.save_serial_packet(serial_pkt.toJSON())
         # Check if this is a serial ACK packet
         if serial_pkt.message_type == serial_protocol.ACK:
             self.ack_pkt = serial_pkt
@@ -55,9 +53,9 @@ class PacketDissector(DatabaseManager):
                 self.sequence += 1
                 # print(f"num seq (NA): {self.sequence}")
                 # We now build the energy DB
-                self.save_energy(pkt, na_pkt)
+                self.db.save_energy(pkt, na_pkt)
                 # We now build the neighbors DB
-                self.save_neighbors(pkt, na_pkt)
+                self.db.save_neighbors(pkt, na_pkt)
                 return
             case sdn_protocols.SDN_PROTO_DATA:
                 # print("Processing data packet")
@@ -73,9 +71,9 @@ class PacketDissector(DatabaseManager):
                 self.sequence += 1
                 # print(f"num seq (data): {self.sequence}")
                 # We now build the pdr DB
-                self.save_pdr(pkt, data_pkt)
+                self.db.save_pdr(pkt, data_pkt)
                 # We now build the delay DB
-                self.save_delay(pkt, data_pkt)
+                self.db.save_delay(pkt, data_pkt)
                 return
             case _:
                 print("sdn IP packet type not found")
