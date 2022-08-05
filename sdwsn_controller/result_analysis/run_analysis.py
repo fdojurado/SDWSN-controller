@@ -433,17 +433,17 @@ def plot_fit_curves(df, title, path):
     title_fontweight = 'bold'
     axis_labels_fontstyle = 'italic'
 
-    fig, axs = pl.subplots(2, 2, layout='constrained')
+    fig, (ax1, ax2, ax3) = pl.subplots(3, layout='constrained')
 
     # Second plot: Power vs. slotframe size
-    axs[0, 1].set_title('Network avg. power vs. SF size',
-                        fontsize=title_font_size, fontweight=title_fontweight)
-    axs[0, 1].set_xlabel('SF size', fontsize=x_axis_font_size,
-                         fontstyle=axis_labels_fontstyle)
-    axs[0, 1].set_ylabel(
-        'Power [mW]', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
-    axs[0, 1].tick_params(axis='both', which='major',
-                          labelsize=ticks_font_size)
+    ax1.set_title('Network avg. power vs. SF size',
+                  fontsize=title_font_size, fontweight=title_fontweight)
+    ax1.set_xlabel('SF size', fontsize=x_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+    ax1.set_ylabel(
+        'Power', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+    ax1.tick_params(axis='both', which='major',
+                    labelsize=ticks_font_size)
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(
         df, 'current_sf_len', 'power_normalized')
@@ -451,9 +451,9 @@ def plot_fit_curves(df, title, path):
     x = stats['current_sf_len']
     y = stats['mean']
 
-    axs[0, 1].scatter(x, y)
-    axs[0, 1].fill_between(x, stats['ci95_hi'],
-                           stats['ci95_lo'], color='b', alpha=.1)
+    ax1.scatter(x, y, s=15)
+    ax1.fill_between(x, stats['ci95_hi'],
+                     stats['ci95_lo'], color='b', alpha=.1)
 
     x = x.to_numpy()
     y = y.to_numpy()
@@ -461,20 +461,27 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 3)
     power_trendpoly = np.poly1d(trend)
 
-    axs[0, 1].plot(x, power_trendpoly(x))
+    ax1.text(25, 0.89, r'$y=x^3*%.2E+x^2*%.2E+x*%.2E+%.2E$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
+             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=5)
+
+    # ax1.text(25, 0.89, 'colored text in axes coords',
+    #          verticalalignment='bottom', horizontalalignment='right',
+    #          color='black', fontsize=5)
+
+    ax1.plot(x, power_trendpoly(x))
 
     print("power fitted curve polynomial coefficients")
     print(trend)
 
     # Third plot: Delay vs. slotframe size
-    axs[1, 0].set_title('Network avg. delay vs. SF size',
-                        fontsize=title_font_size, fontweight=title_fontweight)
-    axs[1, 0].set_xlabel('SF size', fontsize=x_axis_font_size,
-                         fontstyle=axis_labels_fontstyle)
-    axs[1, 0].set_ylabel(
-        'Delay [ms]', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
-    axs[1, 0].tick_params(axis='both', which='major',
-                          labelsize=ticks_font_size)
+    ax2.set_title('Network avg. delay vs. SF size',
+                  fontsize=title_font_size, fontweight=title_fontweight)
+    ax2.set_xlabel('SF size', fontsize=x_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+    ax2.set_ylabel(
+        'Delay', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+    ax2.tick_params(axis='both', which='major',
+                    labelsize=ticks_font_size)
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(
         df, 'current_sf_len', 'delay_normalized')
@@ -482,9 +489,9 @@ def plot_fit_curves(df, title, path):
     x = stats['current_sf_len']
     y = stats['mean']
 
-    axs[1, 0].scatter(x, y)
-    axs[1, 0].fill_between(x, stats['ci95_hi'],
-                           stats['ci95_lo'], color='b', alpha=.1)
+    ax2.scatter(x, y, s=15)
+    ax2.fill_between(x, stats['ci95_hi'],
+                     stats['ci95_lo'], color='b', alpha=.1)
 
     x = x.to_numpy()
     y = y.to_numpy()
@@ -492,29 +499,32 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 3)
     delay_trendpoly = np.poly1d(trend)
 
-    axs[1, 0].plot(x, delay_trendpoly(x))
+    ax2.text(15, 0.03, r'$y=x^3*%.2E+x^2*%.2E+x*%.2E+%.2E$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
+             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=5)
+
+    ax2.plot(x, delay_trendpoly(x))
 
     print("delay fitted curve polynomial coefficients")
     print(trend)
 
     # Fourth plot: PDR vs. slotframe size
-    axs[1, 1].set_title('Network avg. PDR vs. SF size',
-                        fontsize=title_font_size, fontweight=title_fontweight)
-    axs[1, 1].set_xlabel('SF size', fontsize=x_axis_font_size,
-                         fontstyle=axis_labels_fontstyle)
-    axs[1, 1].set_ylabel(
+    ax3.set_title('Network avg. PDR vs. SF size',
+                  fontsize=title_font_size, fontweight=title_fontweight)
+    ax3.set_xlabel('SF size', fontsize=x_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+    ax3.set_ylabel(
         'PDR', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
-    axs[1, 1].tick_params(axis='both', which='major',
-                          labelsize=ticks_font_size)
+    ax3.tick_params(axis='both', which='major',
+                    labelsize=ticks_font_size)
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(df, 'current_sf_len', 'pdr_mean')
 
     x = stats['current_sf_len']
     y = stats['mean']
 
-    axs[1, 1].scatter(x, y)
-    axs[1, 1].fill_between(x, stats['ci95_hi'],
-                           stats['ci95_lo'], color='b', alpha=.1)
+    ax3.scatter(x, y, s=15)
+    ax3.fill_between(x, stats['ci95_hi'],
+                     stats['ci95_lo'], color='b', alpha=.1)
 
     x = x.to_numpy()
     y = y.to_numpy()
@@ -522,46 +532,52 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 1)
     pdr_trendpoly = np.poly1d(trend)
 
-    axs[1, 1].plot(x, pdr_trendpoly(x))
+    ax3.text(25, 0.6, r'$y=x*%.2E+%.2E$' % (trend[0], trend[1]), style='italic',
+             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=5)
+
+    ax3.plot(x, pdr_trendpoly(x))
+
+    ax3.set_ylim([0, 1])
 
     print("pdr fitted curve polynomial coefficients")
     print(trend)
 
-    # First plot: Reward vs. Slotframe size using the previous regressions
-    alpha_weight = df['alpha'].iloc[0]
-    beta_weight = df['beta'].iloc[0]
-    delta_weight = df['delta'].iloc[0]
+    # # First plot: Reward vs. Slotframe size using the previous regressions
+    # alpha_weight = df['alpha'].iloc[0]
+    # beta_weight = df['beta'].iloc[0]
+    # delta_weight = df['delta'].iloc[0]
 
-    axs[0, 0].set_title('Reward vs SF size',
-                        fontsize=title_font_size, fontweight=title_fontweight)
-    axs[0, 0].set_xlabel('SF size', fontsize=x_axis_font_size,
-                         fontstyle=axis_labels_fontstyle)
-    axs[0, 0].set_ylabel('Reward', fontsize=y_axis_font_size,
-                         fontstyle=axis_labels_fontstyle)
-    axs[0, 0].tick_params(axis='both', which='major',
-                          labelsize=ticks_font_size)
-    # Confidence interval for all sf size
-    stats = calculate_confidence_interval(df, 'current_sf_len', 'reward')
+    # axs[0, 0].set_title('Reward vs SF size',
+    #                     fontsize=title_font_size, fontweight=title_fontweight)
+    # axs[0, 0].set_xlabel('SF size', fontsize=x_axis_font_size,
+    #                      fontstyle=axis_labels_fontstyle)
+    # axs[0, 0].set_ylabel('Reward', fontsize=y_axis_font_size,
+    #                      fontstyle=axis_labels_fontstyle)
+    # axs[0, 0].tick_params(axis='both', which='major',
+    #                       labelsize=ticks_font_size)
+    # # Confidence interval for all sf size
+    # stats = calculate_confidence_interval(df, 'current_sf_len', 'reward')
 
-    x = stats['current_sf_len']
-    y = stats['mean']
+    # x = stats['current_sf_len']
+    # y = stats['mean']
 
-    axs[0, 0].scatter(x, y)
-    axs[0, 0].fill_between(x, stats['ci95_hi'],
-                           stats['ci95_lo'], color='b', alpha=.1)
+    # axs[0, 0].scatter(x, y)
+    # axs[0, 0].fill_between(x, stats['ci95_hi'],
+    #                        stats['ci95_lo'], color='b', alpha=.1)
 
-    x = x.to_numpy()
-    y = y.to_numpy()
+    # x = x.to_numpy()
+    # y = y.to_numpy()
 
-    y = -1*(alpha_weight*power_trendpoly(x)+beta_weight *
-            delay_trendpoly(x)-delta_weight*pdr_trendpoly(x))
+    # y = -1*(alpha_weight*power_trendpoly(x)+beta_weight *
+    #         delay_trendpoly(x)-delta_weight*pdr_trendpoly(x))
 
-    print("reward vector")
-    print(y)
+    # print("reward vector")
+    # print(y)
 
-    axs[0, 0].plot(x, y)
+    # axs[0, 0].plot(x, y)
 
     pl.savefig(path+title+'.pdf', bbox_inches='tight')
+    pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
     pl.close()
 
 #######################################################

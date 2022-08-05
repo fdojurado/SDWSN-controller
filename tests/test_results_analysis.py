@@ -1,7 +1,6 @@
 import sys
 import os
 import argparse
-import pathlib
 import pandas as pd
 from sdwsn_controller.result_analysis import run_analysis
 
@@ -28,11 +27,12 @@ def main():
 
     os.makedirs(results_path, exist_ok=True)
 
-    run_analysis.plot(df, name, results_path)
+    # run_analysis.plot(df, name, results_path)
 
-    run_analysis.plot_against_sf_size(df, name, results_path)
+    # run_analysis.plot_against_sf_size(df, name, results_path)
 
     run_analysis.plot_fit_curves(df, name+"_fitted_curves", results_path)
+    # run_analysis.average_network_pdr_ci_sf_size(df, 'pdr', results_path)
 
 
 if __name__ == '__main__':

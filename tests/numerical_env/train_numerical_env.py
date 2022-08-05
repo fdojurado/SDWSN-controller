@@ -1,3 +1,40 @@
+# To get the parameters, we used Optuna (rl-stablebaseline3-zoo)
+# python3 train.py --algo dqn --env sdwsn-v2 -n 50000 -optimize --n-trials 1000 --n-jobs 2 --sampler tpe --pruner median
+# In dqn.yml, we added
+# Almost Tuned
+# sdwsn-v2:
+#   n_timesteps: !!float 5e4
+#   policy: 'MlpPolicy'
+#   learning_rate: !!float 2.3e-3
+#   batch_size: 64
+#   buffer_size: 100000
+#   learning_starts: 1000
+#   gamma: 0.99
+#   target_update_interval: 10
+#   train_freq: 256
+#   gradient_steps: 128
+#   exploration_fraction: 0.16
+#   exploration_final_eps: 0.04
+#   policy_kwargs: "dict(net_arch=[256, 256])"
+# In import_envs.py, we added,
+# import sys
+# sys.path.append('/Users/fernando/SDWSN-controller')
+# try:
+#     import sdwsn_controller
+#     print("sdwsn package imported")
+# except ImportError:
+#     print("sdwsn package not imported")
+#     sdwsn_gym = None
+# register(
+#         # unique identifier for the env `name-version`
+#         id="sdwsn-v2",
+#         # path to the class for creating the env
+#         # Note: entry_point also accept a class as input (and not only a string)
+#         entry_point="sdwsn_controller.reinforcement_learning.env_numerical:Env",
+#         # Max number of steps per episode, using a `TimeLimitWrapper`
+#         max_episode_steps=50
+#     )
+# 
 import sys
 import argparse
 import gym
