@@ -156,7 +156,7 @@ class Env(gym.Env):
         user_requirements = np.array(select_user_req)
         # We now save the observations with reward None
         _, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
-            select_user_req[0], select_user_req[1], select_user_req[2])
+            select_user_req[0], select_user_req[1], select_user_req[2], slotframe_size)
        # Append to the observations
         sample_time = datetime.now().timestamp() * 1000.0
         observation = np.append(user_requirements, cycle_power[2])

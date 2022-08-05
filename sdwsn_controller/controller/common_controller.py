@@ -338,5 +338,5 @@ class CommonController(BaseController):
 
     """ Reinforcement learning functionalities """
 
-    def calculate_reward(self, alpha, beta, delta):
+    def calculate_reward(self, alpha, beta, delta, slotframe_size):
         return self.__reward_processing.calculate_reward(alpha, beta, delta, self.cycle_sequence)
