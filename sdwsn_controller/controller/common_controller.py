@@ -96,6 +96,9 @@ class CommonController(BaseController):
         # Run the data analysis script if there is data in the DB
         # self.run_data_analysis()
 
+    def wait_seconds(self, seconds):
+        sleep(seconds)
+
     def send(self, data):
         if self.__is_running:
             print("sending serial packet")

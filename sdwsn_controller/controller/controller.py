@@ -91,6 +91,10 @@ class BaseController(ABC):
         pass
 
     @abstractmethod
+    def wait_seconds(self):
+        pass
+
+    @abstractmethod
     def send(self):
         """
         This abstract should receive a data parameter

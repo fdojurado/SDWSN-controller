@@ -45,15 +45,15 @@ class Env(gym.Env):
         sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
         alpha, beta, delta, last_ts_in_schedule, current_sf_len, _, _ = self.controller.get_last_observations()
-        print(f"Performing action {action} (current sf: {current_sf_len})")
+        # print(f"Performing action {action} (current sf: {current_sf_len})")
         if action == 0:
-            print("increasing slotframe size")
+            # print("increasing slotframe size")
             sf_len = common.next_coprime(current_sf_len)
         if action == 1:
-            print("decreasing slotframe size")
+            # print("decreasing slotframe size")
             sf_len = common.previous_coprime(current_sf_len)
-        if action == 2:
-            sf_len = current_sf_len
+        # if action == 2:
+        #     sf_len = current_sf_len
         user_requirements = np.array([alpha, beta, delta])
         # the last slot in the current schedule
         # Send the entire TSCH schedule
@@ -70,11 +70,11 @@ class Env(gym.Env):
             self.controller.delete_info_collection()
             # Reset sequence
             self.controller.reset_pkt_sequence()
-        print("process reward")
-        sleep(1)
+        # print("process reward")
+        self.controller.wait_seconds(1)
         # Calculate the reward
         reward, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
-            alpha, beta, delta)
+            alpha, beta, delta, sf_len)
         # Append to the observations
         sample_time = datetime.now().timestamp() * 1000.0
         observation = np.append(user_requirements, cycle_power[2])

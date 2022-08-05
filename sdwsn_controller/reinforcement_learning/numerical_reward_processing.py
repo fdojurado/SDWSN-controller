@@ -7,13 +7,13 @@ from sdwsn_controller.reinforcement_learning.reward_processing import RewardProc
 class NumericalRewardProcessing(RewardProcessing):
     def __init__(
         self,
-        power_weights: np.array() = np.array(
+        power_weights: np = np.array(
             [-2.34925404e-06,  2.38160571e-04, -8.87979911e-03, 3.25046326e-01]
         ),
-        delay_weights: np.array() = np.array(
+        delay_weights: np = np.array(
             [-3.52867079e-06, 2.68498049e-04, -2.37508338e-03, 4.84268817e-02]
         ),
-        pdr_weights: np.array() = np.array(
+        pdr_weights: np = np.array(
             [-0.00121819, 0.88141225]
         )
     ):
@@ -30,12 +30,16 @@ class NumericalRewardProcessing(RewardProcessing):
         Function to calculate the reward given the SF size 
         """
         # Calculate power consumption
-        power = self.power_trendpoly(sf_size)
+        power_normalized = self.power_trendpoly(sf_size)
+        power = [0, 0, power_normalized]
         # Calculate delay consumption
-        delay = self.delay_trendpoly(sf_size)
+        delay_normalized = self.delay_trendpoly(sf_size)
+        delay = [0, 0, delay_normalized]
         # Calculate pdr consumption
-        pdr = self.pdr_trendpoly(sf_size)
+        pdr_normalized = self.pdr_trendpoly(sf_size)
+        pdr = [pdr_normalized, 0]
         # Calculate the reward
-        reward = -1*(alpha*power+beta * delay-delta*pdr)
+        reward = -1*(alpha*power_normalized+beta *
+                     delay_normalized-delta*pdr_normalized)
         # print(f"reward: {reward}")
         return reward, power, delay, pdr
