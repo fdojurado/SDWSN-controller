@@ -280,11 +280,11 @@ def plot_against_sf_size(df, name, path):
     axs[0, 1].set_xlabel('SF size', fontsize=x_axis_font_size,
                          fontstyle=axis_labels_fontstyle)
     axs[0, 1].set_ylabel(
-        'Power [mW]', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+        'power_normalized', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     axs[0, 1].tick_params(axis='both', which='major',
                           labelsize=ticks_font_size)
     # Confidence interval for all sf size
-    stats = calculate_confidence_interval(df, 'current_sf_len', 'power_avg')
+    stats = calculate_confidence_interval(df, 'current_sf_len', 'power_normalized')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -299,11 +299,11 @@ def plot_against_sf_size(df, name, path):
     axs[1, 0].set_xlabel('SF size', fontsize=x_axis_font_size,
                          fontstyle=axis_labels_fontstyle)
     axs[1, 0].set_ylabel(
-        'Delay [ms]', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+        'Delay normalized', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     axs[1, 0].tick_params(axis='both', which='major',
                           labelsize=ticks_font_size)
     # Confidence interval for all sf size
-    stats = calculate_confidence_interval(df, 'current_sf_len', 'delay_avg')
+    stats = calculate_confidence_interval(df, 'current_sf_len', 'delay_normalized')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -458,11 +458,11 @@ def plot_fit_curves(df, title, path):
     x = x.to_numpy()
     y = y.to_numpy()
 
-    trend = np.polyfit(x, y, 3)
+    trend = np.polyfit(x, y, 4)
     power_trendpoly = np.poly1d(trend)
 
-    ax1.text(25, 0.89, r'$y=x^3*%.2E+x^2*%.2E+x*%.2E+%.2E$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
-             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=5)
+    # ax1.text(25, 0.89, r'$y=x^2*%.2E+x*%.2E+%.2E$' % (trend[0], trend[1], trend[2]), style='italic',
+    #          bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=5)
 
     # ax1.text(25, 0.89, 'colored text in axes coords',
     #          verticalalignment='bottom', horizontalalignment='right',
@@ -606,6 +606,6 @@ def run_analysis(Database, name, path, plot_sf_size: bool = False):
     plot_episode_reward(df, name+"_reward", path)
 
     # Fit curves for power, delay, PDR.
-    print("df before fitted curves")
-    print(df.to_string())
-    plot_fit_curves(df, name+"_fitted_curves", path)
+    # print("df before fitted curves")
+    # print(df.to_string())
+    # plot_fit_curves(df, name+"_fitted_curves", path)

@@ -6,6 +6,7 @@ import numpy as np
 from time import sleep
 from datetime import datetime
 import random
+from random import randrange
 
 from sdwsn_controller.common import common
 from sdwsn_controller.result_analysis.run_analysis import run_analysis
@@ -34,8 +35,8 @@ class Env(gym.Env):
         n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
-        # They will be the user requirements, power, delay, pdr, last ts active in schedule
-        self.n_observations = 7
+        # They will be the user requirements, power, delay, pdr, last ts active in schedule, and current slotframe size
+        self.n_observations = 8
         self.observation_space = spaces.Box(low=0, high=1,
                                             shape=(self.n_observations, ), dtype=np.float32)
 
@@ -81,6 +82,7 @@ class Env(gym.Env):
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
         observation = np.append(observation, last_ts_in_schedule/15)
+        observation = np.append(observation, sf_len/50)
         self.controller.save_observations(
             timestamp=sample_time,
             alpha=alpha,
@@ -148,8 +150,8 @@ class Env(gym.Env):
         # Get last active ts
         last_ts_in_schedule = self.controller.last_active_tsch_slot()
         # Set the slotframe size
-        # slotframe_size = randrange(last_ts_in_schedule+1, 45)
-        slotframe_size = last_ts_in_schedule
+        slotframe_size = randrange(last_ts_in_schedule+1, 45)
+        # slotframe_size = last_ts_in_schedule
         # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
         sample_time = datetime.now().timestamp() * 1000.0
         # We now save the user requirements
@@ -163,6 +165,7 @@ class Env(gym.Env):
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
         observation = np.append(observation, last_ts_in_schedule/15)
+        observation = np.append(observation, slotframe_size/50)
         self.controller.save_observations(
             timestamp=sample_time,
             alpha=select_user_req[0],

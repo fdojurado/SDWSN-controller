@@ -124,7 +124,7 @@ class EnvNumericalController(BaseController):
         pass
 
     def last_active_tsch_slot(self):
-        return randrange(10, 15)
+        return 9
 
     def compute_tsch_schedule(self, path, slotframe_size):
         pass

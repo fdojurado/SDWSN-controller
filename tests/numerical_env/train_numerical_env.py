@@ -34,11 +34,12 @@
 #         # Max number of steps per episode, using a `TimeLimitWrapper`
 #         max_episode_steps=50
 #     )
-# 
+#
 import sys
 import argparse
 import gym
 import os
+import numpy as np
 from sdwsn_controller.controller.env_numerical_controller import EnvNumericalController
 
 from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer, SaveOnBestTrainingRewardCallback
@@ -90,7 +91,17 @@ def main():
     controller = EnvNumericalController(
         db_name=args.db_name,
         db_host=args.db_host,
-        db_port=args.db_port
+        db_port=args.db_port,
+        power_weights=np.array(
+            [3.72158335e-08, -5.52679120e-06,
+                3.06757888e-04, -7.85850498e-03, 9.50518299e-01]
+        ),
+        delay_weights=np.array(
+             [3.17334712e-07, -2.40848429e-05,  1.27791635e-03, -4.89649727e-03]
+        ),
+        pdr_weights=np.array(
+            [-5.85240204e-04,  9.65952384e-01]
+        )
     )
 
     env_kwargs = {
@@ -127,9 +138,12 @@ def main():
     # net_arch: medium
     # Writing report to logs/dqn/report_sdwsn-v2_1000-trials-50000-tpe-median_1656979123
     # Create an instance of the RL model to use
-    model = DQN('MlpPolicy', env, verbose=1, gamma=0.98, learning_rate=5.832985636420814e-05, batch_size=256,
-                buffer_size=1000000, exploration_final_eps=0.06038208749247105, exploration_fraction=0.45629838266368317, target_update_interval=20000,
-                learning_starts=5000, train_freq=1000, tensorboard_log=tensor_log_dir)
+    # model = DQN('MlpPolicy', env, verbose=1, gamma=0.98, learning_rate=5.832985636420814e-05, batch_size=256,
+    #             buffer_size=1000000, exploration_final_eps=0.06038208749247105, exploration_fraction=0.45629838266368317, target_update_interval=20000,
+    #             learning_starts=5000, train_freq=1000, tensorboard_log=tensor_log_dir)
+    # Create an instance of the RL model to use
+    model = DQN('MlpPolicy', env, verbose=1, batch_size=256,
+                tensorboard_log=tensor_log_dir, exploration_fraction=0.6)
 
     model.learn(total_timesteps=int(1e6),
                 tb_log_name=args.simulation_name, callback=best_model)
