@@ -8,8 +8,8 @@ from datetime import datetime
 import random
 
 from sdwsn_controller.common import common
-from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.result_analysis.run_analysis import run_analysis
+from sdwsn_controller.database.db_manager import DatabaseManager
 from random import randrange
 
 # These are the size of other schedules in orchestra
@@ -34,11 +34,14 @@ class Env(gym.Env):
         self.fig_dir = fig_dir
         self.simulation_name = simulation_name
         # Save instance of packet dissector
-        self.packet_dissector = PacketDissector(db_name, db_host, db_port)
-        # Initialize database
-        self.packet_dissector.initialise_db()
+        # Create database
+        self.__db = DatabaseManager(
+            name=db_name,
+            host=db_host,
+            port=db_port
+        )
         # We define the number of actions
-        n_actions = 3  # increase and decrease slotframe size
+        n_actions = 2  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
         # They will be the user requirements, power, delay, pdr, last ts active in schedule
@@ -51,7 +54,7 @@ class Env(gym.Env):
     def step(self, action):
         sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
-        alpha, beta, delta, last_ts_in_schedule, current_sf_len, _, _ = self.packet_dissector.get_last_observations()
+        alpha, beta, delta, last_ts_in_schedule, current_sf_len, _, _ = self.__db.get_last_observations()
         # print("Performing action "+str(action))
         if action == 0:
             # print("increasing slotframe size")
@@ -59,8 +62,8 @@ class Env(gym.Env):
         if action == 1:
             sf_len = common.previous_coprime(current_sf_len)
             # print("decreasing slotframe size")
-        if action == 2:
-            sf_len = current_sf_len
+        # if action == 2:
+        #     sf_len = current_sf_len
         user_requirements = np.array([alpha, beta, delta])
         # Calculate the reward
         reward, cycle_power, cycle_delay, cycle_pdr = self.__calculate_reward(
@@ -71,7 +74,7 @@ class Env(gym.Env):
         observation = np.append(observation, cycle_delay)
         observation = np.append(observation, cycle_pdr)
         observation = np.append(observation, last_ts_in_schedule/15)
-        self.packet_dissector.save_observations(
+        self.__db.save_observations(
             timestamp=sample_time,
             alpha=alpha,
             beta=beta,
@@ -124,7 +127,7 @@ class Env(gym.Env):
 
     def reset(self):
         # Initialize database
-        self.packet_dissector.initialise_db()
+        self.__db.initialize()
         # Set the last active timeslot
         last_ts_in_schedule = randrange(10, 15)
         # Set the slotframe size
@@ -146,7 +149,7 @@ class Env(gym.Env):
         observation = np.append(observation, cycle_delay)
         observation = np.append(observation, cycle_pdr)
         observation = np.append(observation, last_ts_in_schedule/15)
-        self.packet_dissector.save_observations(
+        self.__db.save_observations(
             timestamp=sample_time,
             alpha=select_user_req[0],
             beta=select_user_req[1],
