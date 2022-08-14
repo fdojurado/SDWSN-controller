@@ -1,7 +1,7 @@
 from sdwsn_controller.controller.controller import BaseController
 from sdwsn_controller.reinforcement_learning.numerical_reward_processing import NumericalRewardProcessing
 from sdwsn_controller.database.db_manager import DatabaseManager
-from random import randrange
+from sdwsn_controller.database.database import NODES_INFO
 
 
 import numpy as np
@@ -10,9 +10,9 @@ import numpy as np
 class EnvNumericalController(BaseController):
     def __init__(
         self,
-        db_name: str = 'mySDN',
-        db_host: str = '127.0.0.1',
-        db_port: int = 27017,
+        db_name: str = None,
+        db_host: str = None,
+        db_port: int = None,
         power_weights: np = np.array(
             [-2.34925404e-06,  2.38160571e-04, -8.87979911e-03, 3.25046326e-01]
         ),
@@ -23,12 +23,15 @@ class EnvNumericalController(BaseController):
             [-0.00121819, 0.88141225]
         )
     ):
-        # Create database
-        self.__db = DatabaseManager(
-            name=db_name,
-            host=db_host,
-            port=db_port
-        )
+        if db_name is not None and db_host is not None and db_port is not None:
+            # Create database
+            self.__db = DatabaseManager(
+                name=db_name,
+                host=db_host,
+                port=db_port
+            )
+        else:
+            self.__db = None
 
         # Create reward module
         self.__reward_processing = NumericalRewardProcessing(
@@ -37,7 +40,47 @@ class EnvNumericalController(BaseController):
             pdr_weights=pdr_weights
         )
 
+        # Initialize observation variables
+        self.timestamp = 0
+        self.alpha = 0
+        self.beta = 0
+        self.delta = 0
+        self.power_wam = 0
+        self.power_mean = 0
+        self.power_normalized = 0
+        self.delay_wam = 0
+        self.delay_mean = 0
+        self.delay_normalized = 0
+        self.pdr_wam = 0
+        self.pdr_mean = 0
+        self.current_sf_len = 0
+        self.last_ts_in_schedule = 0
+        self.reward = 0
+
         super().__init__()
+
+    """ 
+        Class related functions 
+    """
+
+    def update_observations(self, timestamp, alpha, beta, delta, power_wam, power_mean,
+                            power_normalized, delay_wam, delay_mean, delay_normalized,
+                            pdr_wam, pdr_mean, current_sf_len, last_ts_in_schedule, reward):
+        self.timestamp = timestamp
+        self.alpha = alpha
+        self.beta = beta
+        self.delta = delta
+        self.power_wam = power_wam
+        self.power_mean = power_mean
+        self.power_normalized = power_normalized
+        self.delay_wam = delay_wam
+        self.delay_mean = delay_mean
+        self.delay_normalized = delay_normalized
+        self.pdr_wam = pdr_wam
+        self.pdr_mean = pdr_mean
+        self.current_sf_len = current_sf_len
+        self.last_ts_in_schedule = last_ts_in_schedule
+        self.reward = reward
 
     """ 
         Controller related functions
@@ -80,7 +123,8 @@ class EnvNumericalController(BaseController):
         pass
 
     def init_db(self):
-        self.__db.initialize()
+        if self.__db is not None:
+            self.__db.initialize()
 
     def start(self):
         # Initialize database
@@ -104,6 +148,22 @@ class EnvNumericalController(BaseController):
 
     def reliable_send(self):
         pass
+
+    def save_observations(self, **env_kwargs):
+        if self.__db is not None:
+            self.__db.save_observations(**env_kwargs)
+        else:
+            self.update_observations(**env_kwargs)
+
+    def get_last_observations(self):
+        if self.__db is not None:
+            return self.__db.get_last_observations()
+        else:
+            return self.alpha, self.beta, self.delta, self.last_ts_in_schedule, self.current_sf_len, None, None
+
+    def delete_info_collection(self):
+        if self.__db is not None:
+            self.__db.delete_collection(NODES_INFO)
 
     def calculate_reward(self, alpha, beta, delta, slotframe_size):
         return self.__reward_processing.calculate_reward(alpha, beta, delta, slotframe_size)

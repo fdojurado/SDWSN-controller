@@ -53,12 +53,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='This trains the numerical environment based on the polynomial \
         coefficients found for the hard coded schedule.')
-    parser.add_argument('-dbn', '--db-name', type=str, default='mySDN',
-                        help='Give a name to your DB')
-    parser.add_argument('-dbp', '--db-port', type=int, default=27017,
-                        help='Database port')
-    parser.add_argument('-db', '--db-host', type=str, default='127.0.0.1',
-                        help='Database host address')
+
     parser.add_argument('-ms', '--simulation-name', type=str, default='training',
                         help='Name of your simulation')
     parser.add_argument('-t', '--tensorboard', type=str, default='./tensorlog/',
@@ -89,15 +84,12 @@ def main():
 
     # Controller instance
     controller = EnvNumericalController(
-        db_name=args.db_name,
-        db_host=args.db_host,
-        db_port=args.db_port,
         power_weights=np.array(
             [3.72158335e-08, -5.52679120e-06,
                 3.06757888e-04, -7.85850498e-03, 9.50518299e-01]
         ),
         delay_weights=np.array(
-             [3.17334712e-07, -2.40848429e-05,  1.27791635e-03, -4.89649727e-03]
+            [3.17334712e-07, -2.40848429e-05,  1.27791635e-03, -4.89649727e-03]
         ),
         pdr_weights=np.array(
             [-5.85240204e-04,  9.65952384e-01]
@@ -142,8 +134,8 @@ def main():
     #             buffer_size=1000000, exploration_final_eps=0.06038208749247105, exploration_fraction=0.45629838266368317, target_update_interval=20000,
     #             learning_starts=5000, train_freq=1000, tensorboard_log=tensor_log_dir)
     # Create an instance of the RL model to use
-    model = DQN('MlpPolicy', env, verbose=1, batch_size=256,
-                tensorboard_log=tensor_log_dir, exploration_fraction=0.6)
+    model = DQN('MlpPolicy', env, verbose=1,
+                tensorboard_log=tensor_log_dir)
 
     model.learn(total_timesteps=int(1e6),
                 tb_log_name=args.simulation_name, callback=best_model)

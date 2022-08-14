@@ -89,11 +89,19 @@ def main():
     for i in range(10):
         obs = env.reset()
         done = False
+        acc_reward = 0
+        # reward = 0
         while(not done):
+            # print(f'observations: {obs} reward: {reward}')
+            # if obs[7] < 0.24:
+            #     action = 0
+            # else:
+            #     action = 1
             action, _states = loaded_model.predict(obs, deterministic=True)
             obs, reward, done, info = env.step(action)
+            acc_reward += reward
             if done:
-                print(f"episode done. reward: {reward}")
+                print(f"episode done. reward: {acc_reward}")
                 env.render()
 
     env.close()

@@ -38,7 +38,7 @@ class BaseController(ABC):
     # def init_db(self):
     #     pass
 
-    @property
+    # @property
     @abstractmethod
     def db(self):
         pass
@@ -107,14 +107,20 @@ class BaseController(ABC):
 
     """ Reinforcement learning functionalities """
 
+    @abstractmethod
     def save_observations(self, **env_kwargs):
-        self.db.save_observations(**env_kwargs)
+        pass
+        # self.db.save_observations(**env_kwargs)
 
+    @abstractmethod
     def get_last_observations(self):
-        return self.db.get_last_observations()
+        pass
+        # return self.db.get_last_observations()
 
+    @abstractmethod
     def delete_info_collection(self):
-        self.db.delete_collection(NODES_INFO)
+        pass
+        # self.db.delete_collection(NODES_INFO)
 
     @abstractmethod
     def calculate_reward(self):
