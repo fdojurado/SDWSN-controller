@@ -32,7 +32,7 @@ class Env(gym.Env):
         self.fig_dir = fig_dir
         self.simulation_name = simulation_name
         # We define the number of actions
-        n_actions = 2  # increase and decrease slotframe size
+        n_actions = 3  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
         # We define the observation space
         # They will be the user requirements, power, delay, pdr, last ts active in schedule, and current slotframe size
@@ -53,8 +53,8 @@ class Env(gym.Env):
         if action == 1:
             # print("decreasing slotframe size")
             sf_len = common.previous_coprime(current_sf_len)
-        # if action == 2:
-        #     sf_len = current_sf_len
+        if action == 2:
+            sf_len = current_sf_len
         user_requirements = np.array([alpha, beta, delta])
         # the last slot in the current schedule
         # Send the entire TSCH schedule
@@ -81,7 +81,7 @@ class Env(gym.Env):
         observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
-        observation = np.append(observation, last_ts_in_schedule/15)
+        observation = np.append(observation, last_ts_in_schedule/50)
         observation = np.append(observation, sf_len/50)
         self.controller.save_observations(
             timestamp=sample_time,
@@ -164,7 +164,7 @@ class Env(gym.Env):
         observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
-        observation = np.append(observation, last_ts_in_schedule/15)
+        observation = np.append(observation, last_ts_in_schedule/50)
         observation = np.append(observation, slotframe_size/50)
         self.controller.save_observations(
             timestamp=sample_time,
