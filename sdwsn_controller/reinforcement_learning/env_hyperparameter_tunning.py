@@ -13,9 +13,6 @@ class HyperparameterEnv(Env):
 
         # Controller instance
         controller = EnvNumericalController(
-            db_name='db_'+self.simulation_name,
-            db_host='127.0.0.1',
-            db_port=27017,
             power_weights=np.array(
                 [3.72158335e-08, -5.52679120e-06,
                     3.06757888e-04, -7.85850498e-03, 9.50518299e-01]

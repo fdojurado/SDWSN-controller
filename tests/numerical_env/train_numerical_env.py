@@ -134,10 +134,22 @@ def main():
     #             buffer_size=1000000, exploration_final_eps=0.06038208749247105, exploration_fraction=0.45629838266368317, target_update_interval=20000,
     #             learning_starts=5000, train_freq=1000, tensorboard_log=tensor_log_dir)
     # Create an instance of the RL model to use
-    model = DQN('MlpPolicy', env, verbose=1,
-                tensorboard_log=tensor_log_dir)
 
-    model.learn(total_timesteps=int(1e6),
+    model = DQN('MlpPolicy', env, verbose=1,
+                learning_rate=0.00014573962716878225,
+                batch_size=512,
+                buffer_size=50000,
+                learning_starts=0,
+                gamma=0.95,
+                target_update_interval=1,
+                train_freq=1,
+                gradient_steps=4,
+                exploration_fraction=0.40656924653962173,
+                exploration_final_eps=0.05110760419059456,
+                tensorboard_log=tensor_log_dir,
+                policy_kwargs=dict(net_arch=[64, 64]))
+
+    model.learn(total_timesteps=int(10e4),
                 tb_log_name=args.simulation_name, callback=best_model)
 
 
