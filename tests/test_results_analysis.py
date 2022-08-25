@@ -31,7 +31,7 @@ def main():
 
     # run_analysis.plot_against_sf_size(df, name, results_path)
 
-    run_analysis.plot_fit_curves(df, name+"_fitted_curves", results_path)
+    run_analysis.plot_fit_curves(df, name, results_path)
     # run_analysis.average_network_pdr_ci_sf_size(df, 'pdr', results_path)
 
 

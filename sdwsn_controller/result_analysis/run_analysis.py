@@ -284,7 +284,8 @@ def plot_against_sf_size(df, name, path):
     axs[0, 1].tick_params(axis='both', which='major',
                           labelsize=ticks_font_size)
     # Confidence interval for all sf size
-    stats = calculate_confidence_interval(df, 'current_sf_len', 'power_normalized')
+    stats = calculate_confidence_interval(
+        df, 'current_sf_len', 'power_normalized')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -303,7 +304,8 @@ def plot_against_sf_size(df, name, path):
     axs[1, 0].tick_params(axis='both', which='major',
                           labelsize=ticks_font_size)
     # Confidence interval for all sf size
-    stats = calculate_confidence_interval(df, 'current_sf_len', 'delay_normalized')
+    stats = calculate_confidence_interval(
+        df, 'current_sf_len', 'delay_normalized')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -425,9 +427,10 @@ def plot_fit_curves(df, title, path):
     PDR.
     """
     title_font_size = 8
-    x_axis_font_size = 8
-    y_axis_font_size = 8
-    ticks_font_size = 7
+    x_axis_font_size = 12
+    y_axis_font_size = 12
+    ticks_font_size = 10
+    equation_font_size = 7.7
     data_marker_size = 1.5
     legend_font_size = 6
     title_fontweight = 'bold'
@@ -436,12 +439,12 @@ def plot_fit_curves(df, title, path):
     fig, (ax1, ax2, ax3) = pl.subplots(3, layout='constrained')
 
     # Second plot: Power vs. slotframe size
-    ax1.set_title('Network avg. power vs. SF size',
-                  fontsize=title_font_size, fontweight=title_fontweight)
-    ax1.set_xlabel('SF size', fontsize=x_axis_font_size,
+    # ax1.set_title('Network avg. power vs. SF size',
+    #               fontsize=title_font_size, fontweight=title_fontweight)
+    ax1.set_xlabel(r'$\tau$', fontsize=x_axis_font_size,
                    fontstyle=axis_labels_fontstyle)
     ax1.set_ylabel(
-        'Power', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+        r'$\hat{P_N}$', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     ax1.tick_params(axis='both', which='major',
                     labelsize=ticks_font_size)
     # Confidence interval for all sf size
@@ -461,8 +464,8 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 4)
     power_trendpoly = np.poly1d(trend)
 
-    # ax1.text(25, 0.89, r'$y=x^2*%.2E+x*%.2E+%.2E$' % (trend[0], trend[1], trend[2]), style='italic',
-    #          bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=5)
+    ax1.text(9, 0.89, r'$\hat{P_N}(\tau)=\tau^4*(%.2E)+\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3], trend[4]), style='italic',
+             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
 
     # ax1.text(25, 0.89, 'colored text in axes coords',
     #          verticalalignment='bottom', horizontalalignment='right',
@@ -474,12 +477,12 @@ def plot_fit_curves(df, title, path):
     print(trend)
 
     # Third plot: Delay vs. slotframe size
-    ax2.set_title('Network avg. delay vs. SF size',
-                  fontsize=title_font_size, fontweight=title_fontweight)
-    ax2.set_xlabel('SF size', fontsize=x_axis_font_size,
+    # ax2.set_title('Network avg. delay vs. SF size',
+    #               fontsize=title_font_size, fontweight=title_fontweight)
+    ax2.set_xlabel(r'$\tau$', fontsize=x_axis_font_size,
                    fontstyle=axis_labels_fontstyle)
     ax2.set_ylabel(
-        'Delay', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+        r'$\hat{D_N}$', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     ax2.tick_params(axis='both', which='major',
                     labelsize=ticks_font_size)
     # Confidence interval for all sf size
@@ -499,8 +502,8 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 3)
     delay_trendpoly = np.poly1d(trend)
 
-    ax2.text(15, 0.03, r'$y=x^3*%.2E+x^2*%.2E+x*%.2E+%.2E$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
-             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=5)
+    ax2.text(9, 0.035, r'$\hat{D_N}(\tau)=\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
+             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
 
     ax2.plot(x, delay_trendpoly(x))
 
@@ -508,12 +511,12 @@ def plot_fit_curves(df, title, path):
     print(trend)
 
     # Fourth plot: PDR vs. slotframe size
-    ax3.set_title('Network avg. PDR vs. SF size',
-                  fontsize=title_font_size, fontweight=title_fontweight)
-    ax3.set_xlabel('SF size', fontsize=x_axis_font_size,
+    # ax3.set_title('Network avg. PDR vs. SF size',
+    #               fontsize=title_font_size, fontweight=title_fontweight)
+    ax3.set_xlabel(r'$\tau$', fontsize=x_axis_font_size,
                    fontstyle=axis_labels_fontstyle)
     ax3.set_ylabel(
-        'PDR', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+        r'$\hat{R_N}$', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     ax3.tick_params(axis='both', which='major',
                     labelsize=ticks_font_size)
     # Confidence interval for all sf size
@@ -532,12 +535,12 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 1)
     pdr_trendpoly = np.poly1d(trend)
 
-    ax3.text(25, 0.6, r'$y=x*%.2E+%.2E$' % (trend[0], trend[1]), style='italic',
-             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=5)
+    ax3.text(25, 0.8, r'$\hat{R_N}(\tau)=\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1]), style='italic',
+             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
 
     ax3.plot(x, pdr_trendpoly(x))
 
-    ax3.set_ylim([0, 1])
+    ax3.set_ylim([0.75, 1])
 
     print("pdr fitted curve polynomial coefficients")
     print(trend)
