@@ -346,11 +346,11 @@ def plot_against_sf_size(df, name, path):
 def plot_training_progress(df, title, path):
 
     title_font_size = 8
-    x_axis_font_size = 11
-    y_axis_font_size = 11
-    ticks_font_size = 8
+    x_axis_font_size = 14
+    y_axis_font_size = 14
+    ticks_font_size = 12
     data_marker_size = 3.5
-    legend_font_size = 9
+    legend_font_size = 12
     title_fontweight = 'bold'
     axis_labels_fontstyle = 'normal'
 
