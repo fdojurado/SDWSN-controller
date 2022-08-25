@@ -9,6 +9,7 @@ from numpy import arange
 from scipy.optimize import curve_fit
 from sdwsn_controller.database.database import OBSERVATIONS
 from stable_baselines3.common.results_plotter import load_results, ts2xy
+from matplotlib.ticker import FuncFormatter
 
 
 #######################################################
@@ -342,36 +343,62 @@ def plot_against_sf_size(df, name, path):
 #######################################################
 
 
-def plot_training_progress(log_dir, title="learning_curve"):
+def plot_training_progress(df, title, path):
 
     title_font_size = 8
-    x_axis_font_size = 8
-    y_axis_font_size = 8
-    ticks_font_size = 7
-    data_marker_size = 1.5
-    legend_font_size = 6
+    x_axis_font_size = 11
+    y_axis_font_size = 11
+    ticks_font_size = 8
+    data_marker_size = 3.5
+    legend_font_size = 9
     title_fontweight = 'bold'
-    axis_labels_fontstyle = 'italic'
+    axis_labels_fontstyle = 'normal'
+
+    def millions(x, pos):
+        'The two args are the value and tick position'
+        return '%1.0fk' % (x*1e-3)
+
+    formatter = FuncFormatter(millions)
 
     fig, axs = pl.subplots(layout='constrained')
 
-    x, y = ts2xy(load_results(log_dir), 'timesteps')
+    x = df['Step']
+    y1 = df['Episode']
+    y2 = df['Reward']
 
-    # Truncate x
-    x = x[len(x) - len(y):]
+    l1, = axs.plot(x, y1, 'b-*', markersize=data_marker_size)
 
-    axs.set_title('Reward vs. timesteps',
-                  fontsize=title_font_size, fontweight=title_fontweight)
+    axs.set_ylabel('Average episode length', fontsize=y_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+
+    axs.set_ylim([34, 52])
+    axs.set_xlim([0, 100000])
+
+    ax2 = axs.twinx()
+
+    l2, = ax2.plot(x, y2, 'g-o', markersize=data_marker_size)
+
+    ax2.set_ylim([70, 103])
+    ax2.set_xlim([0, 100000])
+
+    ax2.legend([l1, l2], ['Average episode length',
+               'Average accumulative reward'], fontsize=legend_font_size)
+
+    ax2.set_ylabel('Average accumulative reward', fontsize=y_axis_font_size,
+                   fontstyle=axis_labels_fontstyle)
+
     axs.set_xlabel('Timesteps', fontsize=x_axis_font_size,
-                   fontstyle=axis_labels_fontstyle)
-    axs.set_ylabel('Reward', fontsize=y_axis_font_size,
-                   fontstyle=axis_labels_fontstyle)
+                         fontstyle=axis_labels_fontstyle)
+
     axs.tick_params(axis='both', which='major',
-                    labelsize=ticks_font_size)
+                          labelsize=ticks_font_size)
+    ax2.tick_params(axis='both', which='major',
+                          labelsize=ticks_font_size)
 
-    axs.plot(x, y, 'b-o', markersize=data_marker_size)
+    axs.xaxis.set_major_formatter(formatter)
 
-    pl.savefig(title+'.pdf', bbox_inches='tight')
+    pl.savefig(path+title+'.pdf', bbox_inches='tight')
+    pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
     pl.close()
 #######################################################
 
