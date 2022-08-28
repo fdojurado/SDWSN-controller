@@ -12,7 +12,10 @@ class FitIoTLABController(CommonController):
         db_host: str = '127.0.0.1',
         db_port: int = 27017,
         processing_window: int = 200,
-        tsch_scheduler: object = ContentionFreeScheduler(500, 3)
+        tsch_scheduler: object = ContentionFreeScheduler(500, 3),
+        power_norm_offset: float = 0.0,
+        delay_norm_offset: float = 0.0,
+        reliability_norm_offset: float = 0.0
     ):
         super().__init__(
             port=socket_port,
@@ -20,6 +23,9 @@ class FitIoTLABController(CommonController):
             db_host=db_host,
             db_port=db_port,
             tsch_scheduler=tsch_scheduler,
+            power_norm_offset=power_norm_offset,
+            delay_norm_offset=delay_norm_offset,
+            reliability_norm_offset=reliability_norm_offset
         )
 
         self.__processing_window = processing_window

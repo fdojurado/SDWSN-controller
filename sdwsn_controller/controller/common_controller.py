@@ -34,6 +34,9 @@ class CommonController(BaseController):
         power_max: int = 5000,
         delay_min: int = SLOT_DURATION,
         delay_max: int = 15000,
+        power_norm_offset: float = 0.0,
+        delay_norm_offset: float = 0.0,
+        reliability_norm_offset: float = 0.0
     ):
         # Create a socket communication
         self.__socket = SerialBus(host, port)
@@ -55,7 +58,10 @@ class CommonController(BaseController):
             power_min=power_min,
             power_max=power_max,
             delay_min=delay_min,
-            delay_max=delay_max
+            delay_max=delay_max,
+            power_norm_offset=power_norm_offset,
+            delay_norm_offset = delay_norm_offset,
+            reliability_norm_offset = reliability_norm_offset
         )
 
         # Create TSCH scheduler module

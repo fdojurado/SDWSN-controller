@@ -21,12 +21,18 @@ class EmulatedRewardProcessing(RewardProcessing):
         power_max: int = 5000,
         delay_min: int = SLOT_DURATION,
         delay_max: int = 15000,
+        power_norm_offset: float = 0.0,
+        delay_norm_offset: float = 0.0,
+        reliability_norm_offset: float = 0.0
     ):
         self.db = database
         self.__power_min = power_min
         self.__power_max = power_max
         self.__delay_min = delay_min
         self.__delay_max = delay_max
+        self.__power_norm_offset = power_norm_offset
+        self.__delay_norm_offset = delay_norm_offset
+        self.__reliability_norm_offset = reliability_norm_offset
         super().__init__()
 
     def calculate_reward(self, alpha, beta, delta, sequence):
@@ -62,8 +68,8 @@ class EmulatedRewardProcessing(RewardProcessing):
         power_wam, power_mean = self.__power_weighted_arithmetic_mean(
             power_samples)
         # We now need to normalize the power WAM
-        normalized_power = (power_wam - self.__power_min) / \
-            (self.__power_max-self.__power_min)
+        normalized_power = self.__power_norm_offset + ((power_wam - self.__power_min) /
+                                                       (self.__power_max-self.__power_min))
         print(f'normalized power {normalized_power}')
         return power_wam, power_mean, normalized_power
 
@@ -125,8 +131,8 @@ class EmulatedRewardProcessing(RewardProcessing):
         delay_wam, delay_mean = self.__delay_weighted_arithmetic_mean(
             delay_samples)
         # We now need to normalize the power WAM
-        normalized_delay = (delay_wam - self.__delay_min) / \
-            (self.__delay_max-self.__delay_min)
+        normalized_delay = self.__delay_norm_offset + ((delay_wam - self.__delay_min) / \
+            (self.__delay_max-self.__delay_min))
         print(f'normalized delay {normalized_delay}')
         return delay_wam, delay_mean, normalized_delay
 
@@ -182,6 +188,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         pdr_wam, pdr_mean = self.__pdr_weighted_arithmetic_mean(
             pdr_samples)
         print(f'normalized pdr {pdr_wam}')
+        pdr_wam = pdr_wam - self.__reliability_norm_offset
         return pdr_wam, pdr_mean
 
     def __pdr_weighted_arithmetic_mean(self, pdr_samples):
