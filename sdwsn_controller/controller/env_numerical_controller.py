@@ -2,6 +2,7 @@ from sdwsn_controller.controller.controller import BaseController
 from sdwsn_controller.reinforcement_learning.numerical_reward_processing import NumericalRewardProcessing
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.database.database import NODES_INFO
+from random import randrange
 
 
 import numpy as np
@@ -184,7 +185,7 @@ class EnvNumericalController(BaseController):
         pass
 
     def last_active_tsch_slot(self):
-        return 9
+        return randrange(9+1, 20)
 
     def compute_tsch_schedule(self, path, slotframe_size):
         pass

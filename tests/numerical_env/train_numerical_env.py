@@ -86,13 +86,15 @@ def main():
     controller = EnvNumericalController(
         power_weights=np.array(
             [3.72158335e-08, -5.52679120e-06,
+                # 3.06757888e-04, -7.85850498e-03, 0.085]
                 3.06757888e-04, -7.85850498e-03, 9.50518299e-01]
         ),
         delay_weights=np.array(
-            [3.17334712e-07, -2.40848429e-05,  1.27791635e-03, -4.89649727e-03]
+            # [3.17334712e-07, -2.40848429e-05,  1.27791635e-03, -4.89649727e-03]
+            [3.17334712e-07, -2.40848429e-05,  1.27791635e-03, 0.85554529845230116226030189888771]
         ),
         pdr_weights=np.array(
-            [-5.85240204e-04,  9.65952384e-01]
+            [-5.85240204e-04,  -0.86038091033430107554520380300797]
         )
     )
 
@@ -149,7 +151,7 @@ def main():
                 tensorboard_log=tensor_log_dir,
                 policy_kwargs=dict(net_arch=[64, 64]))
 
-    model.learn(total_timesteps=int(10e4),
+    model.learn(total_timesteps=int(20e5),
                 tb_log_name=args.simulation_name, callback=best_model)
 
 
