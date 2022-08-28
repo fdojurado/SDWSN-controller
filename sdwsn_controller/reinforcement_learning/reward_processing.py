@@ -50,7 +50,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         pdr_wam, pdf_mean = self.__get_network_pdr(nodes, sequence)
         pdr = [pdr_wam, pdf_mean]
         # Calculate the reward
-        reward = -1*(alpha*power_normalized+beta *
+        reward = 2-1*(alpha*power_normalized+beta *
                      delay_normalized-delta*pdr_wam)
         return reward, power, delay, pdr
 
