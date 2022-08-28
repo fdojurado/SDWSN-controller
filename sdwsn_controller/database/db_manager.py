@@ -61,7 +61,7 @@ class DatabaseManager(Database):
         data = self.find(collection, {})
         # Expand the cursor and construct the DataFrame
         df = pd.DataFrame(data)
-        df.to_csv(folder+name+'.csv', sep='\t')
+        df.to_csv(folder+name+'.csv')
 
     def save_serial_packet(self, pkt):
         # The incoming format should be JSON
