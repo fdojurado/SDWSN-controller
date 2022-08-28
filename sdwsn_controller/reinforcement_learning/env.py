@@ -16,6 +16,8 @@ eb_size = 397
 common_size = 31
 control_plane_size = 27
 
+MAX_SLOTFRAME_SIZE = 70
+
 
 class Env(gym.Env):
     """Custom SDWSN Environment that follows gym interface"""
@@ -81,8 +83,8 @@ class Env(gym.Env):
         observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
-        observation = np.append(observation, last_ts_in_schedule/50)
-        observation = np.append(observation, sf_len/50)
+        observation = np.append(observation, last_ts_in_schedule/MAX_SLOTFRAME_SIZE)
+        observation = np.append(observation, sf_len/MAX_SLOTFRAME_SIZE)
         self.controller.save_observations(
             timestamp=sample_time,
             alpha=alpha,
@@ -102,10 +104,10 @@ class Env(gym.Env):
         )
         done = False
         info = {}
-        # 50 is the maximum slotframe size
+        # MAX_SLOTFRAME_SIZE is the maximum slotframe size
         # TODO: Set the maximum slotframe size at the creation
         # of the environment
-        if (sf_len < last_ts_in_schedule or sf_len > 50):
+        if (sf_len < last_ts_in_schedule or sf_len > MAX_SLOTFRAME_SIZE):
             done = True
             reward = -4
         return observation, reward, done, info
@@ -164,8 +166,8 @@ class Env(gym.Env):
         observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
-        observation = np.append(observation, last_ts_in_schedule/50)
-        observation = np.append(observation, slotframe_size/50)
+        observation = np.append(observation, last_ts_in_schedule/MAX_SLOTFRAME_SIZE)
+        observation = np.append(observation, slotframe_size/MAX_SLOTFRAME_SIZE)
         self.controller.save_observations(
             timestamp=sample_time,
             alpha=select_user_req[0],
@@ -195,11 +197,10 @@ class Env(gym.Env):
         run_analysis(self.controller.db,
                      self.simulation_name+str(number), self.folder, True)
 
-
     def close(self):
         """ 
         Here, we want to export the observation collections to CSV format
 
         """
-        self.controller.export_db(self.simulation_name,self.folder)
+        self.controller.export_db(self.simulation_name, self.folder)
         pass

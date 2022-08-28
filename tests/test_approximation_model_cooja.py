@@ -8,6 +8,8 @@ import argparse
 from gym.envs.registration import register
 import sdwsn_controller
 
+MAX_SLOTFRAME_SIZE = 70
+
 
 def main():
 
@@ -95,7 +97,7 @@ def main():
     for i in range(5):
         # action, _state = model.predict(obs, deterministic=True)
         if increase:
-            if sf_size < 50 - 1:
+            if sf_size < MAX_SLOTFRAME_SIZE - 1:
                 action = 0
             else:
                 increase = 0
