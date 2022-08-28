@@ -388,14 +388,68 @@ def plot_training_progress(df, title, path):
                    fontstyle=axis_labels_fontstyle)
 
     axs.set_xlabel('Timesteps', fontsize=x_axis_font_size,
-                         fontstyle=axis_labels_fontstyle)
+                   fontstyle=axis_labels_fontstyle)
 
     axs.tick_params(axis='both', which='major',
-                          labelsize=ticks_font_size)
+                    labelsize=ticks_font_size)
     ax2.tick_params(axis='both', which='major',
-                          labelsize=ticks_font_size)
+                    labelsize=ticks_font_size)
 
     axs.xaxis.set_major_formatter(formatter)
+
+    pl.savefig(path+title+'.pdf', bbox_inches='tight')
+    pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
+    pl.close()
+#######################################################
+
+
+def plot_results(df, title, path, x, y1, name, y2, y3):
+    title_font_size = 8
+    x_axis_font_size = 14
+    y_axis_font_size = 14
+    ticks_font_size = 12
+    data_marker_size = 3.5
+    legend_font_size = 12
+    title_fontweight = 'bold'
+    axis_labels_fontstyle = 'normal'
+
+    fig, ax = pl.subplots()
+    fig.subplots_adjust(right=0.85)
+
+    twin1 = ax.twinx()
+    twin2 = ax.twinx()
+
+    # Offset the right spine of twin2.  The ticks and label have already been
+    # placed on the right by twinx above.
+    twin2.spines.right.set_position(("axes", 1.2))
+
+    p1, = ax.plot(x, y1, "b--*",
+                  label=name, markersize=data_marker_size)
+    p2, = twin1.plot(x, y2, "r-o", label="Reward",
+                     markersize=data_marker_size)
+    p3, = twin2.plot(
+        x, y3, "g:v", label="Slotframe size", markersize=data_marker_size)
+
+    ax.set_xlabel('Iteration', fontsize=x_axis_font_size,
+                  fontstyle=axis_labels_fontstyle)
+    ax.set_ylabel(
+        name, fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+    twin1.set_ylabel(
+        "Reward", fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+    twin2.set_ylabel(
+        "Slotframe size ("+r'$\tau$'+')', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+
+    ax.yaxis.label.set_color(p1.get_color())
+    twin1.yaxis.label.set_color(p2.get_color())
+    twin2.yaxis.label.set_color(p3.get_color())
+
+    tkw = dict(size=4, width=1.5)
+    ax.tick_params(axis='y', colors=p1.get_color(), **tkw)
+    twin1.tick_params(axis='y', colors=p2.get_color(), **tkw)
+    twin2.tick_params(axis='y', colors=p3.get_color(), **tkw)
+    ax.tick_params(axis='x', **tkw)
+
+    ax.legend(handles=[p1, p2, p3], loc='center right')
 
     pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
