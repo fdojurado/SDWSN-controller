@@ -4,6 +4,7 @@ from sdwsn_controller.packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
 import json
 from datetime import datetime
 import numpy as np
+import pandas as pd
 from pymongo.collation import Collation
 import pymongo
 
@@ -51,6 +52,16 @@ class DatabaseManager(Database):
 
     def DATABASE(self):
         return self.DATABASE
+
+    def export_collection(self, name, folder):
+        db = self.find_one(OBSERVATIONS, {})
+        if db is None:
+            return
+        # Load observations
+        data = self.find(OBSERVATIONS, {})
+        # Expand the cursor and construct the DataFrame
+        df = pd.DataFrame(data)
+        df.to_csv(folder+name, sep='\t')
 
     def save_serial_packet(self, pkt):
         # The incoming format should be JSON

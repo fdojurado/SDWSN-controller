@@ -26,7 +26,7 @@ def main():
                         help='Name of your simulation')
     parser.add_argument('-t', '--monitor-log', type=str, default='./tensorlog/',
                         help='Path to log monitor data')
-    parser.add_argument('-fp', '--figures-path', type=str, default='./figures/',
+    parser.add_argument('-fp', '--output-path', type=str, default='./output/',
                         help='Path to save results')
     parser.add_argument('-m', '--model', type=str,
                         help='Path to the trained model to load')
@@ -44,8 +44,8 @@ def main():
         max_episode_steps=50
     )
 
-    # Create figure folder
-    log_dir = args.figures_path
+    # Create output folder
+    log_dir = args.output_path
     os.makedirs(log_dir, exist_ok=True)
 
     # Monitor the environment
@@ -76,7 +76,7 @@ def main():
 
     env_kwargs = {
         'simulation_name': args.simulation_name,
-        'fig_dir': args.figures_path,
+        'folder': args.output_path,
         'controller': controller
     }
 

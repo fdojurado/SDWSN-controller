@@ -2,6 +2,7 @@ from sdwsn_controller.controller.controller import BaseController
 from sdwsn_controller.reinforcement_learning.numerical_reward_processing import NumericalRewardProcessing
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.database.database import NODES_INFO
+from sdwsn_controller.database.database import OBSERVATIONS
 from random import randrange
 
 
@@ -102,6 +103,10 @@ class EnvNumericalController(BaseController):
     @property
     def db(self):
         return self.__db
+
+    def export_db(self, simulation_name, folder):
+        if self.db is not None:
+            self.db.export_collection(OBSERVATIONS, simulation_name, folder)
 
     @property
     def packet_dissector(self):

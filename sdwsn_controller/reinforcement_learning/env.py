@@ -25,11 +25,11 @@ class Env(gym.Env):
             self,
             simulation_name: str,
             controller: object,
-            fig_dir: str = './figures/'
+            folder: str = './figures/'
     ):
         super(Env, self).__init__()
         self.controller = controller
-        self.fig_dir = fig_dir
+        self.folder = folder
         self.simulation_name = simulation_name
         # We define the number of actions
         n_actions = 3  # increase and decrease slotframe size
@@ -193,4 +193,13 @@ class Env(gym.Env):
         print('rendering')
         number = random.randint(0, 100)
         run_analysis(self.controller.db,
-                     self.simulation_name+str(number), self.fig_dir, True)
+                     self.simulation_name+str(number), self.folder, True)
+
+
+    def close(self):
+        """ 
+        Here, we want to export the observation collections to CSV format
+
+        """
+        self.controller.export_db(self.simulation_name,self.folder)
+        pass

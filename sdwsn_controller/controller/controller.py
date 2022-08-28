@@ -43,6 +43,10 @@ class BaseController(ABC):
     def db(self):
         pass
 
+    @abstractmethod
+    def export_db(self):
+        pass
+
     """ Packet dissector functionalities """
 
     @property
