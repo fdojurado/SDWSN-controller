@@ -53,12 +53,12 @@ class DatabaseManager(Database):
     def DATABASE(self):
         return self.DATABASE
 
-    def export_collection(self, name, folder):
-        db = self.find_one(OBSERVATIONS, {})
+    def export_collection(self, collection, name, folder):
+        db = self.find_one(collection, {})
         if db is None:
             return
-        # Load observations
-        data = self.find(OBSERVATIONS, {})
+        # Load collection
+        data = self.find(collection, {})
         # Expand the cursor and construct the DataFrame
         df = pd.DataFrame(data)
         df.to_csv(folder+name, sep='\t')
