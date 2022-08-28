@@ -10,6 +10,7 @@ from sdwsn_controller.reinforcement_learning.reward_processing import EmulatedRe
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.packet.packet import Cell_Packet_Payload
 from sdwsn_controller.database.db_manager import SLOT_DURATION
+from sdwsn_controller.database.database import OBSERVATIONS
 
 
 import numpy as np
@@ -143,7 +144,7 @@ class CommonController(BaseController):
     def get_cycle_sequence(self):
         return self.cycle_sequence
 
-    """ 
+    """
     Serial interface methods:
         * Start
         * Stop
@@ -188,6 +189,12 @@ class CommonController(BaseController):
     @property
     def db(self):
         return self.__db
+
+    def delete_info_collection(self):
+        self.db.delete_collection(NODES_INFO)
+
+    def export_db(self, simulation_name, folder):
+        self.db.export_collection(OBSERVATIONS, simulation_name, folder)
 
     def get_network_links(self):
         # Get last index of sensor
@@ -340,6 +347,12 @@ class CommonController(BaseController):
         return path
 
     """ Reinforcement learning functionalities """
+
+    def get_last_observations(self):
+        return self.db.get_last_observations()
+
+    def save_observations(self, **env_kwargs):
+        self.db.save_observations(**env_kwargs)
 
     def calculate_reward(self, alpha, beta, delta, slotframe_size):
         return self.__reward_processing.calculate_reward(alpha, beta, delta, self.cycle_sequence)
