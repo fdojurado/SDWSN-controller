@@ -152,7 +152,7 @@ class Env(gym.Env):
         # Get last active ts
         last_ts_in_schedule = self.controller.last_active_tsch_slot()
         # Set the slotframe size
-        slotframe_size = randrange(last_ts_in_schedule+1, 45)
+        slotframe_size = randrange(last_ts_in_schedule+1, MAX_SLOTFRAME_SIZE)
         # slotframe_size = last_ts_in_schedule
         # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
         sample_time = datetime.now().timestamp() * 1000.0
