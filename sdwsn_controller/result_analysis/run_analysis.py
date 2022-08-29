@@ -508,10 +508,10 @@ def plot_fit_curves(df, title, path):
     PDR.
     """
     title_font_size = 8
-    x_axis_font_size = 12
-    y_axis_font_size = 12
-    ticks_font_size = 10
-    equation_font_size = 7.7
+    x_axis_font_size = 14
+    y_axis_font_size = 14
+    ticks_font_size = 12
+    equation_font_size = 7.79
     data_marker_size = 1.5
     legend_font_size = 6
     title_fontweight = 'bold'
@@ -528,6 +528,14 @@ def plot_fit_curves(df, title, path):
         r'$\hat{P_N}$', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     ax1.tick_params(axis='both', which='major',
                     labelsize=ticks_font_size)
+
+    ax1.minorticks_on()
+    ax1.set_yticks(np.arange(0.85, 0.9, 0.01))
+    ax1.grid(True, 'major', 'both', linestyle='--',
+             color='0.75', linewidth=0.6)
+    ax1.grid(True, 'minor', 'both', linestyle=':',
+             color='0.85', linewidth=0.5)
+    # ax1.set_yticks(np.arange(0, max(y), 2))
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(
         df, 'current_sf_len', 'power_unbiased')
@@ -545,7 +553,7 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 4)
     power_trendpoly = np.poly1d(trend)
 
-    ax1.text(9, 0.89, r'$\hat{P_N}(\tau)=\tau^4*(%.2E)+\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3], trend[4]), style='italic',
+    ax1.text(8, 0.89, r'$\hat{P_N}(\tau)=\tau^4*(%.2E)+\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3], trend[4]), style='italic',
              bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
 
     # ax1.text(25, 0.89, 'colored text in axes coords',
@@ -566,6 +574,15 @@ def plot_fit_curves(df, title, path):
         r'$\hat{D_N}$', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     ax2.tick_params(axis='both', which='major',
                     labelsize=ticks_font_size)
+
+    ax2.set_yticks(np.arange(0.01, 0.9, 0.02))
+
+    # Turn on the minor TICKS, which are required for the minor GRID
+    ax2.minorticks_on()
+    ax2.grid(True, 'major', 'both', linestyle='--',
+             color='0.75', linewidth=0.6)
+    ax2.grid(True, 'minor', 'both', linestyle=':',
+             color='0.85', linewidth=0.5)
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(
         df, 'current_sf_len', 'delay_unbiased')
@@ -583,7 +600,7 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 3)
     delay_trendpoly = np.poly1d(trend)
 
-    ax2.text(9, 0.045, r'$\hat{D_N}(\tau)=\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
+    ax2.text(8, 0.045, r'$\hat{D_N}(\tau)=\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
              bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
 
     ax2.plot(x, delay_trendpoly(x))
@@ -600,6 +617,14 @@ def plot_fit_curves(df, title, path):
         r'$\hat{R_N}$', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     ax3.tick_params(axis='both', which='major',
                     labelsize=ticks_font_size)
+
+    ax3.set_yticks(np.arange(0.65, 1, 0.1))
+    # Turn on the minor TICKS, which are required for the minor GRID
+    ax3.minorticks_on()
+    ax3.grid(True, 'major', 'both', linestyle='--',
+             color='0.75', linewidth=0.6)
+    ax3.grid(True, 'minor', 'both', linestyle=':',
+             color='0.85', linewidth=0.5)
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(df, 'current_sf_len', 'pdr_unbiased')
 
