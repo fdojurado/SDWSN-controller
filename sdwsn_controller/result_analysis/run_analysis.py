@@ -530,7 +530,7 @@ def plot_fit_curves(df, title, path):
                     labelsize=ticks_font_size)
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(
-        df, 'current_sf_len', 'power_normalized')
+        df, 'current_sf_len', 'power_unbiased')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -568,7 +568,7 @@ def plot_fit_curves(df, title, path):
                     labelsize=ticks_font_size)
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(
-        df, 'current_sf_len', 'delay_normalized')
+        df, 'current_sf_len', 'delay_unbiased')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -583,7 +583,7 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 3)
     delay_trendpoly = np.poly1d(trend)
 
-    ax2.text(9, 0.035, r'$\hat{D_N}(\tau)=\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
+    ax2.text(9, 0.045, r'$\hat{D_N}(\tau)=\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
              bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
 
     ax2.plot(x, delay_trendpoly(x))
@@ -601,7 +601,7 @@ def plot_fit_curves(df, title, path):
     ax3.tick_params(axis='both', which='major',
                     labelsize=ticks_font_size)
     # Confidence interval for all sf size
-    stats = calculate_confidence_interval(df, 'current_sf_len', 'pdr_mean')
+    stats = calculate_confidence_interval(df, 'current_sf_len', 'pdr_unbiased')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -616,12 +616,12 @@ def plot_fit_curves(df, title, path):
     trend = np.polyfit(x, y, 1)
     pdr_trendpoly = np.poly1d(trend)
 
-    ax3.text(25, 0.8, r'$\hat{R_N}(\tau)=\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1]), style='italic',
+    ax3.text(25, 0.7, r'$\hat{R_N}(\tau)=\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1]), style='italic',
              bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
 
     ax3.plot(x, pdr_trendpoly(x))
 
-    ax3.set_ylim([0.75, 1])
+    ax3.set_ylim([0.65, 1])
 
     print("pdr fitted curve polynomial coefficients")
     print(trend)
