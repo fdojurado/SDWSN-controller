@@ -73,7 +73,7 @@ class EnvNumericalController(BaseController):
                             power_normalized, delay_wam, delay_mean, delay_normalized,
                             pdr_wam, pdr_mean, current_sf_len, last_ts_in_schedule, reward):
         self.timestamp = timestamp
-        self.user_requirements(alpha, beta, delta)
+        self.user_requirements = (alpha, beta, delta)
         self.power_wam = power_wam
         self.power_mean = power_mean
         self.power_normalized = power_normalized
@@ -196,10 +196,16 @@ class EnvNumericalController(BaseController):
             return self._alpha, self._beta, self._delta
 
     @user_requirements.setter
-    def user_requirements(self, alpha, beta, delta):
-        self._alpha = alpha
-        self._beta = beta
-        self._delta = delta
+    def user_requirements(self, val):
+        try:
+            alpha, beta, delta = val
+        except ValueError:
+            raise ValueError("Pass an iterable with three items")
+        else:
+            """ This will run only if no exception was raised """
+            self._alpha = alpha
+            self._beta = beta
+            self._delta = delta
 
     def get_network_links(self):
         pass
