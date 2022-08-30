@@ -4,6 +4,7 @@ from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.database.database import NODES_INFO
 from sdwsn_controller.database.database import OBSERVATIONS
 from random import randrange
+import random
 
 
 import numpy as np
@@ -12,6 +13,9 @@ import numpy as np
 class EnvNumericalController(BaseController):
     def __init__(
         self,
+        alpha: float = None,
+        beta: float = None,
+        delta: float = None,
         db_name: str = None,
         db_host: str = None,
         db_port: int = None,
@@ -44,9 +48,9 @@ class EnvNumericalController(BaseController):
 
         # Initialize observation variables
         self.timestamp = 0
-        self.alpha = 0
-        self.beta = 0
-        self.delta = 0
+        self._alpha = alpha
+        self._beta = beta
+        self._delta = delta
         self.power_wam = 0
         self.power_mean = 0
         self.power_normalized = 0
@@ -69,9 +73,7 @@ class EnvNumericalController(BaseController):
                             power_normalized, delay_wam, delay_mean, delay_normalized,
                             pdr_wam, pdr_mean, current_sf_len, last_ts_in_schedule, reward):
         self.timestamp = timestamp
-        self.alpha = alpha
-        self.beta = beta
-        self.delta = delta
+        self.user_requirements(alpha, beta, delta)
         self.power_wam = power_wam
         self.power_mean = power_mean
         self.power_normalized = power_normalized
@@ -161,11 +163,16 @@ class EnvNumericalController(BaseController):
         else:
             self.update_observations(**env_kwargs)
 
-    def get_last_observations(self):
-        if self.__db is not None:
-            return self.__db.get_last_observations()
-        else:
-            return self.alpha, self.beta, self.delta, self.last_ts_in_schedule, self.current_sf_len, None, None
+    def get_state(self):
+        # Let's return the user requirements, last tsch schedule, current slotframe size
+        alpha, beta, delta = self.user_requirements
+        return alpha, beta, delta, self.last_ts_in_schedule, self.current_sf_len
+
+    # def get_last_observations(self):
+    #     if self.__db is not None:
+    #         return self.__db.get_last_observations()
+    #     else:
+    #         return self._alpha, self._beta, self._delta, self.last_ts_in_schedule, self.current_sf_len, None, None
 
     def delete_info_collection(self):
         if self.__db is not None:
@@ -173,6 +180,26 @@ class EnvNumericalController(BaseController):
 
     def calculate_reward(self, alpha, beta, delta, slotframe_size):
         return self.__reward_processing.calculate_reward(alpha, beta, delta, slotframe_size)
+
+    @property
+    def user_requirements(self):
+        if self._alpha is None or self._beta is None or self._delta is None:
+            # If this is not set, we then generate them randomly
+            balanced = [0.4, 0.3, 0.3]
+            energy = [0.8, 0.1, 0.1]
+            delay = [0.1, 0.8, 0.1]
+            reliability = [0.1, 0.1, 0.8]
+            user_req = [balanced, energy, delay, reliability]
+            select_user_req = random.choice(user_req)
+            return select_user_req[0], select_user_req[1], select_user_req[2]
+        else:
+            return self._alpha, self._beta, self._delta
+
+    @user_requirements.setter
+    def user_requirements(self, alpha, beta, delta):
+        self._alpha = alpha
+        self._beta = beta
+        self._delta = delta
 
     def get_network_links(self):
         pass

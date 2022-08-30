@@ -117,8 +117,12 @@ class BaseController(ABC):
         # self.db.save_observations(**env_kwargs)
 
     @abstractmethod
-    def get_last_observations(self):
+    def get_state(self):
         pass
+
+    # @abstractmethod
+    # def get_last_observations(self):
+    #     pass
         # return self.db.get_last_observations()
 
     @abstractmethod
@@ -128,6 +132,16 @@ class BaseController(ABC):
 
     @abstractmethod
     def calculate_reward(self):
+        pass
+
+    @property
+    @abstractmethod
+    def user_requirements(self):
+        pass
+
+    @user_requirements.setter
+    @abstractmethod
+    def user_requirements(self):
         pass
 
     """ Network information methods """
