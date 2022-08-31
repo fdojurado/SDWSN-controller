@@ -44,7 +44,7 @@ def main():
         # Note: entry_point also accept a class as input (and not only a string)
         entry_point="sdwsn_controller.reinforcement_learning.env:Env",
         # Max number of steps per episode, using a `TimeLimitWrapper`
-        max_episode_steps=120
+        max_episode_steps=160
     )
 
     # Create output folder
@@ -101,11 +101,13 @@ def main():
         done = False
         acc_reward = 0
         # Set initial user requirements
-        controller.user_requirements = (0.1, 0.8, 0.1)
+        controller.user_requirements = (0.4, 0.3, 0.3)
         while(not done):
             if num_actions == 40:
-                controller.user_requirements = (0.8, 0.1, 0.1)
+                controller.user_requirements = (0.1, 0.8, 0.1)
             if num_actions == 80:
+                controller.user_requirements = (0.8, 0.1, 0.1)
+            if num_actions == 120:
                 controller.user_requirements = (0.1, 0.1, 0.8)
             num_actions += 1
             action, _ = loaded_model.predict(obs, deterministic=True)
