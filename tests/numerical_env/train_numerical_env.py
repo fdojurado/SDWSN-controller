@@ -38,15 +38,17 @@
 import sys
 import argparse
 import gym
+from torch import nn as nn
 import os
 import numpy as np
 from sdwsn_controller.controller.env_numerical_controller import EnvNumericalController
 
 from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer, SaveOnBestTrainingRewardCallback
-from stable_baselines3 import DQN
+from stable_baselines3 import DQN, A2C, PPO, HerReplayBuffer, DDPG, DQN, SAC, TD3
 from stable_baselines3.common.callbacks import EveryNTimesteps
 from gym.envs.registration import register
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.envs import BitFlippingEnv
 
 
 def main():
@@ -60,6 +62,10 @@ def main():
                         help='Path to log TensorBoard logging')
     parser.add_argument('-svm', '--save-model', type=str, default='./logs/',
                         help='Path to save the trained model')
+    parser.add_argument('-m', '--model', type=str, default=None,
+                        help='Path to the trained model to continue learning. Otherwise star fresh.')
+    parser.add_argument('-mt', '--model_type', type=str, default='DQN',
+                        help='model type to train.')
 
     args = parser.parse_args()
 
@@ -138,21 +144,63 @@ def main():
     #             learning_starts=5000, train_freq=1000, tensorboard_log=tensor_log_dir)
     # Create an instance of the RL model to use
 
-    model = DQN('MlpPolicy', env, verbose=1,
-                learning_rate=0.00014573962716878225,
-                batch_size=512,
-                buffer_size=50000,
-                learning_starts=0,
-                gamma=0.95,
-                target_update_interval=1,
-                train_freq=1,
-                gradient_steps=4,
-                exploration_fraction=0.40656924653962173,
-                exploration_final_eps=0.05110760419059456,
-                tensorboard_log=tensor_log_dir,
-                policy_kwargs=dict(net_arch=[64, 64]))
+    if args.model is not None:
+        print("loading model")
+        match(args.model_type):
+            case 'DQN':
+                # Continue learning
+                print("DQN")
+                model = DQN.load(args.model, env=env)
+            case 'PPO':
+                print("PPO")
+                model = PPO.load(args.model, env=env)
+    else:
+        print("no loading")
+        match(args.model_type):
+            case 'DQN':
+                print("Training DQN")
+                model = DQN("MlpPolicy", env,
+                            tensorboard_log=tensor_log_dir, verbose=1)
+            case 'A2C':
+                print("Training A2c")
+                model = A2C("MlpPolicy", env,
+                            tensorboard_log=tensor_log_dir, verbose=1)
+            case 'PPO':
+                print("Training PPO")
+                model = PPO("MlpPolicy", env,
+                            tensorboard_log=tensor_log_dir, verbose=1)
 
-    model.learn(total_timesteps=int(20e5),
+            case 'HER':
+                model_class = DQN  # works also with SAC, DDPG and TD3
+                N_BITS = 50
+
+                env = BitFlippingEnv(n_bits=N_BITS, continuous=model_class in [
+                                     DDPG, SAC, TD3], max_steps=N_BITS)
+
+                # Available strategies (cf paper): future, final, episode
+                goal_selection_strategy = 'future'  # equivalent to GoalSelectionStrategy.FUTURE
+
+                # If True the HER transitions will get sampled online
+                online_sampling = True
+                # Time limit for the episodes
+                max_episode_length = N_BITS
+
+                # Initialize the model
+                model = model_class(
+                    "MultiInputPolicy",
+                    env,
+                    replay_buffer_class=HerReplayBuffer,
+                    # Parameters for HER
+                    replay_buffer_kwargs=dict(
+                        n_sampled_goal=4,
+                        goal_selection_strategy=goal_selection_strategy,
+                        online_sampling=online_sampling,
+                        max_episode_length=max_episode_length,
+                    ),
+                    verbose=1,
+                )
+
+    model.learn(total_timesteps=int(5e4),
                 tb_log_name=args.simulation_name, callback=best_model)
 
 

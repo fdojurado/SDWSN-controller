@@ -6,12 +6,12 @@ import numpy as np
 
 from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer
 from sdwsn_controller.controller.env_numerical_controller import EnvNumericalController
-from stable_baselines3 import DQN, A2C, PPO
+from stable_baselines3 import DQN
 from stable_baselines3.common.evaluation import evaluate_policy
 from gym.envs.registration import register
 from stable_baselines3.common.monitor import Monitor
 
-
+MAX_SLOTFRAME_SIZE = 70
 
 def main():
     parser = argparse.ArgumentParser(
@@ -31,8 +31,6 @@ def main():
                         help='Path to save results')
     parser.add_argument('-m', '--model', type=str,
                         help='Path to the trained model to load')
-    parser.add_argument('-mt', '--model_type', type=str, default='DQN',
-                        help='model type to train.')
 
     args = parser.parse_args()
 
@@ -44,7 +42,7 @@ def main():
         # Note: entry_point also accept a class as input (and not only a string)
         entry_point="sdwsn_controller.reinforcement_learning.env:Env",
         # Max number of steps per episode, using a `TimeLimitWrapper`
-        max_episode_steps=50
+        # max_episode_steps=50
     )
 
     # Create output folder
@@ -86,37 +84,38 @@ def main():
 
     env = Monitor(env, log_dir)
 
-    # model = DQN('MlpPolicy', env, verbose=1, batch_size=256,
-    #             exploration_fraction=0.1)
+    env.reset()
+    # Get last observations including the SF size
+    _, _, _, last_ts_in_schedule, current_sf_len = controller.get_state()
+    # Current SF size
+    sf_size = current_sf_len
+    last_ts_in_schedule = last_ts_in_schedule
+    controller.user_requirements = (0.4, 0.3, 0.3)
+    increase = 1
+    for i in range(200):
+        # action, _state = model.predict(obs, deterministic=True)
+        if increase:
+            if sf_size < MAX_SLOTFRAME_SIZE - 2:
+                action = 0
+            else:
+                increase = 0
+        else:
+            if sf_size > last_ts_in_schedule + 2:
+                action = 1
+            else:
+                increase = 1
+                # done = True
+                # obs = env.reset()
 
-    match(args.model_type):
-        case 'DQN':
-            loaded_model = DQN.load(args.model, env=env)
-        case 'A2C':
-                loaded_model = A2C.load(args.model, env=env)
-        case 'PPO':
-                loaded_model = PPO.load(args.model, env=env)
+        obs, reward, done, info = env.step(action)
+        print(f'Observations: {obs}, reward: {reward}, done: {done}, info: {info}')
+        # Get last observations including the SF size
+        _, _, _, last_ts_in_schedule, current_sf_len = controller.get_state()
+        # Current SF size
+        sf_size = current_sf_len
+        print(f'current SF size: {sf_size}')
 
-    # Test the trained agent
-    for i in range(10):
-        obs = env.reset()
-        done = False
-        acc_reward = 0
-        # reward = 0
-        while(not done):
-            # print(f'observations: {obs} reward: {reward}')
-            # if obs[7] < 0.24:
-            #     action = 0
-            # else:
-            #     action = 1
-            action, _states = loaded_model.predict(obs, deterministic=True)
-            obs, reward, done, info = env.step(action)
-            acc_reward += reward
-            if done:
-                print(f"episode done. reward: {acc_reward}")
-                env.render()
-
-    env.close()
+    env.render()
 
 
 if __name__ == '__main__':

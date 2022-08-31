@@ -134,6 +134,14 @@ class Env(gym.Env):
         # We now set the TSCH schedules for the current routing
         self.controller.compute_tsch_schedule(path, slotframe_size)
         # We now set and save the user requirements
+        balanced = [0.4, 0.3, 0.3]
+        energy = [0.8, 0.1, 0.1]
+        delay = [0.1, 0.8, 0.1]
+        reliability = [0.1, 0.1, 0.8]
+        user_req = [balanced, energy, delay, reliability]
+        select_user_req = random.choice(user_req)
+        self.controller.user_requirements = (
+            select_user_req[0], select_user_req[1], select_user_req[2])
         alpha, beta, delta = self.controller.user_requirements
         # Send the entire routes
         self.controller.send_routes()
@@ -146,7 +154,8 @@ class Env(gym.Env):
         self.controller.wait()
         # We now save all the observations
         # Get last active ts
-        last_ts_in_schedule = self.controller.last_active_tsch_slot()
+        self.controller.last_tsch_link = randrange(9+1, 20)
+        last_ts_in_schedule = self.controller.last_tsch_link
         # Set the slotframe size
         slotframe_size = randrange(last_ts_in_schedule+1, MAX_SLOTFRAME_SIZE)
         # slotframe_size = last_ts_in_schedule

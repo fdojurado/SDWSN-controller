@@ -48,9 +48,9 @@ class EnvNumericalController(BaseController):
 
         # Initialize observation variables
         self.timestamp = 0
-        self._alpha = alpha
-        self._beta = beta
-        self._delta = delta
+        self.__alpha = alpha
+        self.__beta = beta
+        self.__delta = delta
         self.power_wam = 0
         self.power_mean = 0
         self.power_normalized = 0
@@ -59,8 +59,8 @@ class EnvNumericalController(BaseController):
         self.delay_normalized = 0
         self.pdr_wam = 0
         self.pdr_mean = 0
-        self.current_sf_len = 0
-        self.last_ts_in_schedule = 0
+        self.__current_slotframe_size = 0
+        self.__last_tsch_link = 0
         self.reward = 0
 
         super().__init__()
@@ -82,8 +82,8 @@ class EnvNumericalController(BaseController):
         self.delay_normalized = delay_normalized
         self.pdr_wam = pdr_wam
         self.pdr_mean = pdr_mean
-        self.current_sf_len = current_sf_len
-        self.last_ts_in_schedule = last_ts_in_schedule
+        self.current_slotframe_size = current_sf_len
+        self.last_tsch_link = last_ts_in_schedule
         self.reward = reward
 
     """ 
@@ -160,19 +160,13 @@ class EnvNumericalController(BaseController):
     def save_observations(self, **env_kwargs):
         if self.__db is not None:
             self.__db.save_observations(**env_kwargs)
-        else:
-            self.update_observations(**env_kwargs)
+
+        self.update_observations(**env_kwargs)
 
     def get_state(self):
         # Let's return the user requirements, last tsch schedule, current slotframe size
         alpha, beta, delta = self.user_requirements
-        return alpha, beta, delta, self.last_ts_in_schedule, self.current_sf_len
-
-    # def get_last_observations(self):
-    #     if self.__db is not None:
-    #         return self.__db.get_last_observations()
-    #     else:
-    #         return self._alpha, self._beta, self._delta, self.last_ts_in_schedule, self.current_sf_len, None, None
+        return alpha, beta, delta, self.last_tsch_link, self.current_slotframe_size
 
     def delete_info_collection(self):
         if self.__db is not None:
@@ -183,17 +177,7 @@ class EnvNumericalController(BaseController):
 
     @property
     def user_requirements(self):
-        if self._alpha is None or self._beta is None or self._delta is None:
-            # If this is not set, we then generate them randomly
-            balanced = [0.4, 0.3, 0.3]
-            energy = [0.8, 0.1, 0.1]
-            delay = [0.1, 0.8, 0.1]
-            reliability = [0.1, 0.1, 0.8]
-            user_req = [balanced, energy, delay, reliability]
-            select_user_req = random.choice(user_req)
-            return select_user_req[0], select_user_req[1], select_user_req[2]
-        else:
-            return self._alpha, self._beta, self._delta
+        return self.__alpha, self.__beta, self.__delta
 
     @user_requirements.setter
     def user_requirements(self, val):
@@ -203,9 +187,25 @@ class EnvNumericalController(BaseController):
             raise ValueError("Pass an iterable with three items")
         else:
             """ This will run only if no exception was raised """
-            self._alpha = alpha
-            self._beta = beta
-            self._delta = delta
+            self.__alpha = alpha
+            self.__beta = beta
+            self.__delta = delta
+
+    @property
+    def last_tsch_link(self):
+        return self.__last_tsch_link
+
+    @last_tsch_link.setter
+    def last_tsch_link(self, val):
+        self.__last_tsch_link = val
+
+    @property
+    def current_slotframe_size(self):
+        return self.__current_slotframe_size
+
+    @current_slotframe_size.setter
+    def current_slotframe_size(self, val):
+        self.__current_slotframe_size = val
 
     def get_network_links(self):
         pass
@@ -221,9 +221,6 @@ class EnvNumericalController(BaseController):
 
     def send_tsch_schedules(self, slotframe_size):
         pass
-
-    def last_active_tsch_slot(self):
-        return randrange(9+1, 20)
 
     def compute_tsch_schedule(self, path, slotframe_size):
         pass

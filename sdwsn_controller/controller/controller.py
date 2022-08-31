@@ -144,6 +144,22 @@ class BaseController(ABC):
     def user_requirements(self):
         pass
 
+    @property
+    def last_tsch_link(self):
+        pass
+
+    @last_tsch_link.setter
+    def last_tsch_link(self, val):
+        pass
+
+    @property
+    def current_slotframe_size(self):
+        pass
+
+    @current_slotframe_size.setter
+    def current_slotframe_size(self):
+        pass
+
     """ Network information methods """
 
     @abstractmethod
@@ -170,9 +186,9 @@ class BaseController(ABC):
     def send_tsch_schedules(self):
         pass
 
-    @abstractmethod
-    def last_active_tsch_slot(self):
-        pass
+    # @abstractmethod
+    # def last_active_tsch_slot(self):
+    #     pass
 
     @abstractmethod
     def compute_tsch_schedule(self):
