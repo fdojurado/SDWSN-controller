@@ -4,7 +4,7 @@ This script test the trained agent in Cooja Network Simulator.
 import sys
 from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
-from stable_baselines3 import DQN
+from stable_baselines3 import DQN, A2C, PPO
 import gym
 import os
 import argparse
@@ -48,6 +48,8 @@ def main():
                         help='Maximum timesteps per episode')
     parser.add_argument('-fp', '--output-path', type=str, default='./output/',
                         help='Path to save results')
+    parser.add_argument('-mt', '--model_type', type=str, default='DQN',
+                        help='model type to train.')
 
     args = parser.parse_args()
 
@@ -59,7 +61,7 @@ def main():
         # Note: entry_point also accept a class as input (and not only a string)
         entry_point="sdwsn_controller.reinforcement_learning.env:Env",
         # Max number of steps per episode, using a `TimeLimitWrapper`
-        max_episode_steps=50
+        max_episode_steps=160
     )
 
     # Create output folder
@@ -92,22 +94,39 @@ def main():
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
 
-    loaded_model = DQN.load(args.model, env=env)
+    match(args.model_type):
+        case 'DQN':
+            loaded_model = DQN.load(args.model, env=env)
+        case 'A2C':
+            loaded_model = A2C.load(args.model, env=env)
+        case 'PPO':
+            loaded_model = PPO.load(args.model, env=env)
 
+    num_actions = 0
     # Test the trained agent
-    for i in range(10):
+    for i in range(1):
         obs = env.reset()
         done = False
         acc_reward = 0
+        # Set initial user requirements
+        controller.user_requirements = (0.4, 0.3, 0.3)
         while(not done):
-            action, _states = loaded_model.predict(obs, deterministic=True)
-            obs, reward, done, info = env.step(action)
+            if num_actions == 40:
+                controller.user_requirements = (0.1, 0.8, 0.1)
+            if num_actions == 80:
+                controller.user_requirements = (0.8, 0.1, 0.1)
+            if num_actions == 120:
+                controller.user_requirements = (0.1, 0.1, 0.8)
+            num_actions += 1
+            action, _ = loaded_model.predict(obs, deterministic=True)
+            obs, reward, done, _ = env.step(action)
             acc_reward += reward
             if done:
                 print(f"episode done. reward: {acc_reward}")
                 env.render()
 
     env.close()
+
 
 
 if __name__ == '__main__':

@@ -23,6 +23,9 @@ class CommonController(BaseController):
 
     def __init__(
         self,
+        alpha: float = None,
+        beta: float = None,
+        delta: float = None,
         host: str = '127.0.0.1',
         port: int = 60001,
         db_name: str = 'mySDN',
@@ -60,8 +63,8 @@ class CommonController(BaseController):
             delay_min=delay_min,
             delay_max=delay_max,
             power_norm_offset=power_norm_offset,
-            delay_norm_offset = delay_norm_offset,
-            reliability_norm_offset = reliability_norm_offset
+            delay_norm_offset=delay_norm_offset,
+            reliability_norm_offset=reliability_norm_offset
         )
 
         # Create TSCH scheduler module
@@ -73,7 +76,45 @@ class CommonController(BaseController):
         # Initialize some variables
         self.__is_running = False
 
+        # Initialize observation variables
+        self.timestamp = 0
+        self.__alpha = alpha
+        self.__beta = beta
+        self.__delta = delta
+        self.power_wam = 0
+        self.power_mean = 0
+        self.power_normalized = 0
+        self.delay_wam = 0
+        self.delay_mean = 0
+        self.delay_normalized = 0
+        self.pdr_wam = 0
+        self.pdr_mean = 0
+        self.__current_slotframe_size = 0
+        self.__last_tsch_link = 0
+        self.reward = 0
+
         super().__init__()
+
+    """ 
+        Class related functions 
+    """
+
+    def update_observations(self, timestamp, alpha, beta, delta, power_wam, power_mean,
+                            power_normalized, delay_wam, delay_mean, delay_normalized,
+                            pdr_wam, pdr_mean, current_sf_len, last_ts_in_schedule, reward):
+        self.timestamp = timestamp
+        self.user_requirements = (alpha, beta, delta)
+        self.power_wam = power_wam
+        self.power_mean = power_mean
+        self.power_normalized = power_normalized
+        self.delay_wam = delay_wam
+        self.delay_mean = delay_mean
+        self.delay_normalized = delay_normalized
+        self.pdr_wam = pdr_wam
+        self.pdr_mean = pdr_mean
+        self.current_slotframe_size = current_sf_len
+        self.last_tsch_link = last_ts_in_schedule
+        self.reward = reward
 
     """ Controller related functions """
 
@@ -354,11 +395,50 @@ class CommonController(BaseController):
 
     """ Reinforcement learning functionalities """
 
-    def get_last_observations(self):
-        return self.db.get_last_observations()
+    def get_state(self):
+        # Let's return the user requirements, last tsch schedule, current slotframe size
+        alpha, beta, delta = self.user_requirements
+        return alpha, beta, delta, self.last_tsch_link, self.current_slotframe_size
 
     def save_observations(self, **env_kwargs):
         self.db.save_observations(**env_kwargs)
+        self.update_observations(**env_kwargs)
 
     def calculate_reward(self, alpha, beta, delta, slotframe_size):
         return self.__reward_processing.calculate_reward(alpha, beta, delta, self.cycle_sequence)
+
+    """ User requirements functions """
+    @property
+    def user_requirements(self):
+        return self.__alpha, self.__beta, self.__delta
+
+    @user_requirements.setter
+    def user_requirements(self, val):
+        try:
+            alpha, beta, delta = val
+        except ValueError:
+            raise ValueError("Pass an iterable with three items")
+        else:
+            """ This will run only if no exception was raised """
+            self.__alpha = alpha
+            self.__beta = beta
+            self.__delta = delta
+
+    @property
+    def last_tsch_link(self):
+        self.__last_tsch_link = self.last_active_tsch_slot()
+        return self.__last_tsch_link
+
+    @last_tsch_link.setter
+    def last_tsch_link(self, val):
+        # We pass because this is not valid in TSCH network
+        # Automatically done by the scheduler
+        pass
+
+    @property
+    def current_slotframe_size(self):
+        return self.__current_slotframe_size
+
+    @current_slotframe_size.setter
+    def current_slotframe_size(self, val):
+        self.__current_slotframe_size = val
