@@ -362,29 +362,16 @@ def plot_training_progress(df, title, path):
 
     fig, axs = pl.subplots(layout='constrained')
 
-    x = df['Step']
-    y1 = df['Episode']
-    y2 = df['Reward']
+    x1 = df['Step1']
+    y1 = df['Value1']
+    x2 = df['Step2']
+    y2 = df['Value2']
+    x3 = df['Step3']
+    y3 = df['Value3']
 
-    l1, = axs.plot(x, y1, 'b-*', markersize=data_marker_size)
+    l1, = axs.plot(x1, y1, 'g-o', markersize=data_marker_size)
 
-    axs.set_ylabel('Average episode length', fontsize=y_axis_font_size,
-                   fontstyle=axis_labels_fontstyle)
-
-    axs.set_ylim([34, 52])
-    axs.set_xlim([0, 100000])
-
-    ax2 = axs.twinx()
-
-    l2, = ax2.plot(x, y2, 'g-o', markersize=data_marker_size)
-
-    ax2.set_ylim([70, 103])
-    ax2.set_xlim([0, 100000])
-
-    ax2.legend([l1, l2], ['Average episode length',
-               'Average accumulative reward'], fontsize=legend_font_size)
-
-    ax2.set_ylabel('Average accumulative reward', fontsize=y_axis_font_size,
+    axs.set_ylabel('Average accumulative reward', fontsize=y_axis_font_size,
                    fontstyle=axis_labels_fontstyle)
 
     axs.set_xlabel('Timesteps', fontsize=x_axis_font_size,
@@ -392,8 +379,21 @@ def plot_training_progress(df, title, path):
 
     axs.tick_params(axis='both', which='major',
                     labelsize=ticks_font_size)
-    ax2.tick_params(axis='both', which='major',
+    axs.tick_params(axis='both', which='major',
                     labelsize=ticks_font_size)
+
+    l2, = axs.plot(x2, y2, 'b-*', markersize=data_marker_size)
+    l3, = axs.plot(x3, y3, 'r-s', markersize=data_marker_size)
+
+    axs.legend([l1, l2, l3], ['DQN',
+               'PPO', 'A2C'], fontsize=legend_font_size)
+
+    axs.minorticks_on()
+
+    axs.grid(True, 'major', 'both', linestyle='--',
+             color='0.75', linewidth=0.6)
+    axs.grid(True, 'minor', 'both', linestyle=':',
+             color='0.85', linewidth=0.5)
 
     axs.xaxis.set_major_formatter(formatter)
 
@@ -403,53 +403,128 @@ def plot_training_progress(df, title, path):
 #######################################################
 
 
-def plot_results(df, title, path, x, y1, name, y2, y3):
+def plot_results(df, title, path, x, y1, name, y2, ci=False):
     title_font_size = 8
     x_axis_font_size = 14
     y_axis_font_size = 14
     ticks_font_size = 12
     data_marker_size = 3.5
-    legend_font_size = 12
+    legend_font_size = 7
+    annotate_font_size = 9
     title_fontweight = 'bold'
     axis_labels_fontstyle = 'normal'
 
     fig, ax = pl.subplots()
     fig.subplots_adjust(right=0.85)
 
-    twin1 = ax.twinx()
+    # twin1 = ax.twinx()
     twin2 = ax.twinx()
 
     # Offset the right spine of twin2.  The ticks and label have already been
     # placed on the right by twinx above.
-    twin2.spines.right.set_position(("axes", 1.2))
+    # twin2.spines.right.set_position(("axes", 1.2))
+    # Confidence interval
+    if ci:
+        stats = calculate_confidence_interval(
+            df, x, y1)
 
-    p1, = ax.plot(x, y1, "b--*",
-                  label=name, markersize=data_marker_size)
-    p2, = twin1.plot(x, y2, "r-o", label="Reward",
-                     markersize=data_marker_size)
-    p3, = twin2.plot(
-        x, y3, "g:v", label="Slotframe size", markersize=data_marker_size)
+        x_stats = stats[x]
+        y_stats = stats['mean']
+        ax.fill_between(x_stats, stats['ci95_hi'],
+                        stats['ci95_lo'], color='b', alpha=.1)
+    else:
+        x_stats = df[x]
+        y_stats = df[y1]
+
+    ax.plot(x_stats, y_stats, "b-",
+            label=name, markersize=data_marker_size)
+
+    # Slotframe size
+    if ci:
+        stats = calculate_confidence_interval(
+            df, x, y2)
+
+        x_stats = stats[x]
+        y_stats = stats['mean']
+        twin2.fill_between(x_stats, stats['ci95_hi'],
+                           stats['ci95_lo'], color='g', alpha=.1)
+    else:
+        x_stats = df[x]
+        y_stats = df[y2]
+
+    twin2.plot(x_stats, y_stats, "g-",
+               label=name, markersize=data_marker_size)
+
+    # p1, = ax.plot(x, y1, "b--*",
+    #               label=name, markersize=data_marker_size)
+    # p2, = twin1.plot(x, y2, "r-o", label="Reward",
+    #                  markersize=data_marker_size)
+    # p3, = twin2.plot(
+    #     x, y2, "g:v", label="Slotframe size", markersize=data_marker_size)
 
     ax.set_xlabel('Iteration', fontsize=x_axis_font_size,
                   fontstyle=axis_labels_fontstyle)
     ax.set_ylabel(
         name, fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
-    twin1.set_ylabel(
-        "Reward", fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
-    twin2.set_ylabel(
-        "Slotframe size ("+r'$\tau$'+')', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+    # twin1.set_ylabel(
+    #     "Reward", fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+    # twin2.set_ylabel(
+    #     "Slotframe size ("+r'$\tau$'+')', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
 
-    ax.yaxis.label.set_color(p1.get_color())
-    twin1.yaxis.label.set_color(p2.get_color())
-    twin2.yaxis.label.set_color(p3.get_color())
+    # # ax.yaxis.label.set_color(p1.get_color())
+    # if y1_range is not None:
+    #     ax.set_ylim(y1_range)
+    # # twin1.yaxis.label.set_color(p2.get_color())
+    # # twin1.set_ylim([0.65, 1.2])
+    # # twin2.yaxis.label.set_color(p3.get_color())
 
-    tkw = dict(size=4, width=1.5)
-    ax.tick_params(axis='y', colors=p1.get_color(), **tkw)
-    twin1.tick_params(axis='y', colors=p2.get_color(), **tkw)
-    twin2.tick_params(axis='y', colors=p3.get_color(), **tkw)
-    ax.tick_params(axis='x', **tkw)
+    # tkw = dict(size=4, width=1.5)
+    # # ax.tick_params(axis='y', colors=p1.get_color(), **tkw)
+    # # twin1.tick_params(axis='y', colors=p2.get_color(), **tkw)
+    # # twin2.tick_params(axis='y', colors=p3.get_color(), **tkw)
+    # ax.tick_params(axis='x', **tkw)
 
-    ax.legend(handles=[p1, p2, p3], loc='center right')
+    # # y min and max
+    # ymin, ymax = ax.get_ylim()
+    # ax.vlines(x=[40, 80, 120], ymin=ymin, ymax=ymax,
+    #           colors='darkgrey', ls='--', lw=1)
+    # # ax.vlines(x=[0, 17], ymin=ymin, ymax=ymax, colors='r')
+
+    # # Set user requirements region
+    # ax.text(-5, text_loc[0], r'$\alpha=0.4, \beta=0.3, \gamma=0.3$', style='italic',
+    #         bbox={'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
+    # ax.text(40, text_loc[1], r'$\alpha=0.1, \beta=0.8, \gamma=0.1$', style='italic', bbox={
+    #         'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
+    # ax.text(80, text_loc[2], r'$\alpha=0.8, \beta=0.1, \gamma=0.1$', style='italic', bbox={
+    #         'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
+    # ax.text(123, text_loc[3], r'$\alpha=0.1, \beta=0.1, \gamma=0.8$', style='italic', bbox={
+    #         'facecolor': 'red', 'alpha': 0.6, 'pad': 2}, fontsize=legend_font_size)
+
+    # if label_loc is None:
+    #     label_loc = 'best'
+
+    # if annotate is True:
+    #     circle_rad = 16  # This is the radius, in points
+    #     ax.plot(83.8, 1.117, 'o',
+    #             ms=circle_rad * 2, mec='b', mfc='none', mew=1)
+    #     # ax.annotate('Change of user \nrequirements', xy=(40, 1.08), xycoords='data',
+    #     #             xytext=(40, 1.08),
+    #     #             textcoords='offset points',
+    #     #             color='b', size='large',
+    #     #             arrowprops=dict(
+    #     #                 arrowstyle='simple,tail_width=0.3,head_width=0.8,head_length=0.8',
+    #     #                 facecolor='b', shrinkB=circle_rad * 1.2)
+    #     #             )
+    #     ax.annotate('Change in UR.', xy=(83.8, 1.117),  xycoords='data',
+    #                 xytext=(45, 1.095), textcoords='data',
+    #                 fontsize=annotate_font_size,
+    #                 arrowprops=dict(
+    #         arrowstyle='simple,tail_width=0.3,head_width=0.8,head_length=0.8',
+    #         facecolor='b', shrinkB=circle_rad * 1.2)
+    #     )
+
+    # ax.legend(handles=[p1, p3], loc=label_loc,
+    #           fontsize=legend_font_size, facecolor='white', framealpha=1)
 
     pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)

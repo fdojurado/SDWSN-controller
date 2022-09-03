@@ -10,33 +10,70 @@ def main():
         description='This script loads the results of the experiment and plots \
         all charts: Power vs. SF, Power vs. Reward, etc.')
 
-    parser.add_argument('path', type=str,
-                        help="path and name to CSV file to load.")
-    parser.add_argument('name', type=str,
+    parser.add_argument('path', nargs='+',
+                        help="path and name to CSV file to load, or list of CSV files.")
+    parser.add_argument('-n', '--name', type=str, default='results',
                         help="name for your results.")
     parser.add_argument('-r', '--results-path', type=str, default='./results/',
                         help='Path to save results')
 
     args = parser.parse_args()
 
-    file = args.path
+    csv_files = args.path
     name = args.name
     results_path = args.results_path
 
-    df = pd.read_csv(file)
-
     os.makedirs(results_path, exist_ok=True)
 
-    # Plot power
-    run_analysis.plot_results(df, name+'power', results_path,
-                              range(len(df['timestamp'])), df['power_normalized'].astype(float), r'$\hat{P_N}$', df['reward'].astype(float), df['current_sf_len'].astype(int))
+    frames = []
 
-    # Plot delay
-    run_analysis.plot_results(df, name+'delay', results_path,
-                              range(len(df['timestamp'])), df['delay_normalized'].astype(float), r'$\hat{D_N}$', df['reward'].astype(float), df['current_sf_len'].astype(int))
-    # Plot reliability
-    run_analysis.plot_results(df, name+'reliability', results_path,
-                              range(len(df['timestamp'])), df['pdr_mean'].astype(float), r'$\hat{R_N}$', df['reward'].astype(float), df['current_sf_len'].astype(int))
+    for file in csv_files:
+        # print(f"file: {file}")
+        df = pd.read_csv(file)
+        df.drop(0, inplace=True)
+        df['counter'] = range(len(df))
+        frames.append(df)
+
+    # print(frames)
+    result = pd.concat(frames)
+    # Delete any previous file with the same name
+    if os.path.exists(results_path+"_"+name+".csv"):
+        os.remove(results_path+"_"+name+".csv")
+        print("The file has been deleted successfully")
+    else:
+        print("The file does not exist!")
+
+    result.to_csv(results_path+name+".csv")
+
+    if len(csv_files) > 1:
+        print("Calculating average.")
+         # Plot power
+        run_analysis.plot_results(result, name+'_power', results_path,
+                                  'counter', 'power_normalized', r'$\hat{P_N}$', 'current_sf_len', True)
+        # Plot delay
+        run_analysis.plot_results(result, name+'_delay', results_path,
+                                  'counter', 'delay_normalized', r'$\hat{D_N}$', 'current_sf_len', True)
+        # Plot reliability
+        run_analysis.plot_results(result, name+'_reliability', results_path,
+                                  'counter', 'pdr_mean', r'$\hat{R_N}$', 'current_sf_len', True)
+         # Reward vs slotframe size
+        run_analysis.plot_results(result, name+'_reward', results_path,
+                                  'counter', 'reward', 'Immediate reward', 'current_sf_len', True)
+
+    else:
+        print("Simple graph.")
+        # Plot power
+        run_analysis.plot_results(result, name+'_power', results_path,
+                                  'counter', 'power_normalized', r'$\hat{P_N}$', 'current_sf_len')
+        # Plot delay
+        run_analysis.plot_results(result, name+'_delay', results_path,
+                                  'counter', 'delay_normalized', r'$\hat{D_N}$', 'current_sf_len')
+        # Plot reliability
+        run_analysis.plot_results(result, name+'_reliability', results_path,
+                                  'counter', 'pdr_mean', r'$\hat{R_N}$', 'current_sf_len')
+        # Reward vs slotframe size
+        run_analysis.plot_results(result, name+'_reward', results_path,
+                                  'counter', 'reward', 'Immediate reward', 'current_sf_len')
 
 
 if __name__ == '__main__':
