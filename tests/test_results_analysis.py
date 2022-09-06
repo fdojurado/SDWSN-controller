@@ -49,13 +49,13 @@ def main():
         print("Calculating average.")
          # Plot power
         run_analysis.plot_results(result, name+'_power', results_path,
-                                  'counter', 'power_normalized', r'$\hat{P_N}$', 'current_sf_len', True)
+                                  'counter', 'power_avg', 'Network average power [mW]', 'current_sf_len', True)
         # Plot delay
         run_analysis.plot_results(result, name+'_delay', results_path,
-                                  'counter', 'delay_normalized', r'$\hat{D_N}$', 'current_sf_len', True)
+                                  'counter', 'delay_avg', 'Network average delay [ms]', 'current_sf_len', True)
         # Plot reliability
         run_analysis.plot_results(result, name+'_reliability', results_path,
-                                  'counter', 'pdr_mean', r'$\hat{R_N}$', 'current_sf_len', True)
+                                  'counter', 'pdr_mean', 'Network average reliability', 'current_sf_len', True)
          # Reward vs slotframe size
         run_analysis.plot_results(result, name+'_reward', results_path,
                                   'counter', 'reward', 'Immediate reward', 'current_sf_len', True)
@@ -64,10 +64,10 @@ def main():
         print("Simple graph.")
         # Plot power
         run_analysis.plot_results(result, name+'_power', results_path,
-                                  'counter', 'power_normalized', r'$\hat{P_N}$', 'current_sf_len')
+                                  'counter', 'power_avg', r'$\hat{P_N}$', 'current_sf_len')
         # Plot delay
         run_analysis.plot_results(result, name+'_delay', results_path,
-                                  'counter', 'delay_normalized', r'$\hat{D_N}$', 'current_sf_len')
+                                  'counter', 'delay_avg', r'$\hat{D_N}$', 'current_sf_len')
         # Plot reliability
         run_analysis.plot_results(result, name+'_reliability', results_path,
                                   'counter', 'pdr_mean', r'$\hat{R_N}$', 'current_sf_len')
