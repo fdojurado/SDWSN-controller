@@ -403,13 +403,13 @@ def plot_training_progress(df, title, path):
 #######################################################
 
 
-def plot_results(df, title, path, x, y1, name, y2, ci=False):
+def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_legend, ci=False, y1_limit=None, label_loc=None):
     title_font_size = 8
     x_axis_font_size = 14
     y_axis_font_size = 14
     ticks_font_size = 12
     data_marker_size = 3.5
-    legend_font_size = 7
+    legend_font_size = 12
     annotate_font_size = 9
     title_fontweight = 'bold'
     axis_labels_fontstyle = 'normal'
@@ -417,8 +417,22 @@ def plot_results(df, title, path, x, y1, name, y2, ci=False):
     fig, ax = pl.subplots()
     fig.subplots_adjust(right=0.85)
 
+    ax.tick_params(axis='both', which='major',
+                   labelsize=ticks_font_size)
+    ax.tick_params(axis='both', which='major',
+                   labelsize=ticks_font_size)
+
+    ax.minorticks_on()
+
     # twin1 = ax.twinx()
     twin2 = ax.twinx()
+
+    twin2.tick_params(axis='both', which='major',
+                      labelsize=ticks_font_size)
+    twin2.tick_params(axis='both', which='major',
+                      labelsize=ticks_font_size)
+
+    twin2.minorticks_on()
 
     # Offset the right spine of twin2.  The ticks and label have already been
     # placed on the right by twinx above.
@@ -436,8 +450,11 @@ def plot_results(df, title, path, x, y1, name, y2, ci=False):
         x_stats = df[x]
         y_stats = df[y1]
 
-    ax.plot(x_stats, y_stats, "b-",
-            label=name, markersize=data_marker_size)
+    if y1_limit is not None:
+        ax.set_ylim(y1_limit)
+
+    l1, = ax.plot(x_stats, y_stats, "b-*",
+                  label=y1_legend, markersize=data_marker_size)
 
     # Slotframe size
     if ci:
@@ -452,8 +469,22 @@ def plot_results(df, title, path, x, y1, name, y2, ci=False):
         x_stats = df[x]
         y_stats = df[y2]
 
-    twin2.plot(x_stats, y_stats, "g-",
-               label=name, markersize=data_marker_size)
+    l2, = twin2.plot(x_stats, y_stats, "g-s",
+                     label=y2_name, markersize=data_marker_size)
+
+    twin2.set_ylabel(y2_name, fontsize=y_axis_font_size,
+                     fontstyle=axis_labels_fontstyle)
+
+    if label_loc is None:
+        label_loc = 'best'
+
+    ax.legend([l1, l2], [y1_legend,
+                         y2_legend], loc=label_loc, fontsize=legend_font_size, facecolor='white', framealpha=1)
+
+    ax.grid(True, 'major', 'both', linestyle='--',
+            color='0.75', linewidth=0.6)
+    ax.grid(True, 'minor', 'both', linestyle=':',
+            color='0.85', linewidth=0.5)
 
     # p1, = ax.plot(x, y1, "b--*",
     #               label=name, markersize=data_marker_size)
@@ -465,7 +496,7 @@ def plot_results(df, title, path, x, y1, name, y2, ci=False):
     ax.set_xlabel('Iteration', fontsize=x_axis_font_size,
                   fontstyle=axis_labels_fontstyle)
     ax.set_ylabel(
-        name, fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+        y1_name, fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     # twin1.set_ylabel(
     #     "Reward", fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     # twin2.set_ylabel(

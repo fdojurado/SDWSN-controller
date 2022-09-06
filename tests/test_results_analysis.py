@@ -47,33 +47,33 @@ def main():
 
     if len(csv_files) > 1:
         print("Calculating average.")
-         # Plot power
+        # Plot power
         run_analysis.plot_results(result, name+'_power', results_path,
-                                  'counter', 'power_avg', 'Network average power [mW]', 'current_sf_len', True)
+                                  'counter', 'power_avg', 'Network average power $[\mu W]$', 'Network avg. power', 'current_sf_len', 'slotframe size ('+r'$\tau$'+')', r'$\tau$', True, None,(0.01,0.6))
         # Plot delay
         run_analysis.plot_results(result, name+'_delay', results_path,
-                                  'counter', 'delay_avg', 'Network average delay [ms]', 'current_sf_len', True)
+                                  'counter', 'delay_avg', 'Network average delay $[ms]$', 'Network avg. delay', 'current_sf_len', 'slotframe size ('+r'$\tau$'+')', r'$\tau$', True)
         # Plot reliability
         run_analysis.plot_results(result, name+'_reliability', results_path,
-                                  'counter', 'pdr_mean', 'Network average reliability', 'current_sf_len', True)
-         # Reward vs slotframe size
+                                  'counter', 'pdr_mean', 'Network average reliability', 'Network avg. reliability', 'current_sf_len', 'slotframe size ('+r'$\tau$'+')', r'$\tau$', True, [0.7, 1.0], (0.01,0.5))
+        # Reward vs slotframe size
         run_analysis.plot_results(result, name+'_reward', results_path,
-                                  'counter', 'reward', 'Immediate reward', 'current_sf_len', True)
+                                  'counter', 'reward', 'Average immediate reward', 'Avg. immediate reward', 'current_sf_len', 'slotframe size ('+r'$\tau$'+')', r'$\tau$', True, None, (0.01,0.8))
 
     else:
         print("Simple graph.")
         # Plot power
         run_analysis.plot_results(result, name+'_power', results_path,
-                                  'counter', 'power_avg', r'$\hat{P_N}$', 'current_sf_len')
+                                  'counter', 'power_avg', 'Network average power $[\mu W]$', 'Network avg. power', 'current_sf_len', 'slotframe size ('+r'$\tau$'+')', r'$\tau$', False, None,(0.01,0.6))
         # Plot delay
         run_analysis.plot_results(result, name+'_delay', results_path,
-                                  'counter', 'delay_avg', r'$\hat{D_N}$', 'current_sf_len')
+                                  'counter', 'delay_avg', 'Network average delay $[ms]$', 'Network avg. delay', 'current_sf_len', 'slotframe size ('+r'$\tau$'+')', r'$\tau$')
         # Plot reliability
         run_analysis.plot_results(result, name+'_reliability', results_path,
-                                  'counter', 'pdr_mean', r'$\hat{R_N}$', 'current_sf_len')
+                                  'counter', 'pdr_mean', 'Network average reliability', 'Network avg. reliability', 'current_sf_len', 'slotframe size ('+r'$\tau$'+')', r'$\tau$', False, [0.7, 1.0], (0.01,0.5))
         # Reward vs slotframe size
         run_analysis.plot_results(result, name+'_reward', results_path,
-                                  'counter', 'reward', 'Immediate reward', 'current_sf_len')
+                                  'counter', 'reward', 'Immediate reward', 'Immediate reward', 'current_sf_len', r'$\tau$', r'$\tau$')
 
 
 if __name__ == '__main__':
