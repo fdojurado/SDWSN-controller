@@ -403,14 +403,14 @@ def plot_training_progress(df, title, path):
 #######################################################
 
 
-def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_legend, ci=False, y1_limit=None, label_loc=None):
+def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_legend, text_loc, ci=False, y1_limit=None, label_loc=None):
     title_font_size = 8
     x_axis_font_size = 14
     y_axis_font_size = 14
     ticks_font_size = 12
     data_marker_size = 3.5
     legend_font_size = 12
-    annotate_font_size = 9
+    annotate_font_size = 8
     title_fontweight = 'bold'
     axis_labels_fontstyle = 'normal'
 
@@ -515,24 +515,25 @@ def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_leg
     # # twin2.tick_params(axis='y', colors=p3.get_color(), **tkw)
     # ax.tick_params(axis='x', **tkw)
 
-    # # y min and max
-    # ymin, ymax = ax.get_ylim()
-    # ax.vlines(x=[40, 80, 120], ymin=ymin, ymax=ymax,
-    #           colors='darkgrey', ls='--', lw=1)
-    # # ax.vlines(x=[0, 17], ymin=ymin, ymax=ymax, colors='r')
+    # y min and max
+    ymin, ymax = ax.get_ylim()
+    ax.vlines(x=[40, 80, 120], ymin=ymin, ymax=ymax,
+              colors='red', ls='--', lw=1)
+    # ax.vlines(x=[0, 17], ymin=ymin, ymax=ymax, colors='r')
 
-    # # Set user requirements region
-    # ax.text(-5, text_loc[0], r'$\alpha=0.4, \beta=0.3, \gamma=0.3$', style='italic',
-    #         bbox={'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
-    # ax.text(40, text_loc[1], r'$\alpha=0.1, \beta=0.8, \gamma=0.1$', style='italic', bbox={
-    #         'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
-    # ax.text(80, text_loc[2], r'$\alpha=0.8, \beta=0.1, \gamma=0.1$', style='italic', bbox={
-    #         'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
-    # ax.text(123, text_loc[3], r'$\alpha=0.1, \beta=0.1, \gamma=0.8$', style='italic', bbox={
-    #         'facecolor': 'red', 'alpha': 0.6, 'pad': 2}, fontsize=legend_font_size)
+    # Set user requirements region
+    # circle = pl.Circle((20, text_loc[0]), radius=5)
+    # ax.add_patch(circle)
+    # ax.annotate("1", xy=(20, text_loc[0]), fontsize=annotate_font_size, ha="center")
 
-    # if label_loc is None:
-    #     label_loc = 'best'
+    ax.text(20, text_loc[0], r'$1$', style='italic',
+            bbox={'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
+    ax.text(60, text_loc[1], r'$2$', style='italic', bbox={
+            'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
+    ax.text(100, text_loc[2], r'$3$', style='italic', bbox={
+            'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
+    ax.text(140, text_loc[3], r'$4$', style='italic', bbox={
+            'facecolor': 'red', 'alpha': 0.6, 'pad': 2}, fontsize=legend_font_size)
 
     # if annotate is True:
     #     circle_rad = 16  # This is the radius, in points
