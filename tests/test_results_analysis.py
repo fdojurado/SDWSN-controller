@@ -73,7 +73,7 @@ def main():
                                   'counter', 'pdr_mean', 'Network average reliability', 'Network avg. reliability', 'current_sf_len', 'slotframe size ('+r'$\tau$'+')', r'$\tau$', [10, 10, 10, 10], False, [0.7, 1.0], (0.01, 0.5))
         # Reward vs slotframe size
         run_analysis.plot_results(result, name+'_reward', results_path,
-                                  'counter', 'reward', 'Immediate reward', 'Immediate reward', 'current_sf_len', r'$\tau$', r'$\tau$')
+                                  'counter', 'reward', 'Immediate reward', 'Immediate reward', 'current_sf_len', r'$\tau$', r'$\tau$', [1.1, 1.1, 1.1, 1.1] )
 
 
 if __name__ == '__main__':
