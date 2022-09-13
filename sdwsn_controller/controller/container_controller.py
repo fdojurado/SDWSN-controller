@@ -97,17 +97,17 @@ class ContainerController(CommonController):
         # If we have not received any data after looping 10 times
         # We return
         print("Waiting for the current cycle to finish")
-        count = 0
+        # count = 0
         result = -1
         while(1):
-            count += 1
+            # count += 1
             if self.sequence > self.__processing_window:
                 result = 1
                 break
-            if count > 10:
-                result = 0
-                break
-            sleep(1)
+            # if count > 10:
+            #     result = 0
+            #     break
+            # sleep(1)
         print(f"cycle finished, result: {result}")
         return result
 

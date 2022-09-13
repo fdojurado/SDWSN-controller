@@ -83,6 +83,7 @@ def main():
         db_name=args.db_name,
         db_host=args.db_host,
         db_port=args.db_port,
+        processing_window= args.processing_window,
         tsch_scheduler=tsch_scheduler
     )
 
