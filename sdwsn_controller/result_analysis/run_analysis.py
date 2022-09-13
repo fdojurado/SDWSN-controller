@@ -561,6 +561,84 @@ def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_leg
     pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
     pl.close()
+
+#######################################################
+
+
+def plot_results_bar_chart(df, title, path, x, y1, y1_name, y1_limit=None):
+    title_font_size = 8
+    x_axis_font_size = 14
+    y_axis_font_size = 14
+    ticks_font_size = 12
+    data_marker_size = 3.5
+    legend_font_size = 12
+    annotate_font_size = 8
+    title_fontweight = 'bold'
+    axis_labels_fontstyle = 'normal'
+
+    fig, ax = pl.subplots()
+    fig.subplots_adjust(right=0.85)
+
+    ax.tick_params(axis='y', which='major',
+                   labelsize=ticks_font_size)
+
+    ax.tick_params(axis='x', which='minor', bottom=False)
+
+    ax.minorticks_on()
+
+    stats = calculate_confidence_interval(
+        df, x, y1)
+
+    y_stats = stats['mean']
+
+    if y1_limit is not None:
+        ax.set_ylim(y1_limit)
+
+    # Plot balanced user requirements first
+    df = y_stats.iloc[10:35, ]
+    balanced_mean = df.mean()
+    balanced_std = df.std()
+    balanced_error_plus = 1.96*balanced_std/math.sqrt(35-10)
+    # Plot delay user requirements first
+    df = y_stats.iloc[50:75, ]
+    delay_mean = df.mean()
+    delay_std = df.std()
+    delay_error_plus = 1.96*delay_std/math.sqrt(75-50)
+    # Plot power user requirements first
+    df = y_stats.iloc[95:115, ]
+    power_mean = df.mean()
+    power_std = df.std()
+    power_error_plus = 1.96*power_std/math.sqrt(115-95)
+    # Plot reliability user requirements first
+    df = y_stats.iloc[135:155, ]
+    reliability_mean = df.mean()
+    reliability_std = df.std()
+    reliability_error_plus = 1.96*reliability_std/math.sqrt(155-135)
+
+    x = ['Balanced\n'+r'$\alpha=0.4,$'+'\n'+r'$\beta=0.3,$'+'\n'+r'$\gamma = 0.3$',
+         'Delay\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.8,$'+'\n'+r'$\gamma = 0.1$',
+         'Power\n'+r'$\alpha=0.8,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.1$',
+         'Reliability\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.8$']
+    means = [balanced_mean, delay_mean, power_mean, reliability_mean]
+    errors = [balanced_error_plus, delay_error_plus,
+              power_error_plus, reliability_error_plus]
+    print(x)
+    print(means)
+    print(errors)
+
+    ax.grid(True, 'major', 'both', linestyle='--',
+            color='0.75', linewidth=0.6, zorder=0)
+    ax.grid(True, 'minor', 'both', linestyle=':',
+            color='0.85', linewidth=0.5, zorder=0)
+
+    ax.set_ylabel(
+        y1_name, fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+
+    l1 = ax.bar(x, means, yerr=errors, zorder=3, alpha=0.95,
+                edgecolor="black", linewidth=0.5)
+    pl.savefig(path+title+'.pdf', bbox_inches='tight')
+    pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
+    pl.close()
 #######################################################
 
 
