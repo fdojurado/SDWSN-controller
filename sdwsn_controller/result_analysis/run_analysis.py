@@ -565,7 +565,10 @@ def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_leg
 #######################################################
 
 
-def plot_results_bar_chart(df, title, path, x, y1, y1_name, y1_limit=None):
+def plot_results_bar_chart(df, title, path,
+                           x, y1, y1_name,
+                           orch_df,
+                           y1_limit=None):
     title_font_size = 8
     x_axis_font_size = 14
     y_axis_font_size = 14
@@ -615,17 +618,12 @@ def plot_results_bar_chart(df, title, path, x, y1, y1_name, y1_limit=None):
     reliability_std = df.std()
     reliability_error_plus = 1.96*reliability_std/math.sqrt(155-135)
 
-    x = ['Balanced\n'+r'$\alpha=0.4,$'+'\n'+r'$\beta=0.3,$'+'\n'+r'$\gamma = 0.3$',
+    x_axis = ['Balanced\n'+r'$\alpha=0.4,$'+'\n'+r'$\beta=0.3,$'+'\n'+r'$\gamma = 0.3$',
          'Delay\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.8,$'+'\n'+r'$\gamma = 0.1$',
          'Power\n'+r'$\alpha=0.8,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.1$',
-         'Reliability\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.8$']
-    means = [balanced_mean, delay_mean, power_mean, reliability_mean]
-    errors = [balanced_error_plus, delay_error_plus,
-              power_error_plus, reliability_error_plus]
-    print(x)
-    print(means)
-    print(errors)
-
+         'Reliability\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.8$',
+         'Orchestra']
+    
     ax.grid(True, 'major', 'both', linestyle='--',
             color='0.75', linewidth=0.6, zorder=0)
     ax.grid(True, 'minor', 'both', linestyle=':',
@@ -634,7 +632,21 @@ def plot_results_bar_chart(df, title, path, x, y1, y1_name, y1_limit=None):
     ax.set_ylabel(
         y1_name, fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
 
-    l1 = ax.bar(x, means, yerr=errors, zorder=3, alpha=0.95,
+    # Orchestra results
+    orch_stats = calculate_confidence_interval(
+        orch_df, x, y1)
+
+    orchestra_mean = orch_stats['mean']
+    orch_mean = orchestra_mean.mean()
+    orch_std = orchestra_mean.std()
+    orch_error_plus = 1.96*orch_std/math.sqrt(len(orchestra_mean))
+
+    means = [balanced_mean, delay_mean, power_mean, reliability_mean, orch_mean]
+    errors = [balanced_error_plus, delay_error_plus,
+              power_error_plus, reliability_error_plus, orch_error_plus]
+    
+
+    l1 = ax.bar(x_axis, means, yerr=errors, zorder=3, alpha=0.95,
                 edgecolor="black", linewidth=0.5)
     pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
