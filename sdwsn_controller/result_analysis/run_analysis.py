@@ -619,11 +619,11 @@ def plot_results_bar_chart(df, title, path,
     reliability_error_plus = 1.96*reliability_std/math.sqrt(155-135)
 
     x_axis = ['Balanced\n'+r'$\alpha=0.4,$'+'\n'+r'$\beta=0.3,$'+'\n'+r'$\gamma = 0.3$',
-         'Delay\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.8,$'+'\n'+r'$\gamma = 0.1$',
-         'Power\n'+r'$\alpha=0.8,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.1$',
-         'Reliability\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.8$',
-         'Orchestra']
-    
+              'Delay\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.8,$'+'\n'+r'$\gamma = 0.1$',
+              'Power\n'+r'$\alpha=0.8,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.1$',
+              'Reliability\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.8$',
+              'Orchestra']
+
     ax.grid(True, 'major', 'both', linestyle='--',
             color='0.75', linewidth=0.6, zorder=0)
     ax.grid(True, 'minor', 'both', linestyle=':',
@@ -641,12 +641,14 @@ def plot_results_bar_chart(df, title, path,
     orch_std = orchestra_mean.std()
     orch_error_plus = 1.96*orch_std/math.sqrt(len(orchestra_mean))
 
-    means = [balanced_mean, delay_mean, power_mean, reliability_mean, orch_mean]
+    means = [balanced_mean, delay_mean,
+             power_mean, reliability_mean, orch_mean]
     errors = [balanced_error_plus, delay_error_plus,
               power_error_plus, reliability_error_plus, orch_error_plus]
-    
 
-    l1 = ax.bar(x_axis, means, yerr=errors, zorder=3, alpha=0.95,
+    bar_colors = ['C0', 'C0', 'C0', 'C0', 'C3']
+
+    l1 = ax.bar(x_axis, means, yerr=errors, zorder=3,  color=bar_colors, alpha=0.95,
                 edgecolor="black", linewidth=0.5)
     pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
