@@ -571,8 +571,8 @@ def plot_results_bar_chart(df, title, path,
                            y1_limit=None):
     title_font_size = 8
     x_axis_font_size = 14
-    y_axis_font_size = 14
-    ticks_font_size = 12
+    y_axis_font_size = 17
+    ticks_font_size = 12.8
     data_marker_size = 3.5
     legend_font_size = 12
     annotate_font_size = 8
@@ -583,6 +583,8 @@ def plot_results_bar_chart(df, title, path,
     fig.subplots_adjust(right=0.85)
 
     ax.tick_params(axis='y', which='major',
+                   labelsize=ticks_font_size+2)
+    ax.tick_params(axis='x', which='major',
                    labelsize=ticks_font_size)
 
     ax.tick_params(axis='x', which='minor', bottom=False)
