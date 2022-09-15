@@ -61,7 +61,7 @@ def main():
     rm_file(results_path, name+"_orchestra")
     orchestra_result.to_csv(results_path+name+"_orchestra.csv")
 
-    if len(elise_csv_files) > 1:
+    if len(elise_csv_files) >= 1:
         print("Calculating average.")
         # Plot power
         run_analysis.plot_results_bar_chart(elise_result, name+'_power', results_path,
