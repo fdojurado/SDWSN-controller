@@ -1,29 +1,30 @@
-# README #
+<!-- <img src="https://github.com/SDWSN-controller/SDWSN-controller.github.io/blob/develop/images/logo/Contiki_logo_2RGB.png" alt="Logo" width="256"> -->
 
-This README would normally document whatever steps are necessary to get your application up and running.
+# SDWSN-controller: The controller for the Next Generation SDN-based IoT networks.
 
-### What is this repository for? ###
+<!-- [![Github Actions](https://github.com/SDWSN-controller/SDWSN-controller/workflows/CI/badge.svg?branch=develop)](https://github.com/SDWSN-controller/SDWSN-controller/actions)
+[![Documentation Status](https://readthedocs.org/projects/SDWSN-controller/badge/?version=develop)](https://SDWSN-controller.readthedocs.io/en/develop/?badge=develop) -->
+[![license](https://img.shields.io/badge/license-3--clause%20bsd-brightgreen.svg)](https://github.com/fdojurado/SDWSN-controller/blob/develop/LICENSE.md)
+[![Latest release](https://img.shields.io/github/release/SDWSN-controller/SDWSN-controller.svg)](https://github.com/fdojurado/SDWSN-controller/releases/latest)
+[![GitHub Release Date](https://img.shields.io/github/release-date/SDWSN-controller/SDWSN-controller.svg)](https://github.com/fdojurado/SDWSN-controller/releases/latest)
+[![Last commit](https://img.shields.io/github/last-commit/SDWSN-controller/SDWSN-controller.svg)](https://github.com/fdojurado/SDWSN-controller/commit/HEAD)
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+<!-- [![Stack Overflow Tag](https://img.shields.io/badge/Stack%20Overflow%20tag-Contiki--NG-blue?logo=stackoverflow)](https://stackoverflow.com/questions/tagged/SDWSN-controller) -->
+<!-- [![Gitter](https://img.shields.io/badge/Gitter-Contiki--NG-blue?logo=gitter)](https://gitter.im/SDWSN-controller) -->
+[![Twitter](https://img.shields.io/badge/Twitter-%40contiki__NG__SDWSN-blue?logo=twitter)](https://twitter.com/fdojurado)
 
-### How do I get set up? ###
+This is the main controller of the [ELISE](https://github.com/fdojurado/ELISE) framework and the [Contiki-NG-SDWSN](https://github.com/fdojurado/contiki-ng) project.
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+Find out more:
 
-### Contribution guidelines ###
+* GitHub repository: https://github.com/fdojurado/contiki-ng
+* Documentation: https://github.com/fdojurado/SDWSN-controller/wiki
+<!-- * Web site: http://contiki-ng.org -->
+<!-- * Nightly testbed runs: https://contiki-ng.github.io/testbed -->
 
-* Writing tests
-* Code review
-* Other guidelines
+Engage with the community:
 
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+* Discussions on GitHub: https://github.com/fdojurado/SDWSN-controller/discussions
+<!-- * Contiki-NG tag on Stack Overflow: https://stackoverflow.com/questions/tagged/contiki-ng -->
+<!-- * Gitter: https://gitter.im/contiki-ng -->
+* Twitter: https://twitter.com/fdojurado
