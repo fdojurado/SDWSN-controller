@@ -20,11 +20,11 @@ The SDWSN controller features the main functionalities described below:
 * Multiple controller types including a container controller for the Cooja network simulator (Only docker is supported) and a controller for FIT IoT LAB platforms.
 * A Reinforcement learning module to manage the environment, reward processing, and etc.
 * A mongo database that stored network information.
-* TSCH module: functionalities for building TSCH schedules.
+* TSCH module for designing and building schedules.
 * Routing module to manage routing paths of the SDWSN.
 * Serial interface that handles the communication with the sink node of the SDWSN.
 * Packet processing module that contains a packet dissector to pack and unpack packets from the SDWSN.
-* A Network reconfiguration module that handles the configuration functions of the network.
+* A network reconfiguration module that handles the configuration functions of the network.
 
 Find out more:
 
@@ -36,6 +36,4 @@ Find out more:
 Engage with the community:
 
 * Discussions on GitHub: https://github.com/fdojurado/SDWSN-controller/discussions
-<!-- * Contiki-NG tag on Stack Overflow: https://stackoverflow.com/questions/tagged/contiki-ng -->
-<!-- * Gitter: https://gitter.im/contiki-ng -->
 * Twitter: https://twitter.com/fdojurado
