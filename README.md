@@ -13,7 +13,18 @@
 <!-- [![Gitter](https://img.shields.io/badge/Gitter-Contiki--NG-blue?logo=gitter)](https://gitter.im/SDWSN-controller) -->
 [![Twitter](https://img.shields.io/badge/Twitter-%40contiki__NG__SDWSN-blue?logo=twitter)](https://twitter.com/fdojurado)
 
-This is the main controller of the [ELISE](https://github.com/fdojurado/ELISE) framework and the [Contiki-NG-SDWSN](https://github.com/fdojurado/contiki-ng) project.
+This is the main SDWSN controller of the [ELISE](https://github.com/fdojurado/ELISE) framework and the [Contiki-NG-SDWSN](https://github.com/fdojurado/contiki-ng) project.
+
+The SDWSN controller features the main functionalities described below:
+
+* Multiple controller types including a container controller for the Cooja network simulator (Only docker is supported) and a controller for FIT IoT LAB platforms.
+* A Reinforcement learning module to manage the environment, reward processing, and etc.
+* A mongo database that stored network information.
+* TSCH module: functionalities for building TSCH schedules.
+* Routing module to manage routing paths of the SDWSN.
+* Serial interface that handles the communication with the sink node of the SDWSN.
+* Packet processing module that contains a packet dissector to pack and unpack packets from the SDWSN.
+* A Network reconfiguration module that handles the configuration functions of the network.
 
 Find out more:
 
