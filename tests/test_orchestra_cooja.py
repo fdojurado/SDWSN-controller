@@ -14,13 +14,11 @@ from gym.envs.registration import register
 def main():
 
     parser = argparse.ArgumentParser(
-        description='This script test the trained agent in Cooja environment.')
+        description='This script tests Orchestra in the SDWSN architecture.')
 
-    parser.add_argument('model', type=str,
-                        help="Path to the trained model")
     parser.add_argument('-d', '--docker-image', type=str, default='contiker/contiki-ng',
                         help="Name of the docker image ('contiker/contiki-ng')")
-    parser.add_argument('-dc', '--docker-command', type=str, default='examples/benchmarks/rl-sdwsn',
+    parser.add_argument('-dc', '--docker-command', type=str, default='examples/benchmarks/sdwsn-orchestra',
                         help="Simulation script to run inside the container")
     parser.add_argument('-dmt', '--docker-mount-target', type=str, default='/home/user/contiki-ng',
                         help="Docker mount target")
@@ -48,8 +46,6 @@ def main():
                         help='Maximum timesteps per episode')
     parser.add_argument('-fp', '--output-path', type=str, default='./output/',
                         help='Path to save results')
-    parser.add_argument('-mt', '--model_type', type=str, default='DQN',
-                        help='model type to train.')
 
     args = parser.parse_args()
 
@@ -61,7 +57,7 @@ def main():
         # Note: entry_point also accept a class as input (and not only a string)
         entry_point="sdwsn_controller.reinforcement_learning.env:Env",
         # Max number of steps per episode, using a `TimeLimitWrapper`
-        max_episode_steps=160
+        max_episode_steps=50
     )
 
     # Create output folder
@@ -95,18 +91,10 @@ def main():
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
 
-    match(args.model_type):
-        case 'DQN':
-            loaded_model = DQN.load(args.model, env=env)
-        case 'A2C':
-            loaded_model = A2C.load(args.model, env=env)
-        case 'PPO':
-            loaded_model = PPO.load(args.model, env=env)
-
     num_actions = 0
     # Test the trained agent
     for i in range(1):
-        obs = env.reset()
+        env.reset()
         done = False
         acc_reward = 0
         # Set initial user requirements
@@ -119,7 +107,7 @@ def main():
             if num_actions == 120:
                 controller.user_requirements = (0.1, 0.1, 0.8)
             num_actions += 1
-            action, _ = loaded_model.predict(obs, deterministic=True)
+            action = 2
             obs, reward, done, _ = env.step(action)
             acc_reward += reward
             if done:
