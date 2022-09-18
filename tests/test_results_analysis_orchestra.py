@@ -77,7 +77,7 @@ def main():
         run_analysis.plot_results_bar_chart(elise_result, name+'_reliability', results_path,
                                             'counter', 'pdr_mean', 'Network average reliability',
                                             orchestra_result,
-                                            [0.92, 0.97])
+                                            [0.5, 1.0])
 
 
 if __name__ == '__main__':
