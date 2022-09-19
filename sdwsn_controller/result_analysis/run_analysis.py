@@ -703,7 +703,7 @@ def plot_episode_reward(df, title, path):
 #######################################################
 
 
-def plot_fit_curves(df, title, path):
+def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name, degree, txt_loc, y1_limit=None):
     """ 
     We try to fit the curves for power, delay and
     PDR.
@@ -712,179 +712,66 @@ def plot_fit_curves(df, title, path):
     x_axis_font_size = 14
     y_axis_font_size = 14
     ticks_font_size = 12
+    data_marker_size = 3.5
+    legend_font_size = 12
+    annotate_font_size = 8
     equation_font_size = 7.79
-    data_marker_size = 1.5
-    legend_font_size = 6
     title_fontweight = 'bold'
-    axis_labels_fontstyle = 'italic'
+    axis_labels_fontstyle = 'normal'
 
-    fig, (ax1, ax2, ax3) = pl.subplots(3, layout='constrained')
+    fig, ax = pl.subplots(layout='constrained', figsize=(6.4, 2))
+    # fig.subplots_adjust(right=0.85)
 
-    # Second plot: Power vs. slotframe size
-    # ax1.set_title('Network avg. power vs. SF size',
-    #               fontsize=title_font_size, fontweight=title_fontweight)
-    ax1.set_xlabel(r'$\tau$', fontsize=x_axis_font_size,
-                   fontstyle=axis_labels_fontstyle)
-    ax1.set_ylabel(
-        r'$\hat{P_N}$', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
-    ax1.tick_params(axis='both', which='major',
-                    labelsize=ticks_font_size)
+    ax.tick_params(axis='both', which='major',
+                   labelsize=ticks_font_size)
+    ax.tick_params(axis='both', which='major',
+                   labelsize=ticks_font_size)
 
-    ax1.minorticks_on()
-    ax1.set_yticks(np.arange(0.85, 0.9, 0.01))
-    ax1.grid(True, 'major', 'both', linestyle='--',
-             color='0.75', linewidth=0.6)
-    ax1.grid(True, 'minor', 'both', linestyle=':',
-             color='0.85', linewidth=0.5)
-    # ax1.set_yticks(np.arange(0, max(y), 2))
-    # Confidence interval for all sf size
+    ax.minorticks_on()
+
+    # Confidence interval
     stats = calculate_confidence_interval(
-        df, 'current_sf_len', 'power_unbiased')
+        df, x, y1)
 
-    x = stats['current_sf_len']
-    y = stats['mean']
+    x_stats = stats[x]
+    y_stats = stats['mean']
+    ax.fill_between(x_stats, stats['ci95_hi'],
+                    stats['ci95_lo'], color='b', alpha=.1)
 
-    ax1.scatter(x, y, s=15)
-    ax1.fill_between(x, stats['ci95_hi'],
-                     stats['ci95_lo'], color='b', alpha=.1)
+    if y1_limit is not None:
+        ax.set_ylim(y1_limit)
 
-    x = x.to_numpy()
-    y = y.to_numpy()
+    ax.scatter(x_stats, y_stats, s=15, zorder=3)
 
-    trend = np.polyfit(x, y, 4)
+    x = x_stats.to_numpy()
+    y = y_stats.to_numpy()
+
+    trend = np.polyfit(x, y, degree)
     power_trendpoly = np.poly1d(trend)
 
-    ax1.text(8, 0.89, r'$\hat{P_N}(\tau)=\tau^4*(%.2E)+\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3], trend[4]), style='italic',
-             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
+    if degree == 4:
+        txt = r'$\hat{P_N}(\tau)=\tau^4*(%.2E)+\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (
+            trend[0], trend[1], trend[2], trend[3], trend[4])
+    if degree == 3:
+        txt = r'$\hat{D_N}(\tau)=\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (
+            trend[0], trend[1], trend[2], trend[3])
+    if degree == 1:
+        txt = r'$\hat{R_N}(\tau)=\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1])
 
-    # ax1.text(25, 0.89, 'colored text in axes coords',
-    #          verticalalignment='bottom', horizontalalignment='right',
-    #          color='black', fontsize=5)
+    ax.plot(x, power_trendpoly(x), zorder=3)
 
-    ax1.plot(x, power_trendpoly(x))
+    ax.text(txt_loc[0], txt_loc[1], txt, style='italic',
+            bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
 
-    print("power fitted curve polynomial coefficients")
-    print(trend)
+    ax.grid(True, 'major', 'both', linestyle='--',
+            color='0.75', linewidth=0.6, zorder=0)
+    ax.grid(True, 'minor', 'both', linestyle=':',
+            color='0.85', linewidth=0.5, zorder=0)
 
-    # Third plot: Delay vs. slotframe size
-    # ax2.set_title('Network avg. delay vs. SF size',
-    #               fontsize=title_font_size, fontweight=title_fontweight)
-    ax2.set_xlabel(r'$\tau$', fontsize=x_axis_font_size,
-                   fontstyle=axis_labels_fontstyle)
-    ax2.set_ylabel(
-        r'$\hat{D_N}$', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
-    ax2.tick_params(axis='both', which='major',
-                    labelsize=ticks_font_size)
-
-    ax2.set_yticks(np.arange(0.01, 0.9, 0.02))
-
-    # Turn on the minor TICKS, which are required for the minor GRID
-    ax2.minorticks_on()
-    ax2.grid(True, 'major', 'both', linestyle='--',
-             color='0.75', linewidth=0.6)
-    ax2.grid(True, 'minor', 'both', linestyle=':',
-             color='0.85', linewidth=0.5)
-    # Confidence interval for all sf size
-    stats = calculate_confidence_interval(
-        df, 'current_sf_len', 'delay_unbiased')
-
-    x = stats['current_sf_len']
-    y = stats['mean']
-
-    ax2.scatter(x, y, s=15)
-    ax2.fill_between(x, stats['ci95_hi'],
-                     stats['ci95_lo'], color='b', alpha=.1)
-
-    x = x.to_numpy()
-    y = y.to_numpy()
-
-    trend = np.polyfit(x, y, 3)
-    delay_trendpoly = np.poly1d(trend)
-
-    ax2.text(8, 0.045, r'$\hat{D_N}(\tau)=\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1], trend[2], trend[3]), style='italic',
-             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
-
-    ax2.plot(x, delay_trendpoly(x))
-
-    print("delay fitted curve polynomial coefficients")
-    print(trend)
-
-    # Fourth plot: PDR vs. slotframe size
-    # ax3.set_title('Network avg. PDR vs. SF size',
-    #               fontsize=title_font_size, fontweight=title_fontweight)
-    ax3.set_xlabel(r'$\tau$', fontsize=x_axis_font_size,
-                   fontstyle=axis_labels_fontstyle)
-    ax3.set_ylabel(
-        r'$\hat{R_N}$', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
-    ax3.tick_params(axis='both', which='major',
-                    labelsize=ticks_font_size)
-
-    ax3.set_yticks(np.arange(0.65, 1, 0.1))
-    # Turn on the minor TICKS, which are required for the minor GRID
-    ax3.minorticks_on()
-    ax3.grid(True, 'major', 'both', linestyle='--',
-             color='0.75', linewidth=0.6)
-    ax3.grid(True, 'minor', 'both', linestyle=':',
-             color='0.85', linewidth=0.5)
-    # Confidence interval for all sf size
-    stats = calculate_confidence_interval(df, 'current_sf_len', 'pdr_unbiased')
-
-    x = stats['current_sf_len']
-    y = stats['mean']
-
-    ax3.scatter(x, y, s=15)
-    ax3.fill_between(x, stats['ci95_hi'],
-                     stats['ci95_lo'], color='b', alpha=.1)
-
-    x = x.to_numpy()
-    y = y.to_numpy()
-
-    trend = np.polyfit(x, y, 1)
-    pdr_trendpoly = np.poly1d(trend)
-
-    ax3.text(25, 0.7, r'$\hat{R_N}(\tau)=\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1]), style='italic',
-             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
-
-    ax3.plot(x, pdr_trendpoly(x))
-
-    ax3.set_ylim([0.65, 1])
-
-    print("pdr fitted curve polynomial coefficients")
-    print(trend)
-
-    # # First plot: Reward vs. Slotframe size using the previous regressions
-    # alpha_weight = df['alpha'].iloc[0]
-    # beta_weight = df['beta'].iloc[0]
-    # delta_weight = df['delta'].iloc[0]
-
-    # axs[0, 0].set_title('Reward vs SF size',
-    #                     fontsize=title_font_size, fontweight=title_fontweight)
-    # axs[0, 0].set_xlabel('SF size', fontsize=x_axis_font_size,
-    #                      fontstyle=axis_labels_fontstyle)
-    # axs[0, 0].set_ylabel('Reward', fontsize=y_axis_font_size,
-    #                      fontstyle=axis_labels_fontstyle)
-    # axs[0, 0].tick_params(axis='both', which='major',
-    #                       labelsize=ticks_font_size)
-    # # Confidence interval for all sf size
-    # stats = calculate_confidence_interval(df, 'current_sf_len', 'reward')
-
-    # x = stats['current_sf_len']
-    # y = stats['mean']
-
-    # axs[0, 0].scatter(x, y)
-    # axs[0, 0].fill_between(x, stats['ci95_hi'],
-    #                        stats['ci95_lo'], color='b', alpha=.1)
-
-    # x = x.to_numpy()
-    # y = y.to_numpy()
-
-    # y = -1*(alpha_weight*power_trendpoly(x)+beta_weight *
-    #         delay_trendpoly(x)-delta_weight*pdr_trendpoly(x))
-
-    # print("reward vector")
-    # print(y)
-
-    # axs[0, 0].plot(x, y)
+    ax.set_xlabel(x1_name, fontsize=x_axis_font_size,
+                  fontstyle=axis_labels_fontstyle)
+    ax.set_ylabel(
+        y1_name, fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
 
     pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
