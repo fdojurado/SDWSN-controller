@@ -500,7 +500,7 @@ def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_leg
     # twin1.set_ylabel(
     #     "Reward", fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
     # twin2.set_ylabel(
-    #     "Slotframe size ("+r'$\tau$'+')', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+    #     "Slotframe size ("+r'$|C|$'+')', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
 
     # # ax.yaxis.label.set_color(p1.get_color())
     # if y1_range is not None:
@@ -715,7 +715,7 @@ def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name, degree, txt_loc, y
     data_marker_size = 3.5
     legend_font_size = 12
     annotate_font_size = 8
-    equation_font_size = 7.79
+    equation_font_size = 7.4
     title_fontweight = 'bold'
     axis_labels_fontstyle = 'normal'
 
@@ -750,13 +750,13 @@ def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name, degree, txt_loc, y
     power_trendpoly = np.poly1d(trend)
 
     if degree == 4:
-        txt = r'$\hat{P_N}(\tau)=\tau^4*(%.2E)+\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (
+        txt = r'$\widetilde{P}(|C|)=|C|^4*(%.2E)+|C|^3*(%.2E)+|C|^2*(%.2E)+|C|*(%.2E)+(%.2E)$' % (
             trend[0], trend[1], trend[2], trend[3], trend[4])
     if degree == 3:
-        txt = r'$\hat{D_N}(\tau)=\tau^3*(%.2E)+\tau^2*(%.2E)+\tau*(%.2E)+(%.2E)$' % (
+        txt = r'$\widetilde{D}(|C|)=|C|^3*(%.2E)+|C|^2*(%.2E)+|C|*(%.2E)+(%.2E)$' % (
             trend[0], trend[1], trend[2], trend[3])
     if degree == 1:
-        txt = r'$\hat{R_N}(\tau)=\tau*(%.2E)+(%.2E)$' % (trend[0], trend[1])
+        txt = r'$\widetilde{R}(|C|)=|C|*(%.2E)+(%.2E)$' % (trend[0], trend[1])
 
     ax.plot(x, power_trendpoly(x), zorder=3)
 

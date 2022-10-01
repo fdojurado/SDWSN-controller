@@ -39,8 +39,8 @@ def main():
         results_path,
         'current_sf_len',
         'power_unbiased',
-        'slotframe size ('+r'$\tau$'+')',
-        r'$\hat{P_N}$',
+        r'$|C|$',
+        r'$\widetilde{P}$',
         4,
         [8, 0.89],
         [0.86, 0.9]
@@ -52,8 +52,8 @@ def main():
         results_path,
         'current_sf_len',
         'delay_unbiased',
-        'slotframe size ('+r'$\tau$'+')',
-        r'$\hat{D_N}$',
+        r'$|C|$',
+        r'$\widetilde{D}$',
         3,
         [8, 0.045],
         [0, 0.06]
@@ -64,8 +64,8 @@ def main():
         results_path,
         'current_sf_len',
         'pdr_unbiased',
-        'slotframe size ('+r'$\tau$'+')',
-        r'$\hat{R_N}$',
+        r'$|C|$',
+        r'$\widetilde{R}$',
         1,
         [25, 0.7],
         [0.65, 1]
