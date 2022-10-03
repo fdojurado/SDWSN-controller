@@ -82,7 +82,7 @@ def main():
     env_kwargs = {
         'simulation_name': args.simulation_name,
         'controller': controller,
-        'fig_dir': args.figures_path
+        'folder': args.figures_path
     }
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
