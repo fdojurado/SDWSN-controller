@@ -93,8 +93,8 @@ def main():
     # Get last observations including the SF size
     observations = controller.db.get_last_observations()
     # Current SF size
-    sf_size = observations[4]
-    last_ts_in_schedule = observations[3]
+    sf_size = observations['current_sf_len']
+    last_ts_in_schedule = observations['last_ts_in_schedule']
     increase = 1
     for i in range(5):
         # action, _state = model.predict(obs, deterministic=True)
@@ -116,7 +116,7 @@ def main():
         # Get last observations including the SF size
         observations = controller.db.get_last_observations()
         # Current SF size
-        sf_size = observations[4]
+        sf_size = observations['current_sf_len']
         print(f'current SF size: {sf_size}')
 
     env.render()

@@ -394,7 +394,18 @@ class DatabaseManager(Database):
             current_sf_len = doc['current_sf_len']
             normalized_ts_in_schedule = doc['normalized_ts_in_schedule']
             reward = doc['reward']
-            return alpha, beta, delta, last_ts_in_schedule, current_sf_len, normalized_ts_in_schedule, reward
+
+        last_obs = {
+            "alpha":alpha,
+            "beta":beta,
+            "delta":delta,
+            "last_ts_in_schedule":last_ts_in_schedule,
+            "current_sf_len":current_sf_len,
+            "normalized_ts_in_schedule":normalized_ts_in_schedule,
+            "reward":reward,
+        }
+            
+        return last_obs
 
     def get_last_power_consumption(self, node, power_samples, seq):
         query = {
