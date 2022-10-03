@@ -43,7 +43,7 @@ def main():
                         help='Maximum TSCH slotframe size')
     parser.add_argument('-te', '--maximum-timesteps-episode', type=int, default=50,
                         help='Maximum timesteps per episode')
-    parser.add_argument('-fp', '--figures-path', type=str, default='./figures/',
+    parser.add_argument('-fp', '--output-path', type=str, default='./output/',
                         help='Path to save results')
 
     args = parser.parse_args()
@@ -60,7 +60,7 @@ def main():
     )
 
     # Create figure folder
-    log_dir = args.figures_path
+    log_dir = args.output_path
     os.makedirs(log_dir, exist_ok=True)
 
     simulation_command = '/bin/sh -c '+'"cd ' + \
@@ -76,20 +76,22 @@ def main():
         source=args.docker_mount_source,
         socket_file=args.docker_mount_source+'/'+args.docker_command+'/'+'COOJA.log',
         db_name=args.db_name,
+        db_port=args.db_port,
+        processing_window= args.processing_window,
         tsch_scheduler=tsch_scheduler
     )
 
     env_kwargs = {
         'simulation_name': args.simulation_name,
         'controller': controller,
-        'folder': args.figures_path
+        'folder': args.output_path
     }
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
 
     obs = env.reset()
     # Get last observations including the SF size
-    observations = controller.get_last_observations()
+    observations = controller.db.get_last_observations()
     # Current SF size
     sf_size = observations[4]
     last_ts_in_schedule = observations[3]
@@ -112,7 +114,7 @@ def main():
         obs, reward, done, info = env.step(action)
         print(f'Observations: {obs}, reward: {reward}, done: {done}, info: {info}')
         # Get last observations including the SF size
-        observations = controller.get_last_observations()
+        observations = controller.db.get_last_observations()
         # Current SF size
         sf_size = observations[4]
         print(f'current SF size: {sf_size}')
