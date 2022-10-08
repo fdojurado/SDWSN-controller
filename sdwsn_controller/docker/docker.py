@@ -42,7 +42,7 @@ class CoojaDocker():
     def start_container(self):
         # self.client.containers.prune()  # Remove previous containers
         self.__run_container()
-        sleep(7)
+        sleep(30)
         self.__wait_socket_running()
 
     def __cooja_socket_status(self):
@@ -57,7 +57,7 @@ class CoojaDocker():
             contents = f.read()
             read_line = "Listening on port: " + \
                 str(self.ports[self.container_port])
-            fatal_line = "Exception when loading simulation:"
+            fatal_line = "Simulation not loaded"
             is_listening = read_line in contents
             # print(f'listening result: {is_listening}')
             is_fatal = fatal_line in contents
