@@ -18,7 +18,7 @@ def main():
 
     parser.add_argument('-d', '--docker-image', type=str, default='contiker/contiki-ng',
                         help="Name of the docker image ('contiker/contiki-ng')")
-    parser.add_argument('-dc', '--docker-command', type=str, default='examples/benchmarks/sdwsn-orchestra',
+    parser.add_argument('-dc', '--docker-command', type=str, default='examples/sdn-tsch',
                         help="Simulation script to run inside the container")
     parser.add_argument('-dmt', '--docker-mount-target', type=str, default='/home/user/contiki-ng',
                         help="Docker mount target")
