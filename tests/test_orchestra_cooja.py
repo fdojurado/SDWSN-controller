@@ -2,10 +2,12 @@
 This script test the trained agent in Cooja Network Simulator.
 """
 import sys
+from sdwsn_controller import about
 from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 from stable_baselines3 import DQN, A2C, PPO
 import gym
+import pyfiglet
 import os
 import argparse
 from gym.envs.registration import register
@@ -13,6 +15,9 @@ from gym.envs.registration import register
 
 def main():
 
+    fig = pyfiglet.Figlet(font='standard')
+    print(fig.renderText('SDWSN Controller'))
+    print(about.__info_for_scripts__)
     parser = argparse.ArgumentParser(
         description='This script tests Orchestra in the SDWSN architecture.')
 
