@@ -8,6 +8,8 @@ from typing import Dict
 from time import sleep
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 class ContainerController(CommonController):
     def __init__(
@@ -43,10 +45,15 @@ class ContainerController(CommonController):
             'type': 'bind'
         }
 
-        logger = logging.getLogger(__name__)
-
-
-        logger.info(f"Building a containerized controller.\n image: {image}, \n command: {command}, \n target: {target}, \n source: {source}, \n socket file: {socket_file}, \n cooja port: {cooja_port}, \n DB name: {db_name}, \n simulation name: {simulation_name}\n")
+        logger.info("Building a containerized controller")
+        logger.info(f"Image: {image}")
+        logger.info(f"command: {command}")
+        logger.info(f'target: {target}')
+        logger.info(f'source: {source}')
+        logger.info(f'socket file: {socket_file}')
+        logger.info(f'cooja port: {cooja_port}')
+        logger.info(f'DB name: {db_name}')
+        logger.info(f'simulation name: {simulation_name}')
 
         self.container = CoojaDocker(image=image, command=command, mount=mount,
                                      sysctls=sysctls, ports=container_ports, privileged=privileged, detach=detach,
@@ -79,14 +86,14 @@ class ContainerController(CommonController):
         while True:
             if self.packet_dissector.ack_pkt is not None:
                 if (self.packet_dissector.ack_pkt.reserved0 == ack):
-                    print("correct ACK received")
+                    logger.info("correct ACK received")
                     result = 1
                     break
-                print("ACK not received")
+                logger.info("ACK not received")
                 # We stop sending the current NC packet if
                 # we reached the max RTx or we received ACK
                 if(rtx >= 7):
-                    print("ACK never received")
+                    logger.warning("ACK never received")
                     break
                 # We resend the packet if retransmission < 7
                 rtx = rtx + 1
@@ -100,7 +107,7 @@ class ContainerController(CommonController):
          """
         # If we have not received any data after looping 10 times
         # We return
-        print("Waiting for the current cycle to finish")
+        logger.info("Waiting for the current cycle to finish")
         # count = 0
         result = -1
         while(1):
@@ -112,7 +119,7 @@ class ContainerController(CommonController):
             #     result = 0
             #     break
             # sleep(1)
-        print(f"cycle finished, result: {result}")
+        logger.info(f"cycle finished, result: {result}")
         return result
 
     def container_controller_start(self):
@@ -126,6 +133,6 @@ class ContainerController(CommonController):
         self.stop()
 
     def reset(self):
-        print('Resetting container, controller, etc.')
+        logger.info('Resetting container, controller, etc.')
         self.container_controller_stop()
         self.container_controller_start()

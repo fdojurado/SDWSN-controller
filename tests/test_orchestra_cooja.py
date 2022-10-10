@@ -16,22 +16,8 @@ import logging.config
 from os import path
 from rich.logging import RichHandler
 
-logging.basicConfig(
-    level="NOTSET",
-    format='%(asctime)s - %(message)s',
-    datefmt="[%X]",
-    handlers=[RichHandler(rich_tracebacks=True)]
-)
-
-log_file_path = path.join(path.dirname(path.abspath('logging.conf')), 'sdwsn_controller','logging','logging.conf')
-
 
 def main():
-    # Set logging
-    # logging.config.fileConfig(log_file_path)
-    # create logger
-    logger = logging.getLogger(__name__)
-    logger.info("Hello, World!")
 
     # Set banner
     fig = pyfiglet.Figlet(font='standard')
@@ -70,9 +56,22 @@ def main():
                         help='Maximum timesteps per episode')
     parser.add_argument('-fp', '--output-path', type=str, default='./output/',
                         help='Path to save results')
+    parser.add_argument('-dbg', '--debug_level', default='NOTSET',
+                        help='Debug level, default NOTSET.')
 
     args = parser.parse_args()
 
+    assert args.debug_level in ['CRITICAL',
+                                'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'], "Incorrect debug level"
+    # Set debug level
+    logging.basicConfig(
+        level=args.debug_level,
+        format='%(asctime)s - %(message)s',
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True)]
+    )
+    # Create logger
+    logger = logging.getLogger(__name__)
     # Example for the CartPole environment
     register(
         # unique identifier for the env `name-version`
@@ -103,7 +102,7 @@ def main():
         db_name=args.db_name,
         db_host=args.db_host,
         db_port=args.db_port,
-        processing_window= args.processing_window,
+        processing_window=args.processing_window,
         tsch_scheduler=tsch_scheduler
     )
 
@@ -139,7 +138,6 @@ def main():
                 env.render()
 
     env.close()
-
 
 
 if __name__ == '__main__':

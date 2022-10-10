@@ -17,6 +17,9 @@ import numpy as np
 import networkx as nx
 import threading
 from time import sleep
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CommonController(BaseController):
@@ -149,11 +152,11 @@ class CommonController(BaseController):
 
     def send(self, data):
         if self.__is_running:
-            print("sending serial packet")
+            logger.info("sending serial packet")
             # Send data to the serial send interface
             self.__socket.send(data)
         else:
-            print("Couldn't send data, controller is Not running")
+            logger.warning("Couldn't send data, controller is Not running")
 
     """ Packet dissector related functionalities """
 
@@ -201,9 +204,9 @@ class CommonController(BaseController):
     def comm_interface_start(self):
         # Connect serial
         if self.__socket.connect() != 0:
-            print(f'unsuccessful serial connection (host:{self.__socket.host}, port: {self.__socket.port})')
+            logger.warning(f'unsuccessful serial connection (host:{self.__socket.host}, port: {self.__socket.port})')
             return 0
-        print("Socket up and running")
+        logger.info("Socket up and running")
         # Read serial
         self.__read_socket_thread = threading.Thread(
             target=self.comm_interface_read)
@@ -212,7 +215,7 @@ class CommonController(BaseController):
 
     def comm_interface_stop(self):
         if self.__read_socket_thread is not None:
-            print(f"start to shutdown thread, running flag = {self.__is_running}")
+            logger.info(f"start to shutdown thread, running flag = {self.__is_running}")
             self.__read_socket_thread.join()
         self.__socket.shutdown()
 
@@ -226,7 +229,7 @@ class CommonController(BaseController):
                 pass
             if not self.__is_running:
                 break
-        print("Socket reading thread exited.")
+        logger.info("Socket reading thread exited.")
 
     """ Database related functionalities """
 
@@ -294,8 +297,8 @@ class CommonController(BaseController):
                         dst = elem.destination
                         data = {"channel": channel, "timeslot": timeslot, "addr": addr, "type": type,
                                 "dest": dst}
-                        print("schedule element")
-                        print(data)
+                        logger.debug("schedule element")
+                        logger.debug(data)
                         # if num_links < 11:
                         cell_pkt = Cell_Packet_Payload(payload=payload, type=int(type),
                                                        channel=int(channel), timeslot=int(timeslot), scr=addr,
@@ -303,7 +306,7 @@ class CommonController(BaseController):
                         cell_packed = cell_pkt.pack()
                         payload = cell_packed
                         if len(payload) > 90:
-                            print(f'Sending schedule packet {num_pkts}')
+                            logger.info(f'Sending schedule packet {num_pkts}')
                             # We send the current payload
                             num_pkts += 1
                             current_sf_size = 0
@@ -318,7 +321,7 @@ class CommonController(BaseController):
         # Send the remain payload if there is one
         if payload:
             num_pkts += 1
-            print(f'Sending schedule packet {num_pkts}')
+            logger.info(f'Sending schedule packet {num_pkts}')
             current_sf_size = 0
             if num_pkts == 1:
                 current_sf_size = sf_size
@@ -334,7 +337,7 @@ class CommonController(BaseController):
         return self.__router
 
     def send_routes(self):
-        print('Sending routes')
+        logger.info('Sending routes')
         num_pkts = 0
         payload = []
         for _, row in self.router.routes.iterrows():
@@ -342,14 +345,14 @@ class CommonController(BaseController):
             dst = row['dst']
             via = row['via']
             data = {"scr": scr, "dst": dst, "via": via}
-            print("route")
-            print(data)
+            logger.debug("route")
+            logger.debug(data)
             route_pkt = RA_Packet_Payload(
                 dst=dst, scr=scr, via=via, payload=payload)
             routed_packed = route_pkt.pack()
             payload = routed_packed
             if len(payload) > 90:
-                print(f'Sending routing packet {num_pkts}')
+                logger.info(f'Sending routing packet {num_pkts}')
                 # We send the current payload
                 num_pkts += 1
                 packedData, serial_pkt = common.routing_build_pkt(
@@ -361,7 +364,7 @@ class CommonController(BaseController):
         # Send the remain payload if there is one
         if payload:
             num_pkts += 1
-            print(f'Sending routing packet {num_pkts}')
+            logger.info(f'Sending routing packet {num_pkts}')
             packedData, serial_pkt = common.routing_build_pkt(
                 payload, self.increase_cycle_sequence())
             # Send NC packet
@@ -376,21 +379,21 @@ class CommonController(BaseController):
         path = {}
         for node in list(G.nodes):
             if node != 1 and node != 0:
-                # print("sp from node "+str(node))
+                # logger.debug("sp from node "+str(node))
                 try:
                     node_path = nx.dijkstra_path(G, node, 1, weight='weight')
-                    # print("dijkstra path")
-                    # print(node_path)
+                    # logger.debug("dijkstra path")
+                    # logger.debug(node_path)
                     path[node] = node_path
                     # TODO: find a way to avoid forcing the last addr of
                     # sensor nodes to 0.
                     self.router.add_link(
                         str(node)+".0", "1.1", str(node_path[1])+".0")
                 except nx.NetworkXNoPath:
-                    print("path not found")
+                    logger.exception("path not found")
         # self.router.print_routes()
-        print("total path")
-        print(path)
+        logger.debug("total path")
+        logger.debug(path)
         return path
 
     """ Reinforcement learning functionalities """
