@@ -5,6 +5,7 @@ import docker
 from docker.types import Mount
 from time import sleep
 from rich.progress import track
+from rich.progress import Progress
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,14 +48,26 @@ class CoojaDocker():
     def start_container(self):
         # self.client.containers.prune()  # Remove previous containers
         self.__run_container()
-        for i in track(range(70), description="Waiting for Cooja to start"):
-                sleep(1)
+
+        sleep(2)
+
+        with Progress(transient=True) as progress:
+            task1 = progress.add_task(
+                "[red]Waiting for Cooja to start...", total=100)
+
+            while not progress.finished:
+                progress.update(task1, advance=0.1)
+                if os.access(self.socket_file, os.R_OK):
+                    progress.update(task1, completed=100)
+                sleep(0.1)
+
         self.__wait_socket_running()
 
     def __cooja_socket_status(self):
         # This method checks whether the socket is currently running in Cooja
         if not os.access(self.socket_file, os.R_OK):
-            logger.warning('The input file "{}" does not exist'.format(self.socket_file))
+            logger.warning(
+                'The input file "{}" does not exist'.format(self.socket_file))
 
         is_listening = False
         is_fatal = False
@@ -72,15 +85,21 @@ class CoojaDocker():
     def __wait_socket_running(self):
         cooja_socket_active, fatal_error = self.__cooja_socket_status()
 
-        for i in track(range(50), description="Waiting for Cooja socket interface"):
-            if cooja_socket_active == True:
-                break
-            sleep(2)
-            cooja_socket_active, fatal_error = self.__cooja_socket_status()
-            if fatal_error:
-                logger.warning("Simulation compilation error, starting over ...")
-                # self.client.containers.prune()  # Remove previous containers
-                self.start_container()
+        with Progress(transient=True) as progress:
+            task1 = progress.add_task(
+                "[red]Waiting for Cooja socket interface...", total=10)
+            while not progress.finished:
+                progress.update(task1, advance=0.1)
+                cooja_socket_active, fatal_error = self.__cooja_socket_status()
+                if fatal_error:
+                    logger.warning(
+                        "Simulation compilation error, starting over ...")
+                    # self.client.containers.prune()  # Remove previous containers
+                    self.start_container()
+                if cooja_socket_active == True:
+                    progress.update(task1, completed=100)
+
+                sleep(2)
 
         logger.info("Cooja socket interface is up and running")
 
