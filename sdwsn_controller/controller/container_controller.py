@@ -4,6 +4,7 @@ from sdwsn_controller.docker.docker import CoojaDocker
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.routes.router import SimpleRouter
 
+from rich.progress import Progress
 from typing import Dict
 from time import sleep
 import logging
@@ -107,18 +108,33 @@ class ContainerController(CommonController):
          """
         # If we have not received any data after looping 10 times
         # We return
-        logger.info("Waiting for the current cycle to finish")
-        # count = 0
+        logger.info(f"Starting new cycle")
+
         result = -1
-        while(1):
-            # count += 1
-            if self.sequence > self.__processing_window:
-                result = 1
-                break
-            # if count > 10:
-            #     result = 0
-            #     break
-            # sleep(1)
+
+        with Progress(transient=True) as progress:
+            task1 = progress.add_task(
+                "[red]Waiting for the current cycle to finish...", total=self.__processing_window)
+
+            while not progress.finished:
+                progress.update(task1, completed=self.sequence)
+                if self.sequence > self.__processing_window:
+                    result = 1
+                    logger.info(f"Cycle completed")
+                    progress.update(task1, completed=100)
+                sleep(0.1)
+
+        # # count = 0
+        # result = -1
+        # while(1):
+        #     # count += 1
+        #     if self.sequence > self.__processing_window:
+        #         result = 1
+        #         break
+        #     # if count > 10:
+        #     #     result = 0
+        #     #     break
+        #     # sleep(1)
         logger.info(f"cycle finished, result: {result}")
         return result
 

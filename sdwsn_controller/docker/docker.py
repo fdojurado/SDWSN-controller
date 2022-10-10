@@ -4,7 +4,6 @@ import os
 import docker
 from docker.types import Mount
 from time import sleep
-from rich.progress import track
 from rich.progress import Progress
 import logging
 
