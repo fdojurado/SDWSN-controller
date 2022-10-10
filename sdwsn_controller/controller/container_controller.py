@@ -6,6 +6,7 @@ from sdwsn_controller.routes.router import SimpleRouter
 
 from typing import Dict
 from time import sleep
+import logging
 
 
 class ContainerController(CommonController):
@@ -42,7 +43,10 @@ class ContainerController(CommonController):
             'type': 'bind'
         }
 
-        print(f"Building a containerized controller.\n image: {image}, \n command: {command}, \n target: {target}, \n source: {source}, \n socket file: {socket_file}, \n cooja port: {cooja_port}, \n DB name: {db_name}, \n simulation name: {simulation_name}\n")
+        logger = logging.getLogger(__name__)
+
+
+        logger.info(f"Building a containerized controller.\n image: {image}, \n command: {command}, \n target: {target}, \n source: {source}, \n socket file: {socket_file}, \n cooja port: {cooja_port}, \n DB name: {db_name}, \n simulation name: {simulation_name}\n")
 
         self.container = CoojaDocker(image=image, command=command, mount=mount,
                                      sysctls=sysctls, ports=container_ports, privileged=privileged, detach=detach,

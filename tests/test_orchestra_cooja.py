@@ -11,10 +11,29 @@ import pyfiglet
 import os
 import argparse
 from gym.envs.registration import register
+import logging
+import logging.config
+from os import path
+from rich.logging import RichHandler
+
+logging.basicConfig(
+    level="NOTSET",
+    format='%(asctime)s - %(message)s',
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)]
+)
+
+log_file_path = path.join(path.dirname(path.abspath('logging.conf')), 'sdwsn_controller','logging','logging.conf')
 
 
 def main():
+    # Set logging
+    # logging.config.fileConfig(log_file_path)
+    # create logger
+    logger = logging.getLogger(__name__)
+    logger.info("Hello, World!")
 
+    # Set banner
     fig = pyfiglet.Figlet(font='standard')
     print(fig.renderText('SDWSN Controller'))
     print(about.__info_for_scripts__)
