@@ -86,7 +86,7 @@ class CoojaDocker():
 
         with Progress(transient=True) as progress:
             task1 = progress.add_task(
-                "[red]Waiting for Cooja socket interface...", total=10)
+                "[red]Setting up Cooja simulation...", total=10)
             while not progress.finished:
                 progress.update(task1, advance=0.1)
                 cooja_socket_active, fatal_error = self.__cooja_socket_status()
@@ -96,7 +96,7 @@ class CoojaDocker():
                     # self.client.containers.prune()  # Remove previous containers
                     self.start_container()
                 if cooja_socket_active == True:
-                    progress.update(task1, completed=100)
+                    progress.update(task1, completed=10)
 
                 sleep(2)
 

@@ -1,6 +1,9 @@
 import types
 import json
 from abc import ABC, abstractmethod
+import logging
+
+logger = logging.getLogger(__name__)
 # Protocols encapsulated in sdn IP packet
 cell_type = types.SimpleNamespace()
 cell_type.UC_RX = 2
@@ -31,18 +34,18 @@ class Node:
         self.tx = []
 
     def add_rx_cell(self, channeloffset, timeoffset):
-        # print("adding rx cell")
+        # logger.info("adding rx cell")
         rx_cell = Cell(source=self.node, type=cell_type.UC_RX,
                        channeloffset=channeloffset, timeoffset=timeoffset)
         self.rx.append(rx_cell)
         return rx_cell
 
     def add_tx_cell(self, destination, timeoffset, channeloffset):
-        # print("adding tx cell")
+        # logger.info("adding tx cell")
         # Cell duplicated?
         # for tx_link in self.tx:
         #     if((tx_link.type == cell_type.UC_TX) and (tx_link.destination == destination)):
-        #         # print("duplicated cell")
+        #         # logger.info("duplicated cell")
         #         return None
 
         tx_cell = Cell(source=self.node, type=cell_type.UC_TX, destination=destination,
@@ -93,16 +96,16 @@ class Schedule(ABC):
         pass
 
     def schedule_add_uc(self, node, type, channeloffset=None, timeoffset=None, destination=None):
-        # print("adding uc link node: ", node, " destination: ", destination, "type: ", type,
+        # logger.info("adding uc link node: ", node, " destination: ", destination, "type: ", type,
         #   " channeloffset: ", channeloffset, " timeoffset: ", timeoffset)
         if(not self.list_nodes):
             sensor = Node(node)
             self.list_nodes.append(sensor)
-            # print("creating new sensor")
+            # logger.info("creating new sensor")
         else:
             for elem in self.list_nodes:
                 if (elem.node == node):
-                    # print("sensor already exist")
+                    # logger.info("sensor already exist")
                     sensor = elem
                     break
                 else:
@@ -110,11 +113,11 @@ class Schedule(ABC):
             if (sensor is None):
                 sensor = Node(node)
                 self.list_nodes.append(sensor)
-        # print("list of nodes: ", self.list_nodes)
+        # logger.info("list of nodes: ", self.list_nodes)
         if(type == cell_type.UC_RX):
             # Check if the node already has a rx link
             # if(not sensor.has_rx()):
-            # print("adding rx uc at channeloffset ",
+            # logger.info("adding rx uc at channeloffset ",
             #   channeloffset, " timeoffset ", timeoffset)
             rx_cell = sensor.add_rx_cell(channeloffset, timeoffset)
             self.schedule[channeloffset][timeoffset].append(rx_cell)
@@ -122,7 +125,7 @@ class Schedule(ABC):
             # channeloffset, timeoffset = self.schedule_get_rx_coordinates(
             #     destination)
             # if (channeloffset is not None and timeoffset is not None):
-            # print("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
+            # logger.info("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
             #   channeloffset, " timeoffset ", timeoffset)
             tx_cell = sensor.add_tx_cell(
                 destination, timeoffset, channeloffset)
@@ -212,7 +215,7 @@ class Schedule(ABC):
                                                          dnode=cell.destination)
                     return info
                 case _:
-                    print("unkown cell type")
+                    logger.info("unkown cell type")
                     return None
 
     def schedule_last_active_ts(self):
@@ -246,4 +249,4 @@ class Schedule(ABC):
                         if(txt is not None):
                             print_schedule[i][j].append(txt)
         # print("printing schedule 2")
-        print(*print_schedule, sep='\n')
+        logger.info(*print_schedule, sep='\n')

@@ -1,5 +1,7 @@
 from sdwsn_controller.tsch.schedule import Schedule, cell_type
+import logging
 
+logger = logging.getLogger(__name__)
 
 class HardCodedScheduler(Schedule):
     def __init__(
@@ -12,7 +14,7 @@ class HardCodedScheduler(Schedule):
             channel_offsets)
 
     def run(self, path, current_sf_size):
-        print(f"running hard coded scheduler for sf size {current_sf_size}")
+        logger.debug(f"running hard coded scheduler for sf size {current_sf_size}")
         # Schedule Tx - Node 2 - 1
         tx_node = str(2)+".0"
         rx_node = str(1)+".0"
