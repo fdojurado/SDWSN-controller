@@ -5,6 +5,12 @@ import pandas as pd
 import json
 from datetime import datetime
 from abc import ABC, abstractmethod
+from rich.table import Table
+from rich.console import Console
+from rich.text import Text
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Routes(ABC):
@@ -23,7 +29,31 @@ class Routes(ABC):
                 [self.routes, df], ignore_index=True)  # adding a row
 
     def print_routes(self):
-        print(self.routes.to_string())
+        logger.info(self.routes.to_string())
+
+    def print_routes_table(self):
+        table = Table(title="Routing table")
+
+        table.add_column("Source", justify="center",
+                         style="cyan", no_wrap=True)
+        table.add_column("Destination", justify="center", style="magenta")
+        table.add_column("Via", justify="left", style="green")
+        for _, row in self.routes.iterrows():
+            table.add_row(row['scr'],
+                          row['dst'], row['via'])
+
+        def log_table(rich_table):
+            """Generate an ascii formatted presentation of a Rich table
+            Eliminates any column styling
+            """
+            console = Console(width=150)
+            with console.capture() as capture:
+                console.print(rich_table)
+            return Text.from_ansi(capture.get())
+
+        logger.info(f"Routing table\n{log_table(table)}")
+
+        
 
     def remove_route(self, scr, dst, via):
         df = self.routes
@@ -31,7 +61,7 @@ class Routes(ABC):
                        == dst & df['via'] == via]
         # Check that the index is not empty. Which means we find the target row.
         if(idx.empty):
-            print('route/index not found')
+            logger.info('route/index not found')
             return
         self.routes = df.drop(idx)
         self.print_routes()
@@ -72,5 +102,5 @@ class Routes(ABC):
     #         #     hop_limit = rank
     #     json_message["hop_limit"] = 255
     #     json_dump = json.dumps(json_message, indent=4, sort_keys=True)
-    #     print(json_dump)
+    #     logger.info(json_dump)
     #     return json_dump

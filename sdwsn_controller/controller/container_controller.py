@@ -118,7 +118,7 @@ class ContainerController(CommonController):
 
             while not progress.finished:
                 progress.update(task1, completed=self.sequence)
-                if self.sequence > self.__processing_window:
+                if self.sequence >= self.__processing_window:
                     result = 1
                     logger.info(f"Cycle completed")
                     progress.update(task1, completed=100)

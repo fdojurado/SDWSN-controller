@@ -1,6 +1,9 @@
 import types
 import json
 from abc import ABC, abstractmethod
+from rich.table import Table
+from rich.console import Console
+from rich.text import Text
 import logging
 
 logger = logging.getLogger(__name__)
@@ -215,7 +218,7 @@ class Schedule(ABC):
                                                          dnode=cell.destination)
                     return info
                 case _:
-                    logger.info("unkown cell type")
+                    logger.info("Unknown cell type")
                     return None
 
     def schedule_last_active_ts(self):
@@ -250,3 +253,53 @@ class Schedule(ABC):
                             print_schedule[i][j].append(txt)
         # print("printing schedule 2")
         logger.info(*print_schedule, sep='\n')
+
+    def schedule_print_compact(self):
+        link_list = []
+        for i in range(self.num_channel_offsets):
+            for j in range(self.slotframe_size):
+                if (self.schedule[i][j]):
+                    for cell in self.schedule[i][j]:
+                        txt = self.schedule_format_printing_cell(cell)
+                        TSCH_cell_type = 'None'
+                        match(cell.type):
+                            case cell_type.UC_RX:
+                                TSCH_cell_type = 'Listening'
+                            case cell_type.UC_TX:
+                                TSCH_cell_type = 'Transmitting'
+                            case _:
+                                logger.info("Unknown cell type")
+                        link_dict = {
+                            'timeoffset': j,
+                            'channeloffset': i,
+                            'type': TSCH_cell_type,
+                            'cell': txt
+                        }
+                        link_list.append(link_dict)
+
+        # logger.info('TSCH schedules plain')
+        # for elem in link_list:
+        #     logger.info(elem)
+
+        table = Table(title="TSCH schedules")
+
+        table.add_column("Time offset", justify="center",
+                         style="cyan", no_wrap=True)
+        table.add_column("Channel offset", justify="center", style="magenta")
+        table.add_column("Type", justify="left", style="green")
+        table.add_column("Link \n(src, dst)", justify="left", style="blue")
+
+        for elem in link_list:
+            table.add_row(str(elem['timeoffset']), str(
+                elem['channeloffset']), elem['type'], elem['cell'])
+
+        def log_table(rich_table):
+            """Generate an ascii formatted presentation of a Rich table
+            Eliminates any column styling
+            """
+            console = Console(width=150)
+            with console.capture() as capture:
+                console.print(rich_table)
+            return Text.from_ansi(capture.get())
+
+        logger.info(f"TSCH schedules table\n{log_table(table)}")

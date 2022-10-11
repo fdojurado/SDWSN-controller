@@ -2,7 +2,9 @@ import socket
 import sys
 # import logging
 from sdwsn_controller.bus import BusABC
-import select
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SerialBus(BusABC):
@@ -61,8 +63,8 @@ class SerialBus(BusABC):
             # ser.read can return an empty string
             # or raise a SerialException
             rx_byte = self.ser.recv(1)
-            # print("rx_byte")
-            # print(rx_byte)
+            # logger.info("rx_byte")
+            # logger.info(rx_byte)
             if rx_byte and ord(rx_byte) != 0x7E:
                 if(self.escape_character):
                     self.escape_character = 0
@@ -80,22 +82,22 @@ class SerialBus(BusABC):
                     self.frame_length = self.frame_length + 1
                 else:
                     self.overflow = 1
-                    # print("Packet size overflow: %u bytes\n", self.frame_length)
+                    # logger.info("Packet size overflow: %u bytes\n", self.frame_length)
                     return 0
             else:
-                # print("FRAME_BOUNDARY_OCTET detected")
+                # logger.info("FRAME_BOUNDARY_OCTET detected")
                 if (self.escape_character == 1):
-                    # print("serial: escape_character == true")
+                    # logger.info("serial: escape_character == true")
                     self.escape_character = 0
                 elif (self.overflow):
-                    # print("serial overflow")
+                    # logger.info("serial overflow")
                     self.overflow = 0
                     self.frame_length = 0
                     self.frame_start = 1
                     self.byte_msg = bytearray()
                 elif (self.frame_length >= 6 and self.frame_start):
                     # Wake up consumer process
-                    # print("Wake up consumer process")
+                    # logger.info("Wake up consumer process")
                     self.frame_start = 0
                     self.overflow = 0
                     self.frame_length = 0
@@ -104,7 +106,7 @@ class SerialBus(BusABC):
                     return msg_buffer, False
                 else:
                     # re-synchronization. Start over
-                    # print("serial re-synchronization\n")
+                    # logger.info("serial re-synchronization\n")
                     self.frame_start = 1
                     self.byte_msg = bytearray()
                     self.frame_length = 0
@@ -120,17 +122,17 @@ class SerialBus(BusABC):
         """
         Send a message over the serial device.
         """
-        print('Sending message over the serial interface')
+        logger.info('Sending message over the serial interface')
         byte_msg = bytearray()
         byte_msg.extend(bytes.fromhex('7E'))
         data = [data[i:i+1] for i in range(len(data))]
         for i in range(0, len(data)):
-            # print('data')
-            # print((data[i]))
+            # logger.info('data')
+            # logger.info((data[i]))
             self.check_byte(byte_msg, data[i])
         byte_msg.extend(bytes.fromhex('7E'))
-        # print('packet to send')
-        # print(byte_msg.hex())
+        logger.debug('packet to send')
+        logger.debug(byte_msg.hex())
         self.ser.send(byte_msg)
 
     def check_byte(self, byte_data, data):
@@ -155,7 +157,7 @@ class SerialBus(BusABC):
         """
         if self.ser is not None:
             self.empty_socket()
-            print("socket buffer is now empty, we close ...")
+            logger.info("socket buffer is now empty, we close ...")
             self.ser.close()
             # self.ser.shutdown(socket.SHUT_RDWR)
 
