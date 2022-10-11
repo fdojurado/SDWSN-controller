@@ -15,6 +15,7 @@ import logging
 import logging.config
 from os import path
 from rich.logging import RichHandler
+from signal import signal, SIGINT
 
 
 def main():
@@ -113,6 +114,15 @@ def main():
     }
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
+
+    # Exit signal
+    def handler(*args):
+        # Handle any cleanup here
+        logger.warning('SIGINT or CTRL-C detected. Shutting down ...')
+        controller.container_controller_stop()
+        sys.exit(0)
+
+    signal(SIGINT, handler)
 
     num_actions = 0
     # Test the trained agent
