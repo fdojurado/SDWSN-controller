@@ -13,14 +13,14 @@ logger = logging.getLogger(__name__)
 
 
 def tsch_build_pkt(payloadPacked, sf_len, seq):
-    logger.info(f'Building TSCH packet with SF len {sf_len} and seq {seq}')
+    logger.debug(f'Building TSCH packet with SF len {sf_len} and seq {seq}')
     payload_len = len(payloadPacked)
     # Build schedule packet header
     cell_pkt = Cell_Packet(
         payloadPacked, payload_len=payload_len, sf_len=sf_len, seq=seq)
     # Pack
     cell_packed = cell_pkt.pack()
-    logger.info(repr(cell_pkt))
+    logger.debug(repr(cell_pkt))
     # Build sdn IP packet
     # 0x24: version 2, protocol SA = 4
     vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_SA
@@ -34,13 +34,13 @@ def tsch_build_pkt(payloadPacked, sf_len, seq):
                                vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
     # Pack layer three packet
     sdn_ip_packed = sdn_ip_pkt.pack()
-    logger.info(repr(sdn_ip_pkt))
+    logger.debug(repr(sdn_ip_pkt))
     # Build serial packet
     serial_pkt = SerialPacket(sdn_ip_packed, addr=0, pkt_chksum=0,
                               message_type=2, payload_len=length,
                               reserved0=randrange(1, 254), reserved1=0)
     packedData = serial_pkt.pack()
-    logger.info(repr(serial_pkt))
+    logger.debug(repr(serial_pkt))
     return packedData, serial_pkt
 
 
@@ -48,13 +48,13 @@ def tsch_build_pkt(payloadPacked, sf_len, seq):
 
 
 def routing_build_pkt(payloadPacked, seq):
-    logger.info(f'Building routes packet with seq {seq}')
+    logger.debug(f'Building routes packet with seq {seq}')
     payload_len = len(payloadPacked)
     # Build RA packet
     ra_pkt = RA_Packet(
         payloadPacked, payload_len=payload_len, seq=seq)
     ra_packed = ra_pkt.pack()
-    logger.info(repr(ra_pkt))
+    logger.debug(repr(ra_pkt))
     logger.debug(ra_packed)
     # Build sdn IP packet
     # 0x23: version 2, protocol RA = 3

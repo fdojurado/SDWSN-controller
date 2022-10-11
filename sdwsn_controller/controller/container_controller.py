@@ -87,10 +87,10 @@ class ContainerController(CommonController):
         while True:
             if self.packet_dissector.ack_pkt is not None:
                 if (self.packet_dissector.ack_pkt.reserved0 == ack):
-                    logger.info("correct ACK received")
+                    logger.debug("correct ACK received")
                     result = 1
                     break
-                logger.info("ACK not received")
+                logger.debug("ACK not received")
                 # We stop sending the current NC packet if
                 # we reached the max RTx or we received ACK
                 if(rtx >= 7):
