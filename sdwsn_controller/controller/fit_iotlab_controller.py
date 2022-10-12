@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class FitIoTLABController(CommonController):
     def __init__(
         self,
@@ -68,13 +69,21 @@ class FitIoTLABController(CommonController):
          """
         # If we have not received any data after looping 10 times
         # We return
-        logger.info("Waiting for the current cycle, in the FIT IoT LAB, to finish")
+        logger.info(
+            "Starting new cycle")
         result = -1
-        while(1):
-            if self.sequence > self.__processing_window:
-                result = 1
-                break
-            sleep(1)
+
+        with Progress(transient=True) as progress:
+            task1 = progress.add_task(
+                "[red]Waiting for the current cycle, in the FIT IoT LAB, to finish...", total=self.__processing_window)
+
+            while not progress.finished:
+                progress.update(task1, completed=self.sequence)
+                if self.sequence >= self.__processing_window:
+                    result = 1
+                    logger.info(f"Cycle completed")
+                    progress.update(task1, completed=100)
+                sleep(0.1)
         logger.info(f"cycle finished, result: {result}")
         return result
 
