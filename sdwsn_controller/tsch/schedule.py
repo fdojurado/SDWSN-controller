@@ -361,7 +361,7 @@ class Schedule(ABC):
         df.fillna('-', inplace=True)
 
         table = Table(
-            title="TSCH schedules (Row -> Channels, Columns -> Timeoffsets)")
+            title="TSCH schedules (Row -> Channels, Columns -> Timeoffsets)", show_lines=True)
 
         show_index = True
 
