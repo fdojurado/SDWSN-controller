@@ -215,8 +215,8 @@ class Schedule(ABC):
                     info = "Rx ({fnode})".format(fnode=cell.source)
                     return info
                 case cell_type.UC_TX:
-                    info = "Tx ({fnode}-{dnode})".format(fnode=cell.source,
-                                                         dnode=cell.destination)
+                    info = "({fnode}-{dnode})".format(fnode=cell.source,
+                                                      dnode=cell.destination)
                     return info
                 case _:
                     logger.info("Unknown cell type")
@@ -325,8 +325,7 @@ class Schedule(ABC):
 
     def schedule_print_grid(self):
         """This prints the TSCH schedules in a grid.
-        TODO: This method is not tested.
-        
+
         Returns:
             None
         """
@@ -338,19 +337,15 @@ class Schedule(ABC):
                         txt = self.schedule_format_printing_cell(cell)
                         TSCH_cell_type = 'None'
                         match(cell.type):
-                            case cell_type.UC_RX:
-                                TSCH_cell_type = 'Listening'
                             case cell_type.UC_TX:
                                 TSCH_cell_type = 'Transmitting'
-                            case _:
-                                logger.info("Unknown cell type")
-                        link_dict = {
-                            'timeoffset': j,
-                            'channeloffset': i,
-                            'type': TSCH_cell_type,
-                            'cell': txt
-                        }
-                        link_list.append(link_dict)
+                                link_dict = {
+                                    'timeoffset': j,
+                                    'channeloffset': i,
+                                    'type': TSCH_cell_type,
+                                    'cell': txt
+                                }
+                                link_list.append(link_dict)
 
         # Get the last active timeslot and channel
         max_columns = self.schedule_last_active_ts()
@@ -363,5 +358,34 @@ class Schedule(ABC):
         for link in link_list:
             df.iloc[link['channeloffset'], link['timeoffset']] = link['cell']
 
-        print(df.to_string())
+        df.fillna('-', inplace=True)
 
+        table = Table(
+            title="TSCH schedules (Row -> Channels, Columns -> Timeoffsets)")
+
+        show_index = True
+
+        index_name = ''
+
+        if show_index:
+            index_name = str(index_name) if index_name else ""
+            table.add_column(index_name)
+
+        for column in df.columns:
+            table.add_column(str(column), justify="center")
+
+        for index, value_list in enumerate(df.values.tolist()):
+            row = [str(index)] if show_index else []
+            row += [str(x) for x in value_list]
+            table.add_row(*row)
+
+        def log_table(rich_table):
+            """Generate an ascii formatted presentation of a Rich table
+            Eliminates any column styling
+            """
+            console = Console(width=150)
+            with console.capture() as capture:
+                console.print(rich_table)
+            return Text.from_ansi(capture.get())
+
+        logger.info(f"TSCH schedules table grid\n{log_table(table)}")
