@@ -89,4 +89,5 @@ class HardCodedScheduler(Schedule):
         self.schedule_add_uc(rx_node, cell_type.UC_RX, ch, ts)
 
         # Print the schedule
-        self.schedule_print_compact()
+        self.schedule_print_table()
+        self.schedule_print_grid()

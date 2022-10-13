@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from rich.table import Table
 from rich.console import Console
 from rich.text import Text
+import pandas as pd
 import logging
 
 logger = logging.getLogger(__name__)
@@ -234,6 +235,24 @@ class Schedule(ABC):
 
         return last_ts
 
+    def schedule_last_active_channel(self):
+        """Gets the last active channel of the current TSCH schedule
+        TODO: This method is not tested.
+
+        Returns:
+            int: last currently used channel
+        """
+        last_ch = 0
+        for node in self.list_nodes:
+            for rx_cell in node.rx:
+                if rx_cell.channeloffset > last_ch:
+                    last_ch = rx_cell.channeloffset
+            for tx_cell in node.tx:
+                if tx_cell.channeloffset > last_ch:
+                    last_ch = tx_cell.channeloffset
+
+        return last_ch
+
     def schedule_set_sf_size(self, size):
         self.slotframe_size = size
 
@@ -254,7 +273,7 @@ class Schedule(ABC):
         # print("printing schedule 2")
         logger.info(*print_schedule, sep='\n')
 
-    def schedule_print_compact(self):
+    def schedule_print_table(self):
         link_list = []
         for i in range(self.num_channel_offsets):
             for j in range(self.slotframe_size):
@@ -303,3 +322,46 @@ class Schedule(ABC):
             return Text.from_ansi(capture.get())
 
         logger.info(f"TSCH schedules table\n{log_table(table)}")
+
+    def schedule_print_grid(self):
+        """This prints the TSCH schedules in a grid.
+        TODO: This method is not tested.
+        
+        Returns:
+            None
+        """
+        link_list = []
+        for i in range(self.num_channel_offsets):
+            for j in range(self.slotframe_size):
+                if (self.schedule[i][j]):
+                    for cell in self.schedule[i][j]:
+                        txt = self.schedule_format_printing_cell(cell)
+                        TSCH_cell_type = 'None'
+                        match(cell.type):
+                            case cell_type.UC_RX:
+                                TSCH_cell_type = 'Listening'
+                            case cell_type.UC_TX:
+                                TSCH_cell_type = 'Transmitting'
+                            case _:
+                                logger.info("Unknown cell type")
+                        link_dict = {
+                            'timeoffset': j,
+                            'channeloffset': i,
+                            'type': TSCH_cell_type,
+                            'cell': txt
+                        }
+                        link_list.append(link_dict)
+
+        # Get the last active timeslot and channel
+        max_columns = self.schedule_last_active_ts()
+        max_rows = self.schedule_last_active_channel()
+
+        # Create a pandas dataframe
+        df = pd.DataFrame(index=range(0, max_rows+1),
+                          columns=range(0, max_columns+1))
+
+        for link in link_list:
+            df.iloc[link['channeloffset'], link['timeoffset']] = link['cell']
+
+        print(df.to_string())
+
