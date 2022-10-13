@@ -47,18 +47,21 @@ class CoojaDocker():
     def start_container(self):
         # self.client.containers.prune()  # Remove previous containers
         self.__run_container()
-
         sleep(2)
-
+        status = 0
         with Progress(transient=True) as progress:
             task1 = progress.add_task(
-                "[red]Waiting for Cooja to start...", total=100)
+                "[red]Waiting for Cooja to start...", total=300)
 
             while not progress.finished:
-                progress.update(task1, advance=0.1)
+                progress.update(task1, advance=1)
                 if os.access(self.socket_file, os.R_OK):
-                    progress.update(task1, completed=100)
-                sleep(0.1)
+                    status = 1
+                    progress.update(task1, completed=300)
+                sleep(1)
+
+        if status == 0:
+            raise Exception(f"Failed to start Cooja.")
 
         self.__wait_socket_running()
 
@@ -83,12 +86,12 @@ class CoojaDocker():
 
     def __wait_socket_running(self):
         cooja_socket_active, fatal_error = self.__cooja_socket_status()
-
+        status = 0
         with Progress(transient=True) as progress:
             task1 = progress.add_task(
-                "[red]Setting up Cooja simulation...", total=10)
+                "[red]Setting up Cooja simulation...", total=300)
             while not progress.finished:
-                progress.update(task1, advance=0.1)
+                progress.update(task1, advance=1)
                 cooja_socket_active, fatal_error = self.__cooja_socket_status()
                 if fatal_error:
                     logger.warning(
@@ -96,9 +99,13 @@ class CoojaDocker():
                     # self.client.containers.prune()  # Remove previous containers
                     self.start_container()
                 if cooja_socket_active == True:
-                    progress.update(task1, completed=10)
+                    status = 1
+                    progress.update(task1, completed=300)
 
-                sleep(2)
+                sleep(1)
+
+        if status == 0:
+            raise Exception(f"Failed to start the simulation.")
 
         logger.info("Cooja socket interface is up and running")
 
