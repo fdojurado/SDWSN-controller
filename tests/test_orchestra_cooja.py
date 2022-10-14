@@ -29,7 +29,7 @@ def main():
 
     parser.add_argument('-d', '--docker-image', type=str, default='contiker/contiki-ng',
                         help="Name of the docker image ('contiker/contiki-ng')")
-    parser.add_argument('-dc', '--docker-command', type=str, default='examples/sdn-tsch',
+    parser.add_argument('-sf', '--docker-command', type=str, default='examples/sdn-tsch',
                         help="Simulation script to run inside the container")
     parser.add_argument('-dmt', '--docker-mount-target', type=str, default='/home/user/contiki-ng',
                         help="Docker mount target")
@@ -89,7 +89,7 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
 
     simulation_command = '/bin/sh -c '+'"cd ' + \
-        args.docker_command+' && ./run-cooja.py"'
+        args.docker_command+' && ./run-cooja.py cooja-orchestra.csc"'
 
     tsch_scheduler = HardCodedScheduler(
         sf_size=args.maximum_slotframe_size, channel_offsets=args.maximum_tsch_channels)
