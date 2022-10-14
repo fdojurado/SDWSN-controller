@@ -13,7 +13,6 @@ import argparse
 from gym.envs.registration import register
 import logging
 import logging.config
-from os import path
 from rich.logging import RichHandler
 from signal import signal, SIGINT
 

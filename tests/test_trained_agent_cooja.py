@@ -2,25 +2,35 @@
 This script test the trained agent in Cooja Network Simulator.
 """
 import sys
+from sdwsn_controller import about
 from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 from stable_baselines3 import DQN, A2C, PPO
 import gym
+import pyfiglet
 import os
 import argparse
 from gym.envs.registration import register
+import logging
+import logging.config
+from rich.logging import RichHandler
+from signal import signal, SIGINT
 
 
 def main():
 
+    # Set banner
+    fig = pyfiglet.Figlet(font='standard')
+    print(fig.renderText('SDWSN Controller'))
+    print(about.__info_for_scripts__)
     parser = argparse.ArgumentParser(
-        description='This script test the trained agent in Cooja environment.')
+        description='This script tests the trained agent in Cooja environment.')
 
     parser.add_argument('model', type=str,
                         help="Path to the trained model")
     parser.add_argument('-d', '--docker-image', type=str, default='contiker/contiki-ng',
                         help="Name of the docker image ('contiker/contiki-ng')")
-    parser.add_argument('-dc', '--docker-command', type=str, default='examples/benchmarks/rl-sdwsn',
+    parser.add_argument('-dc', '--docker-command', type=str, default='examples/sdn-tsch',
                         help="Simulation script to run inside the container")
     parser.add_argument('-dmt', '--docker-mount-target', type=str, default='/home/user/contiki-ng',
                         help="Docker mount target")
@@ -36,7 +46,7 @@ def main():
                         help='Database address')
     parser.add_argument('-dbp', '--db-port', type=int, default=27017,
                         help='Database port')
-    parser.add_argument('-ms', '--simulation-name', type=str, default='training',
+    parser.add_argument('-ms', '--simulation-name', type=str, default='test_agent',
                         help='Name of your simulation')
     parser.add_argument('-w', '--processing-window', type=int, default=200,
                         help='Set the window for processing the reward')
@@ -48,11 +58,24 @@ def main():
                         help='Maximum timesteps per episode')
     parser.add_argument('-fp', '--output-path', type=str, default='./output/',
                         help='Path to save results')
-    parser.add_argument('-mt', '--model_type', type=str, default='DQN',
+    parser.add_argument('-mt', '--model_type', type=str, default='PPO',
                         help='model type to train.')
+    parser.add_argument('-dbg', '--debug_level', default='NOTSET',
+                        help='Debug level, default NOTSET.')
 
     args = parser.parse_args()
 
+    assert args.debug_level in ['CRITICAL',
+                                'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'], "Incorrect debug level"
+    # Set debug level
+    logging.basicConfig(
+        level=args.debug_level,
+        format='%(asctime)s - %(message)s',
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True)]
+    )
+    # Create logger
+    logger = logging.getLogger(__name__)
     # Example for the CartPole environment
     register(
         # unique identifier for the env `name-version`
@@ -69,7 +92,7 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
 
     simulation_command = '/bin/sh -c '+'"cd ' + \
-        args.docker_command+' && ./run-cooja.py"'
+        args.docker_command+' && ./run-cooja.py cooja-elise.csc"'
 
     tsch_scheduler = HardCodedScheduler(
         sf_size=args.maximum_slotframe_size, channel_offsets=args.maximum_tsch_channels)
@@ -83,7 +106,7 @@ def main():
         db_name=args.db_name,
         db_host=args.db_host,
         db_port=args.db_port,
-        processing_window= args.processing_window,
+        processing_window=args.processing_window,
         tsch_scheduler=tsch_scheduler
     )
 
@@ -94,6 +117,15 @@ def main():
     }
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
+
+    # Exit signal
+    def handler(*args):
+        # Handle any cleanup here
+        logger.warning('SIGINT or CTRL-C detected. Shutting down ...')
+        controller.container_controller_stop()
+        sys.exit(0)
+
+    signal(SIGINT, handler)
 
     match(args.model_type):
         case 'DQN':
@@ -127,7 +159,6 @@ def main():
                 env.render()
 
     env.close()
-
 
 
 if __name__ == '__main__':
