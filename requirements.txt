@@ -4,3 +4,5 @@ pandas
 python-daemon
 networkx
 docker
+rich
+pyfiglet

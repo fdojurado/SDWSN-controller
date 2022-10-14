@@ -1,6 +1,13 @@
 import types
 import json
 from abc import ABC, abstractmethod
+from rich.table import Table
+from rich.console import Console
+from rich.text import Text
+import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 # Protocols encapsulated in sdn IP packet
 cell_type = types.SimpleNamespace()
 cell_type.UC_RX = 2
@@ -31,18 +38,18 @@ class Node:
         self.tx = []
 
     def add_rx_cell(self, channeloffset, timeoffset):
-        # print("adding rx cell")
+        # logger.info("adding rx cell")
         rx_cell = Cell(source=self.node, type=cell_type.UC_RX,
                        channeloffset=channeloffset, timeoffset=timeoffset)
         self.rx.append(rx_cell)
         return rx_cell
 
     def add_tx_cell(self, destination, timeoffset, channeloffset):
-        # print("adding tx cell")
+        # logger.info("adding tx cell")
         # Cell duplicated?
         # for tx_link in self.tx:
         #     if((tx_link.type == cell_type.UC_TX) and (tx_link.destination == destination)):
-        #         # print("duplicated cell")
+        #         # logger.info("duplicated cell")
         #         return None
 
         tx_cell = Cell(source=self.node, type=cell_type.UC_TX, destination=destination,
@@ -93,16 +100,16 @@ class Schedule(ABC):
         pass
 
     def schedule_add_uc(self, node, type, channeloffset=None, timeoffset=None, destination=None):
-        # print("adding uc link node: ", node, " destination: ", destination, "type: ", type,
+        # logger.info("adding uc link node: ", node, " destination: ", destination, "type: ", type,
         #   " channeloffset: ", channeloffset, " timeoffset: ", timeoffset)
         if(not self.list_nodes):
             sensor = Node(node)
             self.list_nodes.append(sensor)
-            # print("creating new sensor")
+            # logger.info("creating new sensor")
         else:
             for elem in self.list_nodes:
                 if (elem.node == node):
-                    # print("sensor already exist")
+                    # logger.info("sensor already exist")
                     sensor = elem
                     break
                 else:
@@ -110,11 +117,11 @@ class Schedule(ABC):
             if (sensor is None):
                 sensor = Node(node)
                 self.list_nodes.append(sensor)
-        # print("list of nodes: ", self.list_nodes)
+        # logger.info("list of nodes: ", self.list_nodes)
         if(type == cell_type.UC_RX):
             # Check if the node already has a rx link
             # if(not sensor.has_rx()):
-            # print("adding rx uc at channeloffset ",
+            # logger.info("adding rx uc at channeloffset ",
             #   channeloffset, " timeoffset ", timeoffset)
             rx_cell = sensor.add_rx_cell(channeloffset, timeoffset)
             self.schedule[channeloffset][timeoffset].append(rx_cell)
@@ -122,7 +129,7 @@ class Schedule(ABC):
             # channeloffset, timeoffset = self.schedule_get_rx_coordinates(
             #     destination)
             # if (channeloffset is not None and timeoffset is not None):
-            # print("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
+            # logger.info("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
             #   channeloffset, " timeoffset ", timeoffset)
             tx_cell = sensor.add_tx_cell(
                 destination, timeoffset, channeloffset)
@@ -208,11 +215,11 @@ class Schedule(ABC):
                     info = "Rx ({fnode})".format(fnode=cell.source)
                     return info
                 case cell_type.UC_TX:
-                    info = "Tx ({fnode}-{dnode})".format(fnode=cell.source,
-                                                         dnode=cell.destination)
+                    info = "({fnode}-{dnode})".format(fnode=cell.source,
+                                                      dnode=cell.destination)
                     return info
                 case _:
-                    print("unkown cell type")
+                    logger.info("Unknown cell type")
                     return None
 
     def schedule_last_active_ts(self):
@@ -227,6 +234,24 @@ class Schedule(ABC):
                     last_ts = tx_cell.timeoffset
 
         return last_ts
+
+    def schedule_last_active_channel(self):
+        """Gets the last active channel of the current TSCH schedule
+        TODO: This method is not tested.
+
+        Returns:
+            int: last currently used channel
+        """
+        last_ch = 0
+        for node in self.list_nodes:
+            for rx_cell in node.rx:
+                if rx_cell.channeloffset > last_ch:
+                    last_ch = rx_cell.channeloffset
+            for tx_cell in node.tx:
+                if tx_cell.channeloffset > last_ch:
+                    last_ch = tx_cell.channeloffset
+
+        return last_ch
 
     def schedule_set_sf_size(self, size):
         self.slotframe_size = size
@@ -246,4 +271,121 @@ class Schedule(ABC):
                         if(txt is not None):
                             print_schedule[i][j].append(txt)
         # print("printing schedule 2")
-        print(*print_schedule, sep='\n')
+        logger.info(*print_schedule, sep='\n')
+
+    def schedule_print_table(self):
+        link_list = []
+        for i in range(self.num_channel_offsets):
+            for j in range(self.slotframe_size):
+                if (self.schedule[i][j]):
+                    for cell in self.schedule[i][j]:
+                        txt = self.schedule_format_printing_cell(cell)
+                        TSCH_cell_type = 'None'
+                        match(cell.type):
+                            case cell_type.UC_RX:
+                                TSCH_cell_type = 'Listening'
+                            case cell_type.UC_TX:
+                                TSCH_cell_type = 'Transmitting'
+                            case _:
+                                logger.info("Unknown cell type")
+                        link_dict = {
+                            'timeoffset': j,
+                            'channeloffset': i,
+                            'type': TSCH_cell_type,
+                            'cell': txt
+                        }
+                        link_list.append(link_dict)
+
+        # logger.info('TSCH schedules plain')
+        # for elem in link_list:
+        #     logger.info(elem)
+
+        table = Table(title="TSCH schedules")
+
+        table.add_column("Time offset", justify="center",
+                         style="cyan", no_wrap=True)
+        table.add_column("Channel offset", justify="center", style="magenta")
+        table.add_column("Type", justify="left", style="green")
+        table.add_column("Link \n(src, dst)", justify="left", style="blue")
+
+        for elem in link_list:
+            table.add_row(str(elem['timeoffset']), str(
+                elem['channeloffset']), elem['type'], elem['cell'])
+
+        def log_table(rich_table):
+            """Generate an ascii formatted presentation of a Rich table
+            Eliminates any column styling
+            """
+            console = Console(width=150)
+            with console.capture() as capture:
+                console.print(rich_table)
+            return Text.from_ansi(capture.get())
+
+        logger.info(f"TSCH schedules table\n{log_table(table)}")
+
+    def schedule_print_grid(self):
+        """This prints the TSCH schedules in a grid.
+
+        Returns:
+            None
+        """
+        link_list = []
+        for i in range(self.num_channel_offsets):
+            for j in range(self.slotframe_size):
+                if (self.schedule[i][j]):
+                    for cell in self.schedule[i][j]:
+                        txt = self.schedule_format_printing_cell(cell)
+                        TSCH_cell_type = 'None'
+                        match(cell.type):
+                            case cell_type.UC_TX:
+                                TSCH_cell_type = 'Transmitting'
+                                link_dict = {
+                                    'timeoffset': j,
+                                    'channeloffset': i,
+                                    'type': TSCH_cell_type,
+                                    'cell': txt
+                                }
+                                link_list.append(link_dict)
+
+        # Get the last active timeslot and channel
+        max_columns = self.schedule_last_active_ts()
+        max_rows = self.schedule_last_active_channel()
+
+        # Create a pandas dataframe
+        df = pd.DataFrame(index=range(0, max_rows+1),
+                          columns=range(0, max_columns+1))
+
+        for link in link_list:
+            df.iloc[link['channeloffset'], link['timeoffset']] = link['cell']
+
+        df.fillna('-', inplace=True)
+
+        table = Table(
+            title="TSCH schedules (Row -> Channels, Columns -> Timeoffsets)", show_lines=True)
+
+        show_index = True
+
+        index_name = ''
+
+        if show_index:
+            index_name = str(index_name) if index_name else ""
+            table.add_column(index_name)
+
+        for column in df.columns:
+            table.add_column(str(column), justify="center")
+
+        for index, value_list in enumerate(df.values.tolist()):
+            row = [str(index)] if show_index else []
+            row += [str(x) for x in value_list]
+            table.add_row(*row)
+
+        def log_table(rich_table):
+            """Generate an ascii formatted presentation of a Rich table
+            Eliminates any column styling
+            """
+            console = Console(width=150)
+            with console.capture() as capture:
+                console.print(rich_table)
+            return Text.from_ansi(capture.get())
+
+        logger.info(f"TSCH schedules table grid\n{log_table(table)}")

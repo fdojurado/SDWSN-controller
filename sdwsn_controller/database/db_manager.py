@@ -34,7 +34,7 @@ SLOTFRAME_SIZE = NUM_SLOTS * SLOT_DURATION  # Size of the dataplane slotframe
 class DatabaseManager(Database):
     def __init__(
         self,
-        name: str = 'myDSN',
+        name: str = 'mySDN',
         host: str = '127.0.0.1',
         port: int = 27017
     ):

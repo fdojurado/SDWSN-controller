@@ -236,6 +236,10 @@ class Cell_Packet:
         return struct.pack('!BBHH' + str(len(self.payload)) + 's', self.payload_len,
                            self.sf_len, self.seq, self.pkt_chksum, bytes(self.payload))
 
+    def __repr__(self):
+        return "SA_Packet(payload_len={}, slotframe size={}, seq={}, pkt_chksum={}, payload={})".format(
+            hex(self.payload_len), self.sf_len, self.seq, hex(self.pkt_chksum), self.payload)
+
 
 class Cell_Packet_Payload:
 

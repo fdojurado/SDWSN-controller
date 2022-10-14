@@ -3,6 +3,11 @@ from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeSchedu
 
 from time import sleep
 
+from rich.progress import Progress
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class FitIoTLABController(CommonController):
     def __init__(
@@ -43,14 +48,14 @@ class FitIoTLABController(CommonController):
         while True:
             if self.packet_dissector.ack_pkt is not None:
                 if (self.packet_dissector.ack_pkt.reserved0 == ack):
-                    print("correct ACK received")
+                    logger.debug("correct ACK received")
                     result = 1
                     break
-                print("ACK not received")
+                logger.debug("ACK not received")
                 # We stop sending the current NC packet if
                 # we reached the max RTx or we received ACK
                 if(rtx >= 7):
-                    print("ACK never received")
+                    logger.warning("ACK never received")
                     break
                 # We resend the packet if retransmission < 7
                 rtx = rtx + 1
@@ -64,28 +69,36 @@ class FitIoTLABController(CommonController):
          """
         # If we have not received any data after looping 10 times
         # We return
-        print("Waiting for the current cycle, in the FIT IoT LAB, to finish")
+        logger.info(
+            "Starting new cycle")
         result = -1
-        while(1):
-            if self.sequence > self.__processing_window:
-                result = 1
-                break
-            sleep(1)
-        print(f"cycle finished, result: {result}")
+
+        with Progress(transient=True) as progress:
+            task1 = progress.add_task(
+                "[red]Waiting for the current cycle, in the FIT IoT LAB, to finish...", total=self.__processing_window)
+
+            while not progress.finished:
+                progress.update(task1, completed=self.sequence)
+                if self.sequence >= self.__processing_window:
+                    result = 1
+                    logger.info(f"Cycle completed")
+                    progress.update(task1, completed=100)
+                sleep(0.1)
+        logger.info(f"cycle finished, result: {result}")
         return result
 
     def fit_iot_lab_start(self):
         sleep(10)
-        print('starting FIT IoT LAB controller')
+        logger.info('starting FIT IoT LAB controller')
         # Initialize main controller
         self.start()
 
     def fit_iot_lab_stop(self):
-        print('stopping FIT IoT LAB controller')
+        logger.info('stopping FIT IoT LAB controller')
         # Stop main controller
         self.stop()
 
     def reset(self):
-        print('Resetting FIT IoT LAB controller')
+        logger.info('Resetting FIT IoT LAB controller')
         self.fit_iot_lab_stop()
         self.fit_iot_lab_start()

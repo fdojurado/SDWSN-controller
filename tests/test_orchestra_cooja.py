@@ -2,23 +2,34 @@
 This script test the trained agent in Cooja Network Simulator.
 """
 import sys
+from sdwsn_controller import about
 from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 from stable_baselines3 import DQN, A2C, PPO
 import gym
+import pyfiglet
 import os
 import argparse
 from gym.envs.registration import register
+import logging
+import logging.config
+from os import path
+from rich.logging import RichHandler
+from signal import signal, SIGINT
 
 
 def main():
 
+    # Set banner
+    fig = pyfiglet.Figlet(font='standard')
+    print(fig.renderText('SDWSN Controller'))
+    print(about.__info_for_scripts__)
     parser = argparse.ArgumentParser(
         description='This script tests Orchestra in the SDWSN architecture.')
 
     parser.add_argument('-d', '--docker-image', type=str, default='contiker/contiki-ng',
                         help="Name of the docker image ('contiker/contiki-ng')")
-    parser.add_argument('-dc', '--docker-command', type=str, default='examples/benchmarks/sdwsn-orchestra',
+    parser.add_argument('-dc', '--docker-command', type=str, default='examples/sdn-tsch',
                         help="Simulation script to run inside the container")
     parser.add_argument('-dmt', '--docker-mount-target', type=str, default='/home/user/contiki-ng',
                         help="Docker mount target")
@@ -46,9 +57,22 @@ def main():
                         help='Maximum timesteps per episode')
     parser.add_argument('-fp', '--output-path', type=str, default='./output/',
                         help='Path to save results')
+    parser.add_argument('-dbg', '--debug_level', default='NOTSET',
+                        help='Debug level, default NOTSET.')
 
     args = parser.parse_args()
 
+    assert args.debug_level in ['CRITICAL',
+                                'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'], "Incorrect debug level"
+    # Set debug level
+    logging.basicConfig(
+        level=args.debug_level,
+        format='%(asctime)s - %(message)s',
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True)]
+    )
+    # Create logger
+    logger = logging.getLogger(__name__)
     # Example for the CartPole environment
     register(
         # unique identifier for the env `name-version`
@@ -79,7 +103,7 @@ def main():
         db_name=args.db_name,
         db_host=args.db_host,
         db_port=args.db_port,
-        processing_window= args.processing_window,
+        processing_window=args.processing_window,
         tsch_scheduler=tsch_scheduler
     )
 
@@ -90,6 +114,15 @@ def main():
     }
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
+
+    # Exit signal
+    def handler(*args):
+        # Handle any cleanup here
+        logger.warning('SIGINT or CTRL-C detected. Shutting down ...')
+        controller.container_controller_stop()
+        sys.exit(0)
+
+    signal(SIGINT, handler)
 
     num_actions = 0
     # Test the trained agent
@@ -115,7 +148,6 @@ def main():
                 env.render()
 
     env.close()
-
 
 
 if __name__ == '__main__':

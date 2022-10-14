@@ -4,21 +4,23 @@ import numpy as np
 from sdwsn_controller.packet.packet import Cell_Packet, SDN_IP_Packet, SerialPacket, RA_Packet
 from sdwsn_controller.packet.packet import sdn_protocols, SDN_SAH_LEN, SDN_IPH_LEN, SDN_RAH_LEN
 from random import randrange
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 """ Build SA control packet """
 
 
 def tsch_build_pkt(payloadPacked, sf_len, seq):
-    print(f'Building schedule packet with SF len {sf_len} and seq {seq}')
+    logger.debug(f'Building TSCH packet with SF len {sf_len} and seq {seq}')
     payload_len = len(payloadPacked)
     # Build schedule packet header
     cell_pkt = Cell_Packet(
         payloadPacked, payload_len=payload_len, sf_len=sf_len, seq=seq)
     # Pack
     cell_packed = cell_pkt.pack()
-    print(repr(cell_pkt))
-    print(cell_packed)
+    logger.debug(repr(cell_pkt))
     # Build sdn IP packet
     # 0x24: version 2, protocol SA = 4
     vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_SA
@@ -32,13 +34,13 @@ def tsch_build_pkt(payloadPacked, sf_len, seq):
                                vap=vap, tlen=length, ttl=ttl, scr=scr, dest=dest)
     # Pack layer three packet
     sdn_ip_packed = sdn_ip_pkt.pack()
-    print(repr(sdn_ip_pkt))
+    logger.debug(repr(sdn_ip_pkt))
     # Build serial packet
     serial_pkt = SerialPacket(sdn_ip_packed, addr=0, pkt_chksum=0,
                               message_type=2, payload_len=length,
                               reserved0=randrange(1, 254), reserved1=0)
     packedData = serial_pkt.pack()
-    print(repr(serial_pkt))
+    logger.debug(repr(serial_pkt))
     return packedData, serial_pkt
 
 
@@ -46,14 +48,14 @@ def tsch_build_pkt(payloadPacked, sf_len, seq):
 
 
 def routing_build_pkt(payloadPacked, seq):
-    print(f'Building schedule packet with seq {seq}')
+    logger.debug(f'Building routes packet with seq {seq}')
     payload_len = len(payloadPacked)
     # Build RA packet
     ra_pkt = RA_Packet(
         payloadPacked, payload_len=payload_len, seq=seq)
     ra_packed = ra_pkt.pack()
-    print(repr(ra_pkt))
-    print(ra_packed)
+    logger.debug(repr(ra_pkt))
+    logger.debug(ra_packed)
     # Build sdn IP packet
     # 0x23: version 2, protocol RA = 3
     vap = (0x01 << 5) | sdn_protocols.SDN_PROTO_RA
@@ -73,7 +75,7 @@ def routing_build_pkt(payloadPacked, seq):
 
 
 def build_link_schedules_matrix_obs(packet_dissector, mySchedule):
-    print("building link schedules matrix")
+    logger.info("building link schedules matrix")
     # Get last index of sensor
     N = packet_dissector.get_last_index_wsn()+1
     # This is an array of schedule matrices
@@ -86,13 +88,13 @@ def build_link_schedules_matrix_obs(packet_dissector, mySchedule):
         schedule = np.zeros(
             shape=(mySchedule.num_channel_offsets, mySchedule.slotframe_size))
         for rx_cell in node.rx:
-            # print("node is listening in ts " +
+            # logger.info("node is listening in ts " +
             #       str(rx_cell.timeoffset)+" ch "+str(rx_cell.channeloffset))
             schedule[rx_cell.channeloffset][rx_cell.timeoffset] = 1
             if rx_cell.timeoffset > last_ts:
                 last_ts = rx_cell.timeoffset
         for tx_cell in node.tx:
-            # print("node is transmitting in ts " +
+            # logger.info("node is transmitting in ts " +
             #       str(tx_cell.timeoffset)+" ch "+str(tx_cell.channeloffset))
             schedule[tx_cell.channeloffset][tx_cell.timeoffset] = -1
             if tx_cell.timeoffset > last_ts:
@@ -100,8 +102,8 @@ def build_link_schedules_matrix_obs(packet_dissector, mySchedule):
         addr = node.node.split(".")
         link_schedules_matrix[int(
             addr[0])] = schedule.flatten().tolist()
-    # print("link_schedules_matrix")
-    # print(link_schedules_matrix)
+    # logger.info("link_schedules_matrix")
+    # logger.info(link_schedules_matrix)
     # using list comprehension
     # to remove None values in list
     res = [i for i in link_schedules_matrix if i]
@@ -153,7 +155,7 @@ def next_coprime(num):
         num += 1
         # Check if num is coprime with all other sf sizes
         is_coprime = compare_coprime(num)
-    # print(f'next coprime found {num}')
+    logger.debug(f'next coprime found {num}')
     return num
 
 
@@ -163,5 +165,5 @@ def previous_coprime(num):
         num -= 1
         # Check if num is coprime with all other sf sizes
         is_coprime = compare_coprime(num)
-    # print(f'previous coprime found {num}')
+    logger.debug(f'previous coprime found {num}')
     return num
