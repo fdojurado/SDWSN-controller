@@ -93,6 +93,7 @@ class Schedule(ABC):
         self.slotframe_size = sf_size
         self.num_channel_offsets = channel_offsets
         self.list_nodes = []
+        self.__sf_size = None
         # self.clear_schedule()
 
     @abstractmethod
@@ -137,6 +138,16 @@ class Schedule(ABC):
                 self.schedule[channeloffset][timeoffset].append(tx_cell)
 
         # self.print_schedule()
+
+    @property
+    def slot_frame_size(self):
+        return self.__sf_size
+
+    @slot_frame_size.setter
+    def slot_frame_size(self, val):
+        if val <= 0:
+            raise Exception(f"Invalid slotframe size")
+        self.__sf_size = val
 
     def schedule_timeslot_free(self, ts):
         # This function checks whether the given timeslot is free

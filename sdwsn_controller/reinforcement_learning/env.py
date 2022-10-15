@@ -60,7 +60,7 @@ class Env(gym.Env):
         user_requirements = np.array([alpha, beta, delta])
         # the last slot in the current schedule
         # Send the entire TSCH schedule
-        self.controller.send_tsch_schedules(sf_len)
+        self.controller.send_tsch_schedules()
         # Delete the current nodes_info collection from the database
         self.controller.delete_info_collection()
         # Reset sequence
@@ -68,7 +68,7 @@ class Env(gym.Env):
         # We now wait until we reach the processing_window
         while (not self.controller.wait()):
             print("resending schedules")
-            self.controller.send_tsch_schedules(sf_len)
+            self.controller.send_tsch_schedules()
             # Delete the current nodes_info collection from the database
             self.controller.delete_info_collection()
             # Reset sequence
@@ -146,15 +146,16 @@ class Env(gym.Env):
         # Send the entire routes
         self.controller.send_routes()
         # Send the entire TSCH schedule
-        self.controller.send_tsch_schedules(slotframe_size)
+        self.controller.send_tsch_schedules()
         # Delete the current nodes_info collection from the database
         self.controller.delete_info_collection()
         self.controller.reset_pkt_sequence()
         # Wait for the network to settle
         self.controller.wait()
         # We now save all the observations
-        # Get last active ts
+        # This is done for the numerical environment.
         self.controller.last_tsch_link = randrange(9+1, 20)
+        # Get last active ts
         last_ts_in_schedule = self.controller.last_tsch_link
         # Set the slotframe size
         slotframe_size = last_ts_in_schedule

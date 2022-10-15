@@ -280,7 +280,7 @@ class CommonController(BaseController):
     def tsch_scheduler(self):
         return self.__tsch_scheduler
 
-    def send_tsch_schedules(self, sf_size):
+    def send_tsch_schedules(self):
         logger.info("Sending TSCH packet")
         num_pkts = 0
         payload = []
@@ -311,7 +311,7 @@ class CommonController(BaseController):
                             num_pkts += 1
                             current_sf_size = 0
                             if num_pkts == 1:
-                                current_sf_size = sf_size
+                                current_sf_size = self.tsch_scheduler.slot_frame_size
                             packedData, serial_pkt = common.tsch_build_pkt(
                                 payload, current_sf_size, self.increase_cycle_sequence())
                             payload = []
@@ -324,7 +324,7 @@ class CommonController(BaseController):
             logger.debug(f'Sending schedule packet {num_pkts}')
             current_sf_size = 0
             if num_pkts == 1:
-                current_sf_size = sf_size
+                current_sf_size = self.tsch_scheduler.slot_frame_size
             packedData, serial_pkt = common.tsch_build_pkt(
                 payload, current_sf_size, self.increase_cycle_sequence())
             # Send NC packet
