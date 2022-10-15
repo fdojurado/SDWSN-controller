@@ -219,7 +219,7 @@ class EnvNumericalController(BaseController):
     def comm_interface_read(self):
         pass
 
-    def send_tsch_schedules(self, slotframe_size):
+    def send_tsch_schedules(self):
         pass
 
     def compute_tsch_schedule(self, path, slotframe_size):
