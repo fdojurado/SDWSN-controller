@@ -228,5 +228,5 @@ class EnvNumericalController(BaseController):
     def send_routes(self):
         pass
 
-    def compute_dijkstra(self, G):
+    def compute_routes(self, G):
         pass
