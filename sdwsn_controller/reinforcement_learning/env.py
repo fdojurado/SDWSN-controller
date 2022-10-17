@@ -123,7 +123,7 @@ class Env(gym.Env):
         # We get the network links, useful when calculating the routing
         G = self.controller.get_network_links()
         # Run the dijkstra algorithm with the current links
-        path = self.controller.compute_dijkstra(G)
+        path = self.controller.compute_routes(G)
         # Lets set the type of scheduler
         # types_scheduler = ['Contention Free', 'Unique Schedule']
         # type_scheduler = random.choice(types_scheduler)

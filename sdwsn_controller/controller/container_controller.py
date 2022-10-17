@@ -2,7 +2,7 @@ from sdwsn_controller.controller.common_controller import CommonController
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.docker.docker import CoojaDocker
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
-from sdwsn_controller.routes.router import SimpleRouter
+from sdwsn_controller.routes.dijkstra import Dijkstra
 
 from rich.progress import Progress
 from typing import Dict
@@ -32,7 +32,7 @@ class ContainerController(CommonController):
         db_port: int = 27017,
         simulation_name: str = 'mySimulation',
         processing_window: int = 200,
-        router: object = SimpleRouter(),
+        router: object = Dijkstra(),
         tsch_scheduler: object = ContentionFreeScheduler(500, 3)
     ):
         container_ports = {

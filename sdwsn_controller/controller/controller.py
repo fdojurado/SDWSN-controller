@@ -201,5 +201,5 @@ class BaseController(ABC):
         pass
 
     @abstractmethod
-    def compute_dijkstra(self, G):
+    def compute_routes(self, G):
         pass

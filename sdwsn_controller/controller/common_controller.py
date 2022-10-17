@@ -1,7 +1,7 @@
 from sdwsn_controller.controller.controller import BaseController
 from sdwsn_controller.common import common
 from sdwsn_controller.packet.packet import RA_Packet_Payload
-from sdwsn_controller.routes.router import SimpleRouter
+from sdwsn_controller.routes.dijkstra import Dijkstra
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.database.database import NODES_INFO
 from sdwsn_controller.serial.serial import SerialBus
@@ -34,7 +34,7 @@ class CommonController(BaseController):
         db_name: str = 'mySDN',
         db_host: str = '127.0.0.1',
         db_port: int = 27017,
-        router: object = SimpleRouter(),
+        router: object = Dijkstra(),
         tsch_scheduler: object = ContentionFreeScheduler(500, 3),
         power_min: int = 0,
         power_max: int = 5000,
@@ -371,30 +371,8 @@ class CommonController(BaseController):
             self.reliable_send(
                 packedData, serial_pkt.reserved0+1)
 
-    def compute_dijkstra(self, G):
-        # Clear all previous routes
-        self.router.delete_all_routes()
-        # TODO: Routes should be part of the controller
-        # We want to compute the SP from all nodes to the controller
-        path = {}
-        for node in list(G.nodes):
-            if node != 1 and node != 0:
-                logger.debug("sp from node "+str(node))
-                try:
-                    node_path = nx.dijkstra_path(G, node, 1, weight='weight')
-                    logger.debug("dijkstra path")
-                    logger.debug(node_path)
-                    path[node] = node_path
-                    # TODO: find a way to avoid forcing the last addr of
-                    # sensor nodes to 0.
-                    self.router.add_link(
-                        str(node)+".0", "1.1", str(node_path[1])+".0")
-                except nx.NetworkXNoPath:
-                    logger.exception("path not found")
-        self.router.print_routes_table()
-        logger.debug("total path")
-        logger.debug(path)
-        return path
+    def compute_routes(self, G):
+        self.router.run(G)
 
     """ Reinforcement learning functionalities """
 
