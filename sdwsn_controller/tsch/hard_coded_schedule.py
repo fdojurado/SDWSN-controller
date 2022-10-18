@@ -15,7 +15,7 @@ class HardCodedScheduler(Schedule):
     def run(self, path, current_sf_size):
         logger.debug(f"running hard coded scheduler for sf size {current_sf_size}")
         # Set the slotframe size
-        self.slot_frame_size = current_sf_size
+        self.schedule_slot_frame_size = current_sf_size
         # Schedule Tx - Node 2 - 1
         tx_node = str(2)+".0"
         rx_node = str(1)+".0"

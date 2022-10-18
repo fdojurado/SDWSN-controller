@@ -16,7 +16,7 @@ class ContentionFreeScheduler(Schedule):
 
     def run(self, path, current_sf_size):
         logger.debug(f"running contention free scheduler for sf size {current_sf_size}")
-        self.slot_frame_size = current_sf_size
+        self.schedule_slot_frame_size = current_sf_size
         for _, p in path.items():
             if(len(p) >= 2):
                 logger.debug(f"try to add uc for {p}")
@@ -35,7 +35,7 @@ class ContentionFreeScheduler(Schedule):
                         ts = random.randrange(0,
                                               current_sf_size-1)
                         ch = random.randrange(0,
-                                              self.max_number_channels-1)
+                                              self.schedule_max_number_channels-1)
                         # Let's first check whether this timeslot is already in use in the schedule
                         while(not self.schedule_timeslot_free(ts)):
                             ts = random.randrange(0, current_sf_size-1)

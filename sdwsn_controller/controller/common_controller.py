@@ -284,12 +284,12 @@ class CommonController(BaseController):
         logger.info("Sending TSCH packet")
         num_pkts = 0
         payload = []
-        rows, cols = (self.tsch_scheduler.max_number_channels,
-                      self.tsch_scheduler.max_number_timeslots)
+        rows, cols = (self.tsch_scheduler.schedule_max_number_channels,
+                      self.tsch_scheduler.schedule_max_number_timeslots)
         for i in range(rows):
             for j in range(cols):
-                if (self.tsch_scheduler.get_schedule(i, j)):
-                    for elem in self.tsch_scheduler.get_schedule(i, j):
+                if (self.tsch_scheduler.schedule_get_schedule(i, j)):
+                    for elem in self.tsch_scheduler.schedule_get_schedule(i, j):
                         channel = elem.channeloffset
                         timeslot = elem.timeoffset
                         addr = elem.source
@@ -311,7 +311,7 @@ class CommonController(BaseController):
                             num_pkts += 1
                             current_sf_size = 0
                             if num_pkts == 1:
-                                current_sf_size = self.tsch_scheduler.slot_frame_size
+                                current_sf_size = self.tsch_scheduler.schedule_slot_frame_size
                             packedData, serial_pkt = common.tsch_build_pkt(
                                 payload, current_sf_size, self.increase_cycle_sequence())
                             payload = []
@@ -324,7 +324,7 @@ class CommonController(BaseController):
             logger.debug(f'Sending schedule packet {num_pkts}')
             current_sf_size = 0
             if num_pkts == 1:
-                current_sf_size = self.tsch_scheduler.slot_frame_size
+                current_sf_size = self.tsch_scheduler.schedule_slot_frame_size
             packedData, serial_pkt = common.tsch_build_pkt(
                 payload, current_sf_size, self.increase_cycle_sequence())
             # Send NC packet
