@@ -6,8 +6,7 @@ from sdwsn_controller.packet.packet import sdn_protocols, SDN_SAH_LEN, SDN_IPH_L
 from random import randrange
 import logging
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('main.'+__name__)
 
 """ Build SA control packet """
 

@@ -6,8 +6,7 @@ from time import sleep
 from rich.progress import Progress
 import logging
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('main.'+__name__)
 
 class FitIoTLABController(CommonController):
     def __init__(

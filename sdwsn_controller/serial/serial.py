@@ -4,8 +4,7 @@ import sys
 from sdwsn_controller.bus import BusABC
 import logging
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('main.'+__name__)
 
 class SerialBus(BusABC):
     def __init__(self, host: str = '127.0.0.1', port: int = 60001):

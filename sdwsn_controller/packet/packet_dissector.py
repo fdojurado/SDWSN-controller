@@ -7,8 +7,7 @@ from sdwsn_controller.packet.packet import SDN_IPH_LEN, SDN_NAPL_LEN
 from sdwsn_controller.database.db_manager import DatabaseManager
 import logging
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('main.'+__name__)
 
 
 class PacketDissector():

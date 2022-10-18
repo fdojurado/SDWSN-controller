@@ -9,7 +9,7 @@ from typing import Dict
 from time import sleep
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('main.'+__name__)
 
 
 class ContainerController(CommonController):

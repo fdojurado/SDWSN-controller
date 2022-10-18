@@ -4,8 +4,7 @@ from sdwsn_controller.routes.routes import Routes
 import logging
 import networkx as nx
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('main.'+__name__)
 
 class Dijkstra(Routes):
     def __init__(self):

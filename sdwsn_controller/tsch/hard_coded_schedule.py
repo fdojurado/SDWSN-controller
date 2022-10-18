@@ -1,8 +1,7 @@
 from sdwsn_controller.tsch.schedule import Schedule, cell_type
 import logging
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('main.'+__name__)
 class HardCodedScheduler(Schedule):
     def __init__(
             self,

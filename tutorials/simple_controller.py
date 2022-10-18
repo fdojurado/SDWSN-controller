@@ -1,6 +1,8 @@
 from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.routes.dijkstra import Dijkstra
+import logging.config
+from rich.logging import RichHandler
 import sys
 
 
@@ -29,6 +31,31 @@ def data_plane_initial_setup(controller):
 
 def main():
 
+    # Create logger
+    logger = logging.getLogger('main')
+
+    formatter = logging.Formatter(
+        '%(asctime)s - %(message)s')
+    logger.setLevel(logging.DEBUG)
+
+    stream_handler = RichHandler(rich_tracebacks=True)
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(formatter)
+
+    logFilePath = "my.log"
+    formatter = logging.Formatter(
+        '%(asctime)s | %(name)s |  %(levelname)s: %(message)s')
+    file_handler = logging.handlers.TimedRotatingFileHandler(
+        filename=logFilePath, when='midnight', backupCount=30)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+    logger.info('hello info')
+    logger.debug('hello debug')
+
     # Script that run inside the container - simulation file as argument
     run_simulation_file = '/bin/sh -c '+'"cd ' + \
         'examples/elise'+' && ./run-cooja.py cooja-orchestra.csc"'
@@ -43,8 +70,8 @@ def main():
         image='contiker/contiki-ng',
         command=run_simulation_file,
         target='/home/user/contiki-ng',
-        source='/Users/ffjla/ELISE/contiki-ng',
-        socket_file='/Users/ffjla/ELISE/contiki-ng' +
+        source='/Users/fernando/contiki-ng',
+        socket_file='/Users/fernando/contiki-ng' +
         '/'+'examples/elise'+'/'+'COOJA.log',
         db_name='mySDN',
         db_host='127.0.0.1',
@@ -56,6 +83,12 @@ def main():
 
     # Let's start the data plane first
     data_plane_initial_setup(controller)
+
+    logger.info('done, exiting.')
+
+    controller.container_controller_stop()
+
+    return
 
 
 if __name__ == '__main__':

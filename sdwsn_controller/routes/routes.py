@@ -10,8 +10,7 @@ from rich.console import Console
 from rich.text import Text
 import logging
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('main.'+__name__)
 
 class Routes(ABC):
     def __init__(self):

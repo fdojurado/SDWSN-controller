@@ -7,8 +7,8 @@ from rich.text import Text
 import pandas as pd
 import logging
 
-logger = logging.getLogger(__name__)
 # Protocols encapsulated in sdn IP packet
+logger = logging.getLogger('main.'+__name__)
 cell_type = types.SimpleNamespace()
 cell_type.UC_RX = 2
 cell_type.UC_TX = 1
@@ -38,14 +38,14 @@ class Node:
         self.tx = []
 
     def add_rx_cell(self, channeloffset, timeoffset):
-        # logger.info("adding rx cell")
+        logger.debug(f"Adding Rx cell at ch:{channeloffset}, ts:{timeoffset}")
         rx_cell = Cell(source=self.node, type=cell_type.UC_RX,
                        channeloffset=channeloffset, timeoffset=timeoffset)
         self.rx.append(rx_cell)
         return rx_cell
 
     def add_tx_cell(self, destination, timeoffset, channeloffset):
-        # logger.info("adding tx cell")
+        logger.debug(f"Adding Tx cell for node destination {destination} at ch:{channeloffset}, ts:{timeoffset}")
         # Cell duplicated?
         # for tx_link in self.tx:
         #     if((tx_link.type == cell_type.UC_TX) and (tx_link.destination == destination)):
@@ -89,54 +89,62 @@ class Node:
 
 
 class Schedule(ABC):
+    """ 
+    Base class for TSCH schedules.
+
+    Args:
+        max_number_timeslots (int): The total maximum number of timeslots, this
+        has to be long enough to support multiple slotframe sizes.
+        max_number_channels (int): Maximum number of channels.
+    """
+
     def __init__(self, sf_size, channel_offsets):
-        self.slotframe_size = sf_size
-        self.num_channel_offsets = channel_offsets
-        self.list_nodes = []
+        self.max_number_timeslots = sf_size
+        self.max_number_channels = channel_offsets
+        self.__list_nodes = []
+        self.schedule_clear_schedule()
         self.__sf_size = None
-        # self.clear_schedule()
 
     @abstractmethod
     def run(self):
         pass
 
-    def schedule_add_uc(self, node, type, channeloffset=None, timeoffset=None, destination=None):
-        # logger.info("adding uc link node: ", node, " destination: ", destination, "type: ", type,
-        #   " channeloffset: ", channeloffset, " timeoffset: ", timeoffset)
-        if(not self.list_nodes):
+    def schedule_add_uc(self, node, type, channeloffset, timeoffset, destination=None):
+        """ This adds a unicast link to the schedule. This does not do any verification
+        on the status of the link to add. This has to be done by the scheduler.
+
+        Args:
+            node (str): This is the node to add the given type of link.
+            type (cell_type): The type of link (Rx, Tx)
+            channeloffset (int): The channel offset.
+            timeoffset (int): The channel timeoffset.
+            destination (str, optional): Destination node for Tx links. Defaults to None.
+        """
+        logger.debug(f"adding uc link to node: {node}, destination: {destination}, \
+            type: {type} channeloffset: {channeloffset} timeoffset: {timeoffset}")
+        if(not self.list_of_nodes):
             sensor = Node(node)
-            self.list_nodes.append(sensor)
-            # logger.info("creating new sensor")
+            self.list_of_nodes = sensor
+            logger.debug("creating new sensor")
         else:
-            for elem in self.list_nodes:
+            for elem in self.list_of_nodes:
                 if (elem.node == node):
-                    # logger.info("sensor already exist")
+                    logger.debug("sensor already exist")
                     sensor = elem
                     break
                 else:
                     sensor = None
             if (sensor is None):
                 sensor = Node(node)
-                self.list_nodes.append(sensor)
-        # logger.info("list of nodes: ", self.list_nodes)
+                self.list_of_nodes = sensor
         if(type == cell_type.UC_RX):
-            # Check if the node already has a rx link
-            # if(not sensor.has_rx()):
-            # logger.info("adding rx uc at channeloffset ",
-            #   channeloffset, " timeoffset ", timeoffset)
             rx_cell = sensor.add_rx_cell(channeloffset, timeoffset)
-            self.schedule[channeloffset][timeoffset].append(rx_cell)
+            self.add_to_schedule(channeloffset, timeoffset, rx_cell)
         if(type == cell_type.UC_TX and destination is not None):
-            # channeloffset, timeoffset = self.schedule_get_rx_coordinates(
-            #     destination)
-            # if (channeloffset is not None and timeoffset is not None):
-            # logger.info("adding tx uc link from ", node, " to ", destination, " at channeloffset ",
-            #   channeloffset, " timeoffset ", timeoffset)
             tx_cell = sensor.add_tx_cell(
                 destination, timeoffset, channeloffset)
-            if(tx_cell is not None):
-                self.schedule[channeloffset][timeoffset].append(tx_cell)
-
+            # if(tx_cell is not None):
+            self.add_to_schedule(channeloffset, timeoffset, tx_cell)
         # self.print_schedule()
 
     @property
@@ -146,13 +154,31 @@ class Schedule(ABC):
     @slot_frame_size.setter
     def slot_frame_size(self, val):
         if val <= 0:
-            raise Exception(f"Invalid slotframe size")
+            raise Exception(f"Invalid slotframe size.")
         self.__sf_size = val
+
+    @property
+    def list_of_nodes(self):
+        return self.__list_nodes
+
+    @list_of_nodes.setter
+    def list_of_nodes(self, val):
+        self.__list_nodes.append(val)
+
+    def get_schedule(self, ch_offset, ts_offset):
+        if ch_offset > self.max_number_channels or ts_offset > self.max_number_timeslots:
+            raise Exception(f"Invalid schedule coordinates.")
+        return self.__schedule[ch_offset][ts_offset]
+
+    def add_to_schedule(self, ch_offset, ts_offset, val):
+        if ch_offset > self.max_number_channels or ts_offset > self.max_number_timeslots:
+            raise Exception(f"Invalid schedule coordinates.")
+        self.__schedule[ch_offset][ts_offset].append(val)
 
     def schedule_timeslot_free(self, ts):
         # This function checks whether the given timeslot is free
         # in the entire schedule
-        for elem in self.list_nodes:
+        for elem in self.list_of_nodes:
             for rx in elem.rx:
                 if rx.timeoffset == ts:
                     return 0
@@ -162,7 +188,7 @@ class Schedule(ABC):
         return 1
 
     def schedule_is_timeslot_empty(self, node, timeslot):
-        for elem in self.list_nodes:
+        for elem in self.list_of_nodes:
             if elem.node == node:
                 return elem.timeslot_empty(timeslot)
         # If this is not found, then it is empty
@@ -170,7 +196,7 @@ class Schedule(ABC):
 
     def schedule_get_num_of_cells(self, addr):
         # Get the total number of all Rx links
-        for elem in self.list_nodes:
+        for elem in self.list_of_nodes:
             if elem.node == addr:
                 if elem.rx:
                     return len(elem.rx)
@@ -178,7 +204,7 @@ class Schedule(ABC):
 
     def schedule_get_rx_cells(self, addr):
         # Get all Rx links in the node
-        for elem in self.list_nodes:
+        for elem in self.list_of_nodes:
             if elem.node == addr:
                 if elem.rx:
                     return elem.rx
@@ -186,7 +212,7 @@ class Schedule(ABC):
 
     def schedule_link_exists(self, Tx, Rx):
         # It evaluates whether the given Tx-Rx links exists
-        for elem in self.list_nodes:
+        for elem in self.list_of_nodes:
             if elem.node == Tx:
                 for tx in elem.tx:
                     if tx.destination == Rx:
@@ -195,7 +221,7 @@ class Schedule(ABC):
 
     def schedule_get_rx_coordinates(self, addr):
         # Get the time and channel offset from the given addr.
-        for node in self.list_nodes:
+        for node in self.list_of_nodes:
             if node.rx:
                 for rx in node.rx:
                     if (rx.source == str(addr)):
@@ -205,18 +231,18 @@ class Schedule(ABC):
     def schedule_get_list_ts_in_use(self):
         # This function returns a list of ts currently used
         list_ts = []
-        for ts in range(self.slotframe_size):
+        for ts in range(self.slot_frame_size):
             if not self.schedule_timeslot_free(ts):
                 list_ts.append(ts)
         return list_ts
 
     def schedule_clear_schedule(self):
-        rows, cols = (self.num_channel_offsets, self.slotframe_size)
-        self.schedule = [[0 for i in range(cols)] for j in range(rows)]
+        rows, cols = (self.max_number_channels, self.max_number_timeslots)
+        self.__schedule = [[0 for i in range(cols)] for j in range(rows)]
         for i in range(rows):
             for j in range(cols):
-                self.schedule[i][j] = []
-        self.list_nodes = []
+                self.__schedule[i][j] = []
+        self.__list_nodes = []
 
     def schedule_format_printing_cell(self, cell):
         if(cell):
@@ -236,7 +262,7 @@ class Schedule(ABC):
     def schedule_last_active_ts(self):
         # Last timeslot offset of the current schedule
         last_ts = 0
-        for node in self.list_nodes:
+        for node in self.list_of_nodes:
             for rx_cell in node.rx:
                 if rx_cell.timeoffset > last_ts:
                     last_ts = rx_cell.timeoffset
@@ -254,7 +280,7 @@ class Schedule(ABC):
             int: last currently used channel
         """
         last_ch = 0
-        for node in self.list_nodes:
+        for node in self.list_of_nodes:
             for rx_cell in node.rx:
                 if rx_cell.channeloffset > last_ch:
                     last_ch = rx_cell.channeloffset
@@ -264,32 +290,27 @@ class Schedule(ABC):
 
         return last_ch
 
-    def schedule_set_sf_size(self, size):
-        self.slotframe_size = size
-
     def schedule_print(self):
-        # print(*self.schedule, sep='\n')
-        rows, cols = (self.num_channel_offsets, self.slotframe_size)
+        rows, cols = (self.max_number_channels, self.slot_frame_size)
         print_schedule = [[0 for i in range(cols)] for j in range(rows)]
         for i in range(rows):
             for j in range(cols):
                 print_schedule[i][j] = []
         for i in range(rows):
             for j in range(cols):
-                if (self.schedule[i][j]):
-                    for elem in self.schedule[i][j]:
+                if (self.get_schedule(i, j)):
+                    for elem in self.get_schedule(i, j):
                         txt = self.schedule_format_printing_cell(elem)
                         if(txt is not None):
                             print_schedule[i][j].append(txt)
-        # print("printing schedule 2")
         logger.info(*print_schedule, sep='\n')
 
     def schedule_print_table(self):
         link_list = []
-        for i in range(self.num_channel_offsets):
-            for j in range(self.slotframe_size):
-                if (self.schedule[i][j]):
-                    for cell in self.schedule[i][j]:
+        for i in range(self.max_number_channels):
+            for j in range(self.slot_frame_size):
+                if (self.get_schedule(i, j)):
+                    for cell in self.get_schedule(i, j):
                         txt = self.schedule_format_printing_cell(cell)
                         TSCH_cell_type = 'None'
                         match(cell.type):
@@ -341,10 +362,10 @@ class Schedule(ABC):
             None
         """
         link_list = []
-        for i in range(self.num_channel_offsets):
-            for j in range(self.slotframe_size):
-                if (self.schedule[i][j]):
-                    for cell in self.schedule[i][j]:
+        for i in range(self.max_number_channels):
+            for j in range(self.slot_frame_size):
+                if (self.get_schedule(i, j)):
+                    for cell in self.get_schedule(i, j):
                         txt = self.schedule_format_printing_cell(cell)
                         TSCH_cell_type = 'None'
                         match(cell.type):

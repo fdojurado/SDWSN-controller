@@ -19,7 +19,7 @@ import threading
 from time import sleep
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('main.'+__name__)
 
 
 class CommonController(BaseController):
@@ -284,12 +284,12 @@ class CommonController(BaseController):
         logger.info("Sending TSCH packet")
         num_pkts = 0
         payload = []
-        rows, cols = (self.tsch_scheduler.num_channel_offsets,
-                      self.tsch_scheduler.slotframe_size)
+        rows, cols = (self.tsch_scheduler.max_number_channels,
+                      self.tsch_scheduler.max_number_timeslots)
         for i in range(rows):
             for j in range(cols):
-                if (self.tsch_scheduler.schedule[i][j]):
-                    for elem in self.tsch_scheduler.schedule[i][j]:
+                if (self.tsch_scheduler.get_schedule(i, j)):
+                    for elem in self.tsch_scheduler.get_schedule(i, j):
                         channel = elem.channeloffset
                         timeslot = elem.timeoffset
                         addr = elem.source
@@ -372,7 +372,7 @@ class CommonController(BaseController):
                 packedData, serial_pkt.reserved0+1)
 
     def compute_routes(self, G):
-        self.router.run(G)
+        return self.router.run(G)
 
     """ Reinforcement learning functionalities """
 
