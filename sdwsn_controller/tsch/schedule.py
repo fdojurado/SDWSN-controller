@@ -15,6 +15,11 @@ cell_type.UC_TX = 1
 
 
 class Cell:
+    """
+    Cell class - Holds the cell node address, type of cell,
+    destination address, and coordinates.
+    """
+
     def __init__(self, source=None, type=None, destination=None, channeloffset=None, timeoffset=None):
         self.source = source
         self.type = type
@@ -32,60 +37,98 @@ class Cell:
 
 
 class Node:
+    """
+    Node class - holds the listening and transmission cells
+
+    Args:
+        node (str): The sensor node address
+
+    """
+
     def __init__(self, node):
         self.node = node
-        self.rx = []
-        self.tx = []
+        self.__rx = []
+        self.__tx = []
 
-    def add_rx_cell(self, channeloffset, timeoffset):
+    @property
+    def node_rx_cells(self):
+        return self.__rx
+
+    @node_rx_cells.setter
+    def rx(self, val):
+        self.__rx.append(val)
+
+    @property
+    def node_tx_cells(self):
+        return self.__tx
+
+    @node_tx_cells.setter
+    def tx(self, val):
+        self.__tx.append(val)
+
+    def node_add_rx_cell(self, channeloffset, timeoffset):
+        """
+        Adds a Rx cell to the sensor node. This doesn't verify
+        whether a Rx cell for the given (ch,ts) already exist 
+        or not. This has to be done by the scheduler.
+
+        Args:
+            channeloffset (int): The channel offset.
+            timeoffset (int): The time offset.
+
+        Returns:
+            Cell: The cell created.
+        """
         logger.debug(f"Adding Rx cell at ch:{channeloffset}, ts:{timeoffset}")
         rx_cell = Cell(source=self.node, type=cell_type.UC_RX,
                        channeloffset=channeloffset, timeoffset=timeoffset)
-        self.rx.append(rx_cell)
+        self.node_rx_cells.append(rx_cell)
         return rx_cell
 
-    def add_tx_cell(self, destination, timeoffset, channeloffset):
-        logger.debug(f"Adding Tx cell for node destination {destination} at ch:{channeloffset}, ts:{timeoffset}")
-        # Cell duplicated?
-        # for tx_link in self.tx:
-        #     if((tx_link.type == cell_type.UC_TX) and (tx_link.destination == destination)):
-        #         # logger.info("duplicated cell")
-        #         return None
+    def node_add_tx_cell(self, destination, timeoffset, channeloffset):
+        """
+        Adds a Tx cell to the sensor node. This doesn't check wether
+        the Tx cell already exists or not. This has to be done by the
+        scheduler.
 
+        Args:
+            destination (str): The destination node address.
+            timeoffset (int): The channel offset.
+            channeloffset (int): The time offset.
+
+        Returns:
+            Cell: The cell created.
+        """
+        logger.debug(f"Adding Tx cell for node destination {destination} at ch:{channeloffset}, ts:{timeoffset}")
         tx_cell = Cell(source=self.node, type=cell_type.UC_TX, destination=destination,
                        timeoffset=timeoffset, channeloffset=channeloffset)
 
-        self.tx.append(tx_cell)
+        self.node_tx_cells.append(tx_cell)
         return tx_cell
 
-    def is_link_in_cell(self, type, timeoffset, channeloffset, destination=None):
-        if(type == cell_type.UC_RX):
-            if not self.rx:
-                for rx in self.rx:
-                    if((timeoffset == rx.timeoffset) and (channeloffset == rx.channeloffset)):
-                        return 1
-        return 0
+    def node_timeslot_empty(self, timeoffset):
+        """
+        Checks if the give time offset exists in the node.
 
-    def timeslot_empty(self, timeoffset):
-        if self.rx:
-            for rx in self.rx:
+        Args:
+            timeoffset (int): The time offset.
+
+        Returns:
+            int: 1 if the time offset is free; 0 otherwise.
+        """
+        if self.node_rx_cells:
+            for rx in self.node_rx_cells:
                 if(timeoffset == rx.timeoffset):
                     return 0
-        if self.tx:
-            for tx in self.tx:
+        if self.node_tx_cells:
+            for tx in self.node_tx_cells:
                 if(timeoffset == tx.timeoffset):
                     return 0
         return 1
 
-    def has_rx(self):
-        if(not self.rx):
-            return 0
-        else:
-            return 1
-
     def __repr__(self):
         return "Node(Node={}, rx={}, tx={})".format(
-            self.node, self.rx, self.tx)
+            self.node, self.node_rx_cells, self.node_tx_cells)
 
 
 class Schedule(ABC):
@@ -138,10 +181,10 @@ class Schedule(ABC):
                 sensor = Node(node)
                 self.schedule_list_of_nodes = sensor
         if(type == cell_type.UC_RX):
-            rx_cell = sensor.add_rx_cell(channeloffset, timeoffset)
+            rx_cell = sensor.node_add_rx_cell(channeloffset, timeoffset)
             self.schedule_add_to_schedule(channeloffset, timeoffset, rx_cell)
         if(type == cell_type.UC_TX and destination is not None):
-            tx_cell = sensor.add_tx_cell(
+            tx_cell = sensor.node_add_tx_cell(
                 destination, timeoffset, channeloffset)
             # if(tx_cell is not None):
             self.schedule_add_to_schedule(channeloffset, timeoffset, tx_cell)
@@ -169,7 +212,7 @@ class Schedule(ABC):
 
     @schedule_slot_frame_size.setter
     def schedule_slot_frame_size(self, val):
-        if val <= 0:
+        if val <= 0 or val > self.schedule_max_number_timeslots:
             raise Exception(f"Invalid slotframe size.")
         self.__sf_size = val
 
@@ -202,10 +245,10 @@ class Schedule(ABC):
             int: 1 if the timeslot is free; 0 otherwise.
         """
         for elem in self.schedule_list_of_nodes:
-            for rx in elem.rx:
+            for rx in elem.node_rx_cells:
                 if rx.timeoffset == ts:
                     return 0
-            for tx in elem.tx:
+            for tx in elem.node_tx_cells:
                 if tx.timeoffset == ts:
                     return 0
         return 1
@@ -224,7 +267,7 @@ class Schedule(ABC):
         """
         for elem in self.schedule_list_of_nodes:
             if elem.node == node:
-                return elem.timeslot_empty(timeslot)
+                return elem.node_timeslot_empty(timeslot)
         # If this is not found, then it is empty
         return 0
 
@@ -240,8 +283,8 @@ class Schedule(ABC):
         """
         for elem in self.schedule_list_of_nodes:
             if elem.node == node:
-                if elem.rx:
-                    return len(elem.rx)
+                if elem.node_rx_cells:
+                    return len(elem.node_rx_cells)
         return 0
 
     def schedule_get_rx_cells(self, node):
@@ -257,8 +300,8 @@ class Schedule(ABC):
         #
         for elem in self.schedule_list_of_nodes:
             if elem.node == node:
-                if elem.rx:
-                    return elem.rx
+                if elem.node_rx_cells:
+                    return elem.node_rx_cells
         return None
 
     def schedule_link_exists(self, Tx, Rx):
@@ -275,7 +318,7 @@ class Schedule(ABC):
         #
         for elem in self.schedule_list_of_nodes:
             if elem.node == Tx:
-                for tx in elem.tx:
+                for tx in elem.node_tx_cells:
                     if tx.destination == Rx:
                         return 1
         return 0
@@ -283,8 +326,8 @@ class Schedule(ABC):
     def schedule_get_rx_coordinates(self, addr):
         # Get the time and channel offset from the given addr.
         for node in self.schedule_list_of_nodes:
-            if node.rx:
-                for rx in node.rx:
+            if node.node_rx_cells:
+                for rx in node.node_rx_cells:
                     if (rx.source == str(addr)):
                         return rx.channeloffset, rx.timeoffset
         return None, None
@@ -307,7 +350,8 @@ class Schedule(ABC):
         """ 
         Clears the current schedule
         """
-        rows, cols = (self.schedule_max_number_channels, self.schedule_max_number_timeslots)
+        rows, cols = (self.schedule_max_number_channels,
+                      self.schedule_max_number_timeslots)
         self.__schedule = [[0 for i in range(cols)] for j in range(rows)]
         for i in range(rows):
             for j in range(cols):
@@ -338,10 +382,10 @@ class Schedule(ABC):
         """
         last_ts = 0
         for node in self.schedule_list_of_nodes:
-            for rx_cell in node.rx:
+            for rx_cell in node.node_rx_cells:
                 if rx_cell.timeoffset > last_ts:
                     last_ts = rx_cell.timeoffset
-            for tx_cell in node.tx:
+            for tx_cell in node.node_tx_cells:
                 if tx_cell.timeoffset > last_ts:
                     last_ts = tx_cell.timeoffset
 
@@ -356,17 +400,18 @@ class Schedule(ABC):
         """
         last_ch = 0
         for node in self.schedule_list_of_nodes:
-            for rx_cell in node.rx:
+            for rx_cell in node.node_rx_cells:
                 if rx_cell.channeloffset > last_ch:
                     last_ch = rx_cell.channeloffset
-            for tx_cell in node.tx:
+            for tx_cell in node.node_tx_cells:
                 if tx_cell.channeloffset > last_ch:
                     last_ch = tx_cell.channeloffset
 
         return last_ch
 
     def schedule_print(self):
-        rows, cols = (self.schedule_max_number_channels, self.schedule_slot_frame_size)
+        rows, cols = (self.schedule_max_number_channels,
+                      self.schedule_slot_frame_size)
         print_schedule = [[0 for i in range(cols)] for j in range(rows)]
         for i in range(rows):
             for j in range(cols):
