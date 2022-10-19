@@ -12,7 +12,7 @@ CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
 PYTHON_SCRIPT = './run-cooja.py cooja-orchestra.csc'
 
 
-def data_plane_initial_setup(controller):
+def run_data_plane(controller):
     controller.reset()
     # We now wait until we reach the processing_window
     controller.wait()
@@ -37,7 +37,7 @@ def data_plane_initial_setup(controller):
 
 def main():
 
-    # Create logger
+    # -------------------- Create logger --------------------
     logger = logging.getLogger('main')
 
     formatter = logging.Formatter(
@@ -58,15 +58,10 @@ def main():
 
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
-
-    logger.info('hello info')
-    logger.debug('hello debug')
-
+    # -------------------- setup controller --------------------
     # Script that run inside the container - simulation file as argument
     run_simulation_file = '/bin/sh -c '+'"cd ' + \
         SIMULATION_FOLDER+' && ' + PYTHON_SCRIPT + '"'
-
-    logger.info(f"simulation file: {run_simulation_file}")
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
@@ -87,9 +82,9 @@ def main():
         router=routing,
         tsch_scheduler=tsch_scheduler
     )
-
+    # --------------------Start data plane ------------------------
     # Let's start the data plane first
-    data_plane_initial_setup(controller)
+    run_data_plane(controller)
 
     logger.info('done, exiting.')
 
