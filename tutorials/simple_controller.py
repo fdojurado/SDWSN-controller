@@ -5,6 +5,12 @@ import logging.config
 from rich.logging import RichHandler
 import sys
 
+DOCKER_IMAGE = 'contiker/contiki-ng'
+SIMULATION_FOLDER = 'examples/elise'
+DOCKER_TARGET = '/home/user/contiki-ng'
+CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
+PYTHON_SCRIPT = './run-cooja.py cooja-orchestra.csc'
+
 
 def data_plane_initial_setup(controller):
     controller.reset()
@@ -58,7 +64,9 @@ def main():
 
     # Script that run inside the container - simulation file as argument
     run_simulation_file = '/bin/sh -c '+'"cd ' + \
-        'examples/elise'+' && ./run-cooja.py cooja-orchestra.csc"'
+        SIMULATION_FOLDER+' && ' + PYTHON_SCRIPT + '"'
+
+    logger.info(f"simulation file: {run_simulation_file}")
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
@@ -67,12 +75,11 @@ def main():
     routing = Dijkstra()
 
     controller = ContainerController(
-        image='contiker/contiki-ng',
+        image=DOCKER_IMAGE,
         command=run_simulation_file,
-        target='/home/user/contiki-ng',
-        source='/Users/fernando/contiki-ng',
-        socket_file='/Users/fernando/contiki-ng' +
-        '/'+'examples/elise'+'/'+'COOJA.log',
+        target=DOCKER_TARGET,
+        source=CONTIKI_SOURCE,
+        socket_file=CONTIKI_SOURCE + '/' + SIMULATION_FOLDER + '/COOJA.log',
         db_name='mySDN',
         db_host='127.0.0.1',
         db_port=27017,
