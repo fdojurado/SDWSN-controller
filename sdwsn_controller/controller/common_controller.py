@@ -1,3 +1,20 @@
+#!/usr/bin/python3
+#
+# Copyright (C) 2022  Fernando Jurado-Lasso <ffjla@dtu.dk>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from sdwsn_controller.controller.controller import BaseController
 from sdwsn_controller.common import common
 from sdwsn_controller.packet.packet import RA_Packet_Payload
@@ -203,7 +220,8 @@ class CommonController(BaseController):
     def comm_interface_start(self):
         # Connect serial
         if self.__socket.connect() != 0:
-            logger.warning(f'unsuccessful serial connection (host:{self.__socket.host}, port: {self.__socket.port})')
+            logger.warning(
+                f'unsuccessful serial connection (host:{self.__socket.host}, port: {self.__socket.port})')
             return 0
         logger.info("Socket up and running")
         # Read serial
@@ -214,7 +232,8 @@ class CommonController(BaseController):
 
     def comm_interface_stop(self):
         if self.__read_socket_thread is not None:
-            logger.info(f"start to shutdown thread, running flag = {self.__is_running}")
+            logger.info(
+                f"start to shutdown thread, running flag = {self.__is_running}")
             self.__read_socket_thread.join()
         self.__socket.shutdown()
 
