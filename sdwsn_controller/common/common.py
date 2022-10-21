@@ -4,9 +4,22 @@ import numpy as np
 from sdwsn_controller.packet.packet import Cell_Packet, SDN_IP_Packet, SerialPacket, RA_Packet
 from sdwsn_controller.packet.packet import sdn_protocols, SDN_SAH_LEN, SDN_IPH_LEN, SDN_RAH_LEN
 from random import randrange
+from rich.console import Console
+from rich.text import Text
 import logging
 
 logger = logging.getLogger('main.'+__name__)
+
+
+def log_table(rich_table):
+    """Generate an ascii formatted presentation of a Rich table
+    Eliminates any column styling
+    """
+    console = Console(width=150)
+    with console.capture() as capture:
+        console.print(rich_table)
+    return Text.from_ansi(capture.get())
+
 
 """ Build SA control packet """
 

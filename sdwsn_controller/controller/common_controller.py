@@ -1,7 +1,7 @@
 from sdwsn_controller.controller.controller import BaseController
 from sdwsn_controller.common import common
 from sdwsn_controller.packet.packet import RA_Packet_Payload
-from sdwsn_controller.routes.dijkstra import Dijkstra
+from sdwsn_controller.routing.dijkstra import Dijkstra
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.database.database import NODES_INFO
 from sdwsn_controller.serial.serial import SerialBus
@@ -340,7 +340,7 @@ class CommonController(BaseController):
         logger.info('Sending routes')
         num_pkts = 0
         payload = []
-        for _, row in self.router.routes.iterrows():
+        for _, row in self.router.routing_table_routes.iterrows():
             scr = row['scr']
             dst = row['dst']
             via = row['via']

@@ -1,8 +1,8 @@
 from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
-from sdwsn_controller.routes.dijkstra import Dijkstra
-import logging.config
+from sdwsn_controller.routing.dijkstra import Dijkstra
 from rich.logging import RichHandler
+import logging.config
 import sys
 
 DOCKER_IMAGE = 'contiker/contiki-ng'

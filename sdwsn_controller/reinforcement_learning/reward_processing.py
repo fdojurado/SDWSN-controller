@@ -1,13 +1,13 @@
-from abc import ABC, abstractmethod
-import numpy as np
 from sdwsn_controller.database.db_manager import DatabaseManager, SLOT_DURATION
 from sdwsn_controller.database.database import NODES_INFO
+from sdwsn_controller.common import common
+from abc import ABC, abstractmethod
 from rich.table import Table
-from rich.console import Console
-from rich.text import Text
+import numpy as np
 import logging
 
 logger = logging.getLogger('main.'+__name__)
+
 
 class RewardProcessing(ABC):
     def __init__(self) -> None:
@@ -77,7 +77,7 @@ class EmulatedRewardProcessing(RewardProcessing):
                 table.add_row(str(elem[0]), str(elem[1]))
             return table
 
-        logger.info(f"Power samples for sequence {sequence}\n{log_table(power_samples_table(power_samples))}")
+        logger.info(f"Power samples for sequence {sequence}\n{common.log_table(power_samples_table(power_samples))}")
         # We now need to compute the weighted arithmetic mean
         power_wam, power_mean = self.__power_weighted_arithmetic_mean(
             power_samples)
@@ -149,7 +149,7 @@ class EmulatedRewardProcessing(RewardProcessing):
                 table.add_row(str(elem[0]), str(elem[1]))
             return table
 
-        logger.info(f"Delay samples for sequence {sequence}\n{log_table(delay_samples_table(delay_samples))}")
+        logger.info(f"Delay samples for sequence {sequence}\n{common.log_table(delay_samples_table(delay_samples))}")
         # We now need to compute the weighted arithmetic mean
         delay_wam, delay_mean = self.__delay_weighted_arithmetic_mean(
             delay_samples)
@@ -215,7 +215,7 @@ class EmulatedRewardProcessing(RewardProcessing):
                 table.add_row(str(elem[0]), str(elem[1]))
             return table
 
-        logger.info(f"PDR samples for sequence {sequence}\n{log_table(pdr_samples_table(pdr_samples))}")
+        logger.info(f"PDR samples for sequence {sequence}\n{common.log_table(pdr_samples_table(pdr_samples))}")
         # We now need to compute the weighted arithmetic mean
         pdr_wam, pdr_mean = self.__pdr_weighted_arithmetic_mean(
             pdr_samples)
@@ -267,13 +267,3 @@ class EmulatedRewardProcessing(RewardProcessing):
         weight = 0.9 * (node_rank/last_rank) + 0.1 * (num_nbr/N)
         # logger.info(f'computing pdr WAM of node {node} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
         return weight
-
-
-def log_table(rich_table):
-    """Generate an ascii formatted presentation of a Rich table
-    Eliminates any column styling
-    """
-    console = Console(width=150)
-    with console.capture() as capture:
-        console.print(rich_table)
-    return Text.from_ansi(capture.get())

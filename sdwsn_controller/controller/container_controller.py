@@ -2,7 +2,7 @@ from sdwsn_controller.controller.common_controller import CommonController
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.docker.docker import CoojaDocker
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
-from sdwsn_controller.routes.dijkstra import Dijkstra
+from sdwsn_controller.routing.dijkstra import Dijkstra
 
 from rich.progress import Progress
 from typing import Dict

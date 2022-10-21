@@ -1,10 +1,9 @@
-import types
-import json
+from sdwsn_controller.common import common
 from abc import ABC, abstractmethod
 from rich.table import Table
-from rich.console import Console
-from rich.text import Text
 import pandas as pd
+import types
+import json
 import logging
 
 # Protocols encapsulated in sdn IP packet
@@ -467,16 +466,7 @@ class Schedule(ABC):
             table.add_row(str(elem['timeoffset']), str(
                 elem['channeloffset']), elem['type'], elem['cell'])
 
-        def log_table(rich_table):
-            """Generate an ascii formatted presentation of a Rich table
-            Eliminates any column styling
-            """
-            console = Console(width=150)
-            with console.capture() as capture:
-                console.print(rich_table)
-            return Text.from_ansi(capture.get())
-
-        logger.info(f"TSCH schedules table\n{log_table(table)}")
+        logger.info(f"TSCH schedules table\n{common.log_table(table)}")
 
     def schedule_print_grid(self):
         """
@@ -532,13 +522,4 @@ class Schedule(ABC):
             row += [str(x) for x in value_list]
             table.add_row(*row)
 
-        def log_table(rich_table):
-            """Generate an ascii formatted presentation of a Rich table
-            Eliminates any column styling
-            """
-            console = Console(width=150)
-            with console.capture() as capture:
-                console.print(rich_table)
-            return Text.from_ansi(capture.get())
-
-        logger.info(f"TSCH schedules table grid\n{log_table(table)}")
+        logger.info(f"TSCH schedules table grid\n{common.log_table(table)}")
