@@ -98,7 +98,8 @@ class Node:
         Returns:
             Cell: The cell created.
         """
-        logger.debug(f"Adding Tx cell for node destination {destination} at ch:{channeloffset}, ts:{timeoffset}")
+        logger.debug(
+            f"Adding Tx cell for node destination {destination} at ch:{channeloffset}, ts:{timeoffset}")
         tx_cell = Cell(source=self.node, type=cell_type.UC_TX, destination=destination,
                        timeoffset=timeoffset, channeloffset=channeloffset)
 
@@ -223,14 +224,22 @@ class Schedule(ABC):
     def schedule_list_of_nodes(self, val):
         self.__list_nodes.append(val)
 
+    def schedule_check_valid_coordinates(func):
+        def inner(self, ch_offset, ts_offset):
+            logger.info("Checking for valid TSCH schedule")
+            if ch_offset > self.schedule_max_number_channels or ts_offset > self.schedule_max_number_timeslots:
+                logger.error("Invalid schedule coordinates.")
+                return
+
+            return func(ch_offset, ts_offset)
+        return inner
+
+    @schedule_check_valid_coordinates
     def schedule_get_schedule(self, ch_offset, ts_offset):
-        if ch_offset > self.schedule_max_number_channels or ts_offset > self.schedule_max_number_timeslots:
-            raise Exception(f"Invalid schedule coordinates.")
         return self.__schedule[ch_offset][ts_offset]
 
+    @schedule_check_valid_coordinates
     def schedule_add_to_schedule(self, ch_offset, ts_offset, val):
-        if ch_offset > self.schedule_max_number_channels or ts_offset > self.schedule_max_number_timeslots:
-            raise Exception(f"Invalid schedule coordinates.")
         self.__schedule[ch_offset][ts_offset].append(val)
 
     def schedule_timeslot_free(self, ts):
