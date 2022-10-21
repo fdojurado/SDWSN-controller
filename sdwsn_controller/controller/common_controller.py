@@ -40,6 +40,29 @@ logger = logging.getLogger('main.'+__name__)
 
 
 class CommonController(BaseController):
+    """
+    A type of controller that shares functionalities with simulated and
+     real-world deployments; but not with numerical controllers.
+
+    Args:
+        alpha (float): Coefficient for avg power consumption.
+        beta (float): Coefficient for avg delay.
+        delta (float): Coefficient for avg reliability.
+        host (str): Host address of the serial interface (Communication with the sink.)
+        port (int): Port to stablish the connection with the host. (Communication with the sink.)
+        db_name (str): The name of the database.
+        db_host (str): Address of the machine hosting the data base.
+        db_port (int): Port of the database.
+        router (object): The routing algorithm.
+        tsch_scheduler (object): The TSCH scheduler.
+        power_min (int): Minimum power consumption - useful in the normalization. (RL)
+        power_max (int): Maximum power consumption - useful in the normalization. (RL)
+        delay_min (int): Minimum delay - useful in the normalization. (RL)
+        delay_max (int): Maximum delay - useful in the normalization. (RL)
+        power_norm_offset (float): Power normalization offset - this is to balance/ease the training of the RL alg.
+        delay_norm_offset (float): Delay normalization offset - this is to balance/ease the training of the RL alg.
+        reliability_norm_offset (float): Reliability normalization offset - this is to balance/ease the training of the RL alg.
+    """
 
     def __init__(
         self,
@@ -90,7 +113,7 @@ class CommonController(BaseController):
         # Create TSCH scheduler module
         self.__tsch_scheduler = tsch_scheduler
 
-        # Create an instance of Router
+        # Create the routing algorithm module
         self.__router = router
 
         # Initialize some variables
