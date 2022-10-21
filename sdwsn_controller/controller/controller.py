@@ -15,17 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# The BaseController class is an abstract class. Some functionalities are declared
-# as abstract methods, classes that inherits from the BaseController should take care
-# of them. The controller has four main modules: router, tsch scheduler, packet dissector,
-# and communication interface.
-
 from abc import ABC, abstractmethod
-
-from sdwsn_controller.database.database import NODES_INFO
 
 
 class BaseController(ABC):
+    """
+    The BaseController class is an abstract class. Some functionalities are declared
+    as abstract methods, classes that inherits from the BaseController should take care
+    of them. The controller has four main modules: router, tsch scheduler, packet dissector,
+    and communication interface.
+    """
+
     def __init__(
         self,
     ):
@@ -105,10 +105,6 @@ class BaseController(ABC):
 
     @abstractmethod
     def wait(self):
-        """
-        This abstract should return a value (1 successful)
-        :rtype: integer
-         """
         pass
 
     @abstractmethod
@@ -117,9 +113,6 @@ class BaseController(ABC):
 
     @abstractmethod
     def send(self):
-        """
-        This abstract should receive a data parameter
-         """
         pass
 
     @abstractmethod
@@ -137,15 +130,13 @@ class BaseController(ABC):
     def get_state(self):
         pass
 
-    # @abstractmethod
-    # def get_last_observations(self):
-    #     pass
-        # return self.db.get_last_observations()
+    @abstractmethod
+    def update_observations(self):
+        pass
 
     @abstractmethod
     def delete_info_collection(self):
         pass
-        # self.db.delete_collection(NODES_INFO)
 
     @abstractmethod
     def calculate_reward(self):
