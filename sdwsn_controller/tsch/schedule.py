@@ -225,17 +225,16 @@ class Schedule(ABC):
         self.__list_nodes.append(val)
 
     def schedule_check_valid_coordinates(func):
-        def inner(self, ch_offset, ts_offset):
-            logger.info("Checking for valid TSCH schedule")
+        def inner(self, ch_offset, ts_offset, val=None):
             if ch_offset > self.schedule_max_number_channels or ts_offset > self.schedule_max_number_timeslots:
                 logger.error("Invalid schedule coordinates.")
                 return
 
-            return func(ch_offset, ts_offset)
+            return func(self, ch_offset, ts_offset, val)
         return inner
 
     @schedule_check_valid_coordinates
-    def schedule_get_schedule(self, ch_offset, ts_offset):
+    def schedule_get_schedule(self, ch_offset, ts_offset, val=None):
         return self.__schedule[ch_offset][ts_offset]
 
     @schedule_check_valid_coordinates
