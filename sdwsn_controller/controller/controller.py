@@ -84,7 +84,7 @@ class BaseController(ABC):
 
     def reset_pkt_sequence(self):
         if self.packet_dissector is not None:
-            self.sequence = 0
+            self.packet_dissector.sequence = 0
 
     @property
     @abstractmethod
@@ -273,11 +273,12 @@ class BaseController(ABC):
             return 1
 
     def comm_interface_stop(self):
-        if self.read_socket_thread and self.socket is not None:
-            logger.info(
-                f"start to shutdown thread, running flag = {self.__is_running}")
-            self.__read_socket_thread.join()
-        self.socket.shutdown()
+        if self.controller_running:
+            if self.read_socket_thread and self.socket is not None:
+                logger.info(
+                    f"start to shutdown thread, running flag = {self.__is_running}")
+                self.__read_socket_thread.join()
+            self.socket.shutdown()
 
     def comm_interface_read(self):
         if self.socket is not None:

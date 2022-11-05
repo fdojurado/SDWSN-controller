@@ -46,11 +46,11 @@ class Dissector(ABC):
 
     @property
     def sequence(self):
-        self.__sequence
+        return self.__sequence
 
     @sequence.setter
     def sequence(self, num):
-        self.sequence = num
+        self.__sequence = num
 
     @property
     def cycle_sequence(self):
@@ -58,7 +58,7 @@ class Dissector(ABC):
 
     @cycle_sequence.setter
     def cycle_sequence(self, num):
-        self.cycle_sequence = num
+        self.__cycle_sequence = num
 
     def reset_pkt_sequence(self):
         self.sequence = 0
@@ -72,23 +72,23 @@ class Dissector(ABC):
             return self.__db
 
     def save_energy(self, pkt, na_pkt):
-        if self.db is None:
+        if self.db is not None:
             self.db.save_energy(pkt, na_pkt)
 
     def save_neighbors(self, pkt, na_pkt):
-        if self.db is None:
+        if self.db is not None:
             self.db.save_neighbors(pkt, na_pkt)
 
     def save_pdr(self, pkt, data_pkt):
-        if self.db is None:
+        if self.db is not None:
             self.db.save_pdr(pkt, data_pkt)
 
     def save_delay(self, pkt, data_pkt):
-        if self.db is None:
+        if self.db is not None:
             self.db.save_delay(pkt, data_pkt)
 
     def save_serial_packet(self, serial_pkt):
-        if self.db is None:
+        if self.db is not None:
             self.db.save_serial_packet(serial_pkt.toJSON())
 
 

@@ -103,7 +103,9 @@ class Env(gym.Env):
         observation = np.append(observation, sf_len/MAX_SLOTFRAME_SIZE)
         self.controller.save_observations(
             timestamp=sample_time,
-            user_requirements=obs['user_requirements'],
+            alpha=self.controller.alpha,
+            beta=self.controller.beta,
+            delta=self.controller.delta,
             power_wam=cycle_power[0],
             power_mean=cycle_power[1],
             power_normalized=cycle_power[2],
@@ -189,7 +191,9 @@ class Env(gym.Env):
         observation = np.append(observation, slotframe_size/MAX_SLOTFRAME_SIZE)
         self.controller.save_observations(
             timestamp=sample_time,
-            user_requirements=self.controller.user_requirements,
+            alpha=self.controller.alpha,
+            beta=self.controller.beta,
+            delta=self.controller.delta,
             power_wam=cycle_power[0],
             power_mean=cycle_power[1],
             power_normalized=cycle_power[2],

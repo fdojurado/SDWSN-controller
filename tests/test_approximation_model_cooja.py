@@ -16,27 +16,64 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # This test obtains the chart for the approximation model in Cooja (Docker).
-import sys
+
 from sdwsn_controller.controller.rl_container_controller import RLContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 from sdwsn_controller.routing.dijkstra import Dijkstra
+from gym.envs.registration import register
+from rich.logging import RichHandler
+from sdwsn_controller import about
+from signal import signal, SIGINT
+
+import logging.config
+import logging
+import pyfiglet
+import argparse
+import sys
 import gym
 import os
-import argparse
-from gym.envs.registration import register
-import sdwsn_controller
+
+logger = logging.getLogger('main.'+__name__)
 
 MAX_SLOTFRAME_SIZE = 70
 
 
 def main():
 
+    # -------------------- Create logger --------------------
+    logger = logging.getLogger('main')
+
+    formatter = logging.Formatter(
+        '%(asctime)s - %(message)s')
+    logger.setLevel(logging.DEBUG)
+
+    stream_handler = RichHandler(rich_tracebacks=True)
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(formatter)
+
+    logFilePath = "my.log"
+    formatter = logging.Formatter(
+        '%(asctime)s | %(name)s |  %(levelname)s: %(message)s')
+    file_handler = logging.handlers.TimedRotatingFileHandler(
+        filename=logFilePath, when='midnight', backupCount=30)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+    # -------------------- Set Banner --------------------
+    fig = pyfiglet.Figlet(font='standard')
+    print(fig.renderText('SDWSN Controller'))
+    print(about.__info_for_scripts__)
+
+    # -------------------- Parse arguments ---------------
     parser = argparse.ArgumentParser(
-        description='It trains DQN using the given, or default parameters.')
+        description='This script obtains the plot for the approximation model in Cooja.')
     parser.add_argument('-d', '--docker-image', type=str, default='contiker/contiki-ng',
                         help="Name of the docker image ('contiker/contiki-ng')")
-    parser.add_argument('-dc', '--docker-command', type=str, default='examples/elise',
-                        help="Simulation script to run inside the container")
+    parser.add_argument('-dc', '--contiki-folder', type=str, default='examples/elise',
+                        help="Contiki simulaiton folder")
     parser.add_argument('-dmt', '--docker-mount-target', type=str, default='/home/user/contiki-ng',
                         help="Docker mount target")
     parser.add_argument('-dms', '--docker-mount-source', type=str, default='/Users/fernando/contiki-ng',
@@ -77,12 +114,12 @@ def main():
         # max_episode_steps=50
     )
 
-    # Create figure folder
+    # Create output folder
     log_dir = args.output_path
     os.makedirs(log_dir, exist_ok=True)
 
     simulation_command = '/bin/sh -c '+'"cd ' + \
-        args.docker_command+' && ./run-cooja.py"'
+        args.contiki_folder+' && ./run-cooja.py cooja-elise.csc"'
 
     # Routing algorithm
     routing = Dijkstra()
@@ -91,18 +128,27 @@ def main():
         sf_size=args.maximum_slotframe_size, channel_offsets=args.maximum_tsch_channels)
 
     controller = RLContainerController(
+        # Container related
         image=args.docker_image,
         command=simulation_command,
         target=args.docker_mount_target,
         source=args.docker_mount_source,
-        socket_file=args.docker_mount_source+'/'+args.docker_command+'/'+'COOJA.log',
+        socket_file=args.docker_mount_source+'/'+args.contiki_folder+'/'+'COOJA.log',
+        # Sink/socket communication
+        socket_address=args.cooja,
+        socket_port=args.cooja_port,
+        # Database
         db_name=args.db_name,
         db_host=args.db,
         db_port=args.db_port,
+        # Simulation
         simulation_name=args.simulation_name,
-        processing_window=args.processing_window,
+        # Routing
         router=routing,
-        tsch_scheduler=tsch_scheduler
+        # TSCH scheduler
+        tsch_scheduler=tsch_scheduler,
+        # RL related
+        processing_window=args.processing_window,
     )
 
     env_kwargs = {
@@ -112,6 +158,15 @@ def main():
     }
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
+
+    # Exit signal
+    def handler(*args):
+        # Handle any cleanup here
+        logger.warning('SIGINT or CTRL-C detected. Shutting down ...')
+        controller.stop()
+        sys.exit(0)
+
+    signal(SIGINT, handler)
 
     obs = env.reset()
     # Get last observations including the SF size
@@ -136,14 +191,16 @@ def main():
                 # obs = env.reset()
 
         obs, reward, done, info = env.step(action)
-        print(f'Observations: {obs}, reward: {reward}, done: {done}, info: {info}')
+        logger.info(f'Observations: {obs}, reward: {reward}, done: {done}, info: {info}')
         # Get last observations including the SF size
-        observations = controller.db.get_last_observations()
+        observations = controller.get_state()
         # Current SF size
         sf_size = observations['current_sf_len']
-        print(f'current SF size: {sf_size}')
+        logger.info(f'current SF size: {sf_size}')
 
     env.render()
+
+    return
 
 
 if __name__ == '__main__':

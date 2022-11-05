@@ -103,11 +103,13 @@ class RLBaseController(BaseController):
 
         self.__update_observations(**env_kwargs)
 
-    def __update_observations(self, timestamp, user_requirements, power_wam, power_mean,
+    def __update_observations(self, timestamp, alpha, beta, delta, power_wam, power_mean,
                               power_normalized, delay_wam, delay_mean, delay_normalized,
                               pdr_wam, pdr_mean, current_sf_len, last_ts_in_schedule, reward):
         self.__timestamp = timestamp
-        self.user_requirements = user_requirements
+        self.alpha = alpha
+        self.beta = beta
+        self.delta = delta
         self.__power_wam = power_wam
         self.__power_mean = power_mean
         self.__power_normalized = power_normalized

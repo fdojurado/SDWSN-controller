@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from matplotlib import use
 from sdwsn_controller.controller.rl_base_controller import RLBaseController
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.reinforcement_learning.reward_processing import EmulatedRewardProcessing
@@ -52,9 +51,9 @@ class RLContainerController(RLBaseController):
         socket_address: str = '127.0.0.1',
         socket_port: int = 60001,
         # Database
-        db_name: str = 'mySDN',
-        db_host: str = '127.0.0.1',
-        db_port: int = 27017,
+        db_name: str = None,
+        db_host: str = None,
+        db_port: int = None,
         # Simulation
         simulation_name: str = 'mySimulation',
         # RL related
@@ -97,12 +96,16 @@ class RLContainerController(RLBaseController):
                                      sysctls=sysctls, ports=container_ports, privileged=privileged, detach=detach,
                                      socket_file=socket_file)
 
-        # Create database manager
-        self.__db = DatabaseManager(
-            name=db_name,
-            host=db_host,
-            port=db_port
-        )
+        # We only create a DB if this is explicitly pass to the class.
+        # This is done to speed up the training in the numerical env.
+        if db_name is not None and db_host is not None and db_port is not None:
+            self.__db = DatabaseManager(
+                name=db_name,
+                host=db_host,
+                port=db_port
+            )
+        else:
+            self.__db = None
 
         # Create packet dissector
         self.__packet_dissector = PacketDissector(database=self.db)
@@ -149,6 +152,7 @@ class RLContainerController(RLBaseController):
         return self.__tsch_scheduler
 
     # Routing
+    @property
     def router(self):
         return self.__router
 
@@ -167,7 +171,7 @@ class RLContainerController(RLBaseController):
         self.__processing_window = val
 
     # Reinforcement learning functionalities
-    def calculate_reward(self, alpha, beta, delta, slotframe_size):
+    def calculate_reward(self, alpha, beta, delta, _):
         return self.__reward_processing.calculate_reward(alpha, beta, delta, self.cycle_sequence)
 
     # Controller related functions
