@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.controller.reinforcement_learning_controller import ReinforcementLearningController
+from sdwsn_controller.controller.rl_base_controller import RLBaseController
 from sdwsn_controller.reinforcement_learning.numerical_reward_processing import NumericalRewardProcessing
 from sdwsn_controller.database.db_manager import DatabaseManager
 from typing import Dict
@@ -65,7 +65,7 @@ class NumericalRewardProcessing():
         return reward, power, delay, pdr
 
 
-class RLNumericalController(ReinforcementLearningController):
+class RLNumericalController(RLBaseController):
     def __init__(
         self,
         db_name: str = None,

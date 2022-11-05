@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from matplotlib import use
-from sdwsn_controller.controller.reinforcement_learning_controller import ReinforcementLearningController
+from sdwsn_controller.controller.rl_base_controller import RLBaseController
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.reinforcement_learning.reward_processing import EmulatedRewardProcessing
 from sdwsn_controller.serial.serial import SerialBus
@@ -34,7 +34,7 @@ import logging
 logger = logging.getLogger('main.'+__name__)
 
 
-class RLContainerController(ReinforcementLearningController):
+class RLContainerController(RLBaseController):
     def __init__(
         self,
         # Container related

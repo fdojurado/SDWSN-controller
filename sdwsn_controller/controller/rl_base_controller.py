@@ -25,7 +25,7 @@ import logging
 logger = logging.getLogger('main.'+__name__)
 
 
-class ReinforcementLearningController(BaseController):
+class RLBaseController(BaseController):
     """
 
     A reinforcement learning controller that is meant to be flexible;
