@@ -64,18 +64,15 @@ class Env(gym.Env):
     def step(self, action):
         sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
-        alpha, beta, delta, last_ts_in_schedule, current_sf_len = self.controller.get_state()
-        # print(f"Performing action {action} (current sf: {current_sf_len})")
+        obs = self.controller.get_state()
         if action == 0:
             # print("increasing slotframe size")
-            sf_len = common.next_coprime(current_sf_len)
+            sf_len = common.next_coprime(obs['current_sf_len'])
         if action == 1:
             # print("decreasing slotframe size")
-            sf_len = common.previous_coprime(current_sf_len)
+            sf_len = common.previous_coprime(obs['current_sf_len'])
         if action == 2:
-            sf_len = current_sf_len
-        user_requirements = np.array([alpha, beta, delta])
-        # the last slot in the current schedule
+            sf_len = obs['current_sf_len']
         # Send the entire TSCH schedule
         self.controller.send_tsch_schedules()
         # Delete the current nodes_info collection from the database
@@ -91,23 +88,22 @@ class Env(gym.Env):
             # Reset sequence
             self.controller.reset_pkt_sequence()
         # print("process reward")
-        self.controller.wait_seconds(1)
+        # TODO: DO we really need this delay?
+        self.controller.processing_wait(1)
         # Calculate the reward
         reward, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
-            alpha, beta, delta, sf_len)
+            self.controller.alpha, self.controller.beta, self.controller.delta, sf_len)
         # Append to the observations
         sample_time = datetime.now().timestamp() * 1000.0
-        observation = np.append(user_requirements, cycle_power[2])
+        observation = np.append(obs['user_requirements'], cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
         observation = np.append(
-            observation, last_ts_in_schedule/MAX_SLOTFRAME_SIZE)
+            observation, obs['last_ts_in_schedule']/MAX_SLOTFRAME_SIZE)
         observation = np.append(observation, sf_len/MAX_SLOTFRAME_SIZE)
         self.controller.save_observations(
             timestamp=sample_time,
-            alpha=alpha,
-            beta=beta,
-            delta=delta,
+            user_requirements=obs['user_requirements'],
             power_wam=cycle_power[0],
             power_mean=cycle_power[1],
             power_normalized=cycle_power[2],
@@ -117,7 +113,7 @@ class Env(gym.Env):
             pdr_wam=cycle_pdr[0],
             pdr_mean=cycle_pdr[1],
             current_sf_len=sf_len,
-            last_ts_in_schedule=last_ts_in_schedule,
+            last_ts_in_schedule=obs['last_ts_in_schedule'],
             reward=reward
         )
         done = False
@@ -125,9 +121,10 @@ class Env(gym.Env):
         # MAX_SLOTFRAME_SIZE is the maximum slotframe size
         # TODO: Set the maximum slotframe size at the creation
         # of the environment
-        if (sf_len < last_ts_in_schedule or sf_len > MAX_SLOTFRAME_SIZE):
+        if (sf_len < obs['last_ts_in_schedule'] or sf_len > MAX_SLOTFRAME_SIZE):
             done = True
             reward = -4
+
         return observation, reward, done, info
 
     """ Reset the environment, reset the routing and the TSCH schedules """
@@ -151,15 +148,13 @@ class Env(gym.Env):
         # We now set the TSCH schedules for the current routing
         self.controller.compute_tsch_schedule(path, slotframe_size)
         # We now set and save the user requirements
-        balanced = [0.4, 0.3, 0.3]
-        energy = [0.8, 0.1, 0.1]
-        delay = [0.1, 0.8, 0.1]
-        reliability = [0.1, 0.1, 0.8]
+        balanced = (0.4, 0.3, 0.3)
+        energy = (0.8, 0.1, 0.1)
+        delay = (0.1, 0.8, 0.1)
+        reliability = (0.1, 0.1, 0.8)
         user_req = [balanced, energy, delay, reliability]
         select_user_req = random.choice(user_req)
-        self.controller.user_requirements = (
-            select_user_req[0], select_user_req[1], select_user_req[2])
-        alpha, beta, delta = self.controller.user_requirements
+        self.controller.user_requirements = select_user_req
         # Send the entire routes
         self.controller.send_routes()
         # Send the entire TSCH schedule
@@ -180,10 +175,10 @@ class Env(gym.Env):
         # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
         sample_time = datetime.now().timestamp() * 1000.0
         # We now save the user requirements
-        user_requirements = np.array([alpha, beta, delta])
+        user_requirements = self.controller.user_requirements
         # We now save the observations with reward None
         _, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
-            alpha, beta, delta, slotframe_size)
+            self.controller.alpha, self.controller.beta, self.controller.delta, slotframe_size)
        # Append to the observations
         sample_time = datetime.now().timestamp() * 1000.0
         observation = np.append(user_requirements, cycle_power[2])
@@ -194,9 +189,7 @@ class Env(gym.Env):
         observation = np.append(observation, slotframe_size/MAX_SLOTFRAME_SIZE)
         self.controller.save_observations(
             timestamp=sample_time,
-            alpha=alpha,
-            beta=beta,
-            delta=delta,
+            user_requirements=self.controller.user_requirements,
             power_wam=cycle_power[0],
             power_mean=cycle_power[1],
             power_normalized=cycle_power[2],

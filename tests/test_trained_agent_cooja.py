@@ -20,7 +20,7 @@ This script test the trained agent in Cooja Network Simulator.
 """
 import sys
 from sdwsn_controller import about
-from sdwsn_controller.controller.container_controller import ContainerController
+from sdwsn_controller.controller.rl_container_controller import RLContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 from stable_baselines3 import DQN, A2C, PPO
 import gym
@@ -114,7 +114,7 @@ def main():
     tsch_scheduler = HardCodedScheduler(
         sf_size=args.maximum_slotframe_size, channel_offsets=args.maximum_tsch_channels)
 
-    controller = ContainerController(
+    controller = RLContainerController(
         image=args.docker_image,
         command=simulation_command,
         target=args.docker_mount_target,

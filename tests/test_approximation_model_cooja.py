@@ -17,8 +17,9 @@
 
 # This test obtains the chart for the approximation model in Cooja (Docker).
 import sys
-from sdwsn_controller.controller.container_controller import ContainerController
+from sdwsn_controller.controller.rl_container_controller import RLContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
+from sdwsn_controller.routing.dijkstra import Dijkstra
 import gym
 import os
 import argparse
@@ -34,7 +35,7 @@ def main():
         description='It trains DQN using the given, or default parameters.')
     parser.add_argument('-d', '--docker-image', type=str, default='contiker/contiki-ng',
                         help="Name of the docker image ('contiker/contiki-ng')")
-    parser.add_argument('-dc', '--docker-command', type=str, default='examples/benchmarks/rl-sdwsn',
+    parser.add_argument('-dc', '--docker-command', type=str, default='examples/elise',
                         help="Simulation script to run inside the container")
     parser.add_argument('-dmt', '--docker-mount-target', type=str, default='/home/user/contiki-ng',
                         help="Docker mount target")
@@ -83,18 +84,24 @@ def main():
     simulation_command = '/bin/sh -c '+'"cd ' + \
         args.docker_command+' && ./run-cooja.py"'
 
+    # Routing algorithm
+    routing = Dijkstra()
+
     tsch_scheduler = HardCodedScheduler(
         sf_size=args.maximum_slotframe_size, channel_offsets=args.maximum_tsch_channels)
 
-    controller = ContainerController(
+    controller = RLContainerController(
         image=args.docker_image,
         command=simulation_command,
         target=args.docker_mount_target,
         source=args.docker_mount_source,
         socket_file=args.docker_mount_source+'/'+args.docker_command+'/'+'COOJA.log',
         db_name=args.db_name,
+        db_host=args.db,
         db_port=args.db_port,
-        processing_window= args.processing_window,
+        simulation_name=args.simulation_name,
+        processing_window=args.processing_window,
+        router=routing,
         tsch_scheduler=tsch_scheduler
     )
 
@@ -108,7 +115,7 @@ def main():
 
     obs = env.reset()
     # Get last observations including the SF size
-    observations = controller.db.get_last_observations()
+    observations = controller.get_state()
     # Current SF size
     sf_size = observations['current_sf_len']
     last_ts_in_schedule = observations['last_ts_in_schedule']

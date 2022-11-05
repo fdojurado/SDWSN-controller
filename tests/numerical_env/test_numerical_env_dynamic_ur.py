@@ -5,7 +5,7 @@ import gym
 import os
 import numpy as np
 
-from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer
+from sdwsn_controller.controller.rl_numerical_controller import RLNumericalController
 from sdwsn_controller.controller.env_numerical_controller import EnvNumericalController
 from stable_baselines3 import DQN, A2C, PPO
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -56,7 +56,7 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
 
     # Controller instance
-    controller = EnvNumericalController(
+    controller = RLNumericalController(
         db_name=args.db_name,
         db_host=args.db_host,
         db_port=args.db_port,

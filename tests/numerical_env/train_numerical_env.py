@@ -41,7 +41,7 @@ import gym
 from torch import nn as nn
 import os
 import numpy as np
-from sdwsn_controller.controller.env_numerical_controller import EnvNumericalController
+from sdwsn_controller.controller.rl_numerical_controller import RLNumericalController 
 
 from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer, SaveOnBestTrainingRewardCallback
 from stable_baselines3 import DQN, A2C, PPO, HerReplayBuffer, DDPG, DQN, SAC, TD3
@@ -89,7 +89,7 @@ def main():
     os.makedirs(monitor_log_dir, exist_ok=True)
 
     # Controller instance
-    controller = EnvNumericalController(
+    controller = RLNumericalController(
         power_weights=np.array(
             [1.14247726e-08, -2.22419840e-06,
                 1.60468046e-04, -5.27254015e-03, 9.35384746e-01]

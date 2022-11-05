@@ -374,7 +374,7 @@ class Schedule(ABC):
 
     def schedule_last_active_ts(self):
         """ 
-        Last times offset of the current schedule
+        Last time offset of the current schedule
 
         Returns:
             int: Last active times offset.
