@@ -1,18 +1,42 @@
-import sys
-import argparse
-import gym
-import os
+#!/usr/bin/python3
+#
+# Copyright (C) 2022  Fernando Jurado-Lasso <ffjla@dtu.dk>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+from sdwsn_controller.controller.rl_numerical_controller import RLNumericalController
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3 import DQN, A2C, PPO
+from gym.envs.registration import register
+from sdwsn_controller import about
+
 import numpy as np
 
-from sdwsn_controller.controller.rl_numerical_controller import RLNumericalController 
-from stable_baselines3 import DQN, A2C, PPO
-from stable_baselines3.common.evaluation import evaluate_policy
-from gym.envs.registration import register
-from stable_baselines3.common.monitor import Monitor
-
+import pyfiglet
+import argparse
+import sys
+import gym
+import os
 
 
 def main():
+
+    # Set banner
+    fig = pyfiglet.Figlet(font='standard')
+    print(fig.renderText('SDWSN Controller'))
+    print(about.__info_for_scripts__)
+
     parser = argparse.ArgumentParser(
         description='Loads previous trained model and evaluate it.')
 
@@ -92,24 +116,18 @@ def main():
         case 'DQN':
             loaded_model = DQN.load(args.model, env=env)
         case 'A2C':
-                loaded_model = A2C.load(args.model, env=env)
+            loaded_model = A2C.load(args.model, env=env)
         case 'PPO':
-                loaded_model = PPO.load(args.model, env=env)
+            loaded_model = PPO.load(args.model, env=env)
 
     # Test the trained agent
-    for i in range(10):
+    for _ in range(10):
         obs = env.reset()
         done = False
         acc_reward = 0
-        # reward = 0
         while(not done):
-            # print(f'observations: {obs} reward: {reward}')
-            # if obs[7] < 0.24:
-            #     action = 0
-            # else:
-            #     action = 1
-            action, _states = loaded_model.predict(obs, deterministic=True)
-            obs, reward, done, info = env.step(action)
+            action, _ = loaded_model.predict(obs, deterministic=True)
+            obs, reward, done, _ = env.step(action)
             acc_reward += reward
             if done:
                 print(f"episode done. reward: {acc_reward}")
