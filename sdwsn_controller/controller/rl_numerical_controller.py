@@ -18,7 +18,6 @@
 from sdwsn_controller.controller.rl_base_controller import RLBaseController
 from sdwsn_controller.reinforcement_learning.numerical_reward_processing import NumericalRewardProcessing
 from sdwsn_controller.database.db_manager import DatabaseManager
-from typing import Dict
 
 
 import numpy as np

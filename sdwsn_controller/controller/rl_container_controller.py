@@ -25,7 +25,6 @@ from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeSchedu
 from sdwsn_controller.docker.docker import CoojaDocker
 from sdwsn_controller.routing.dijkstra import Dijkstra
 
-from rich.progress import Progress
 from typing import Dict
 from time import sleep
 import logging

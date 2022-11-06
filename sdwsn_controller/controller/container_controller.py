@@ -15,17 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.controller.controller import BaseController
+from sdwsn_controller.controller.base_controller import BaseController
 from sdwsn_controller.database.db_manager import DatabaseManager
-from sdwsn_controller.reinforcement_learning.reward_processing import EmulatedRewardProcessing
 from sdwsn_controller.serial.serial import SerialBus
 from sdwsn_controller.packet.packet_dissector import PacketDissector
-from sdwsn_controller.database.db_manager import SLOT_DURATION
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.docker.docker import CoojaDocker
 from sdwsn_controller.routing.dijkstra import Dijkstra
 
-from rich.progress import Progress
 from typing import Dict
 from time import sleep
 import logging

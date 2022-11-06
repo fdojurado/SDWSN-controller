@@ -17,7 +17,7 @@
 
 from sdwsn_controller.database.database import OBSERVATIONS
 from sdwsn_controller.database.database import NODES_INFO
-from sdwsn_controller.controller.controller import BaseController
+from sdwsn_controller.controller.base_controller import BaseController
 
 import numpy as np
 import logging
