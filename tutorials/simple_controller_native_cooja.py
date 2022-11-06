@@ -75,9 +75,6 @@ def main():
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
-    # Script that run inside the container - simulation file as argument
-    run_simulation_file = '/bin/sh -c '+'"cd ' + \
-        SIMULATION_FOLDER+' && ' + PYTHON_SCRIPT + '"'
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
