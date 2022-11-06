@@ -175,7 +175,7 @@ def main():
     sf_size = observations['current_sf_len']
     last_ts_in_schedule = observations['last_ts_in_schedule']
     increase = 1
-    for i in range(5):
+    for i in range(200):
         # action, _state = model.predict(obs, deterministic=True)
         if increase:
             if sf_size < MAX_SLOTFRAME_SIZE - 1:

@@ -45,8 +45,7 @@ def run_data_plane(controller):
     controller.send_routes()
     # Send the entire TSCH schedule
     controller.send_tsch_schedules()
-    # Delete the current nodes_info collection from the database
-    controller.delete_info_collection()
+    # Reset packet sequence
     controller.reset_pkt_sequence()
     # Wait for the network to settle
     controller.wait()
@@ -105,7 +104,7 @@ def main():
 
     logger.info('done, exiting.')
 
-    controller.container_controller_stop()
+    controller.stop()
 
     return
 
