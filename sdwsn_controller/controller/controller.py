@@ -44,9 +44,9 @@ class Controller(BaseController):
         socket_address: str = '127.0.0.1',
         socket_port: int = 60001,
         # Database
-        db_name: str = None,
-        db_host: str = None,
-        db_port: int = None,
+        db_name: str = 'mySDN',
+        db_host: str = '127.0.0.1',
+        db_port: int = 27017,
         # Simulation
         simulation_name: str = 'mySimulation',
         # Window
@@ -82,23 +82,18 @@ class Controller(BaseController):
         logger.info(f"Simulation script: {self.__simulation_script}")
         logger.info(f'Socket address: {socket_address}')
         logger.info(f'Socket port: {socket_port}')
-
-        # We only create a DB if this is explicitly pass to the class.
-        # This is done to speed up the training in the numerical env.
-        if db_name is not None and db_host is not None and db_port is not None:
-            self.__db = DatabaseManager(
-                name=db_name,
-                host=db_host,
-                port=db_port
-            )
-            logger.info(f'DB name: {db_name}')
-            logger.info(f'DB host: {db_host}')
-            logger.info(f'DB port: {db_port}')
-        else:
-            self.__db = None
-
+        logger.info(f'DB name: {db_name}')
+        logger.info(f'DB host: {db_host}')
+        logger.info(f'DB port: {db_port}')
         logger.info(f'simulation name: {simulation_name}')
         logger.info(f'Processing window: {processing_window}')
+
+        # Create Database
+        self.__db = DatabaseManager(
+            name=db_name,
+            host=db_host,
+            port=db_port
+        )
 
         # Create packet dissector
         self.__packet_dissector = PacketDissector(database=self.db)
