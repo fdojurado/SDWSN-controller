@@ -17,8 +17,8 @@
 
 # python3 train.py --algo dqn --env sdwsn-v2 -n 50000 -optimize --n-trials 1000 --n-jobs 2 --sampler tpe --pruner median
 
+from sdwsn_controller.controller.numerical_controller import NumericalController, NumericalRewardProcessing
 from sdwsn_controller.reinforcement_learning.wrappers import SaveOnBestTrainingRewardCallback
-from sdwsn_controller.controller.rl_numerical_controller import RLNumericalController
 from stable_baselines3 import DQN, A2C, PPO, HerReplayBuffer, DDPG, DQN, SAC, TD3
 from stable_baselines3.common.envs import BitFlippingEnv
 from stable_baselines3.common.monitor import Monitor
@@ -29,6 +29,7 @@ from torch import nn as nn
 import numpy as np
 
 import argparse
+import pyfiglet
 import sys
 import gym
 import os
@@ -77,21 +78,26 @@ def main():
     monitor_log_dir = args.save_model
     os.makedirs(monitor_log_dir, exist_ok=True)
 
-    # Controller instance
-    controller = RLNumericalController(
+    # -------------------- setup controller --------------------
+    reward_processing = NumericalRewardProcessing(
         power_weights=np.array(
             [1.14247726e-08, -2.22419840e-06,
-                1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
+             1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
         ),
         delay_weights=np.array(
             # [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,  1.02710258e-04]
             [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,
-                0.85749587960003453947587046868728]
+             0.85749587960003453947587046868728]
         ),
         pdr_weights=np.array(
             # [-2.76382789e-04,  9.64746733e-01]
             [-2.76382789e-04,  -0.8609615946299346738365592202098]
         )
+    )
+
+    # Controller instance
+    controller = NumericalController(
+        reward_processing=reward_processing
     )
 
     env_kwargs = {

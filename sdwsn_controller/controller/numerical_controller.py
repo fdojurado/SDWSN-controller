@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.controller.rl_base_controller import RLBaseController
-from sdwsn_controller.reinforcement_learning.numerical_reward_processing import NumericalRewardProcessing
-from sdwsn_controller.database.db_manager import DatabaseManager
-
+from sdwsn_controller.reinforcement_learning.reward_processing import RewardProcessing
+from sdwsn_controller.controller.base_controller import BaseController
 
 import numpy as np
 
+import logging
 
-class NumericalRewardProcessing():
+logger = logging.getLogger('main.'+__name__)
+
+
+class NumericalRewardProcessing(RewardProcessing):
     def __init__(
         self,
         power_weights: np = np.array(
@@ -42,7 +44,10 @@ class NumericalRewardProcessing():
         self.delay_trendpoly = np.poly1d(delay_weights)
         # PDR polynomials coefficients
         self.pdr_trendpoly = np.poly1d(pdr_weights)
-        super().__init__()
+
+        super().__init__(
+            name="Numerical Reward processing"
+        )
 
     def calculate_reward(self, alpha, beta, delta, sf_size):
         """
@@ -64,51 +69,28 @@ class NumericalRewardProcessing():
         return reward, power, delay, pdr
 
 
-class RLNumericalController(RLBaseController):
+class NumericalController(BaseController):
     def __init__(
         self,
-        db_name: str = None,
-        db_host: str = None,
-        db_port: int = None,
-        power_weights: np = np.array(
-            [-2.34925404e-06,  2.38160571e-04, -8.87979911e-03, 3.25046326e-01]
-        ),
-        delay_weights: np = np.array(
-            [-3.52867079e-06, 2.68498049e-04, -2.37508338e-03, 4.84268817e-02]
-        ),
-        pdr_weights: np = np.array(
-            [-0.00121819, 0.88141225]
-        )
+        # Database
+        db: object = None,
+        # RL related
+        reward_processing: object = None,
     ):
-        # We only create a DB if this is explicitly pass to the class.
-        # This is done to speed up the training in the numerical env.
-        if db_name is not None and db_host is not None and db_port is not None:
-            self.__db = DatabaseManager(
-                name=db_name,
-                host=db_host,
-                port=db_port
-            )
-        else:
-            self.__db = None
 
-        # Create reward module
-        self.__reward_processing = NumericalRewardProcessing(
-            power_weights=power_weights,
-            delay_weights=delay_weights,
-            pdr_weights=pdr_weights
+        logger.info("Building numerical controller")
+
+        super().__init__(
+            db=db,
+            reward_processing=reward_processing
         )
 
-        super().__init__()
+    # Controller related functions
+    def timeout(self):
+        pass
 
-    # Database
-    @property
-    def db(self):
-        return self.__db
-
-    # Packet dissector
-    @property
-    def packet_dissector(self):
-        return None
+    def wait(self):
+        return 1
 
     # Override some TSCH functions
     @property
@@ -127,32 +109,6 @@ class RLNumericalController(RLBaseController):
     def current_slotframe_size(self, val):
         self.__current_slotframe_size = val
 
-    @property
-    def tsch_scheduler(self):
-        return None
-
-    # Routing
-    @property
-    def router(self):
-        return None
-
-    # Serial Interface
-    @property
-    def socket(self):
-        return None
-
-    # No processing window
-    @property
-    def processing_window(self):
-        return None
-
-    @processing_window.setter
-    def processing_window(self, val):
-        pass
-
-    def timeout(self):
-        pass
-
     def reset(self):
         self.start()
 
@@ -160,4 +116,4 @@ class RLNumericalController(RLBaseController):
         pass
 
     def calculate_reward(self, alpha, beta, delta, slotframe_size):
-        return self.__reward_processing.calculate_reward(alpha, beta, delta, slotframe_size)
+        return self.reward_processing.calculate_reward(alpha, beta, delta, slotframe_size)

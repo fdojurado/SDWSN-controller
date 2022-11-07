@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from sdwsn_controller.controller.base_controller import BaseController
-from sdwsn_controller.database.db_manager import DatabaseManager
 from subprocess import Popen, PIPE, STDOUT
 
 from rich.progress import Progress
