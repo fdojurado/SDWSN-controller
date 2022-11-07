@@ -15,9 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
+from sdwsn_controller.packet.packet_dissector import PacketDissector
+from sdwsn_controller.database.db_manager import DatabaseManager
+from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.routing.dijkstra import Dijkstra
+from sdwsn_controller.serial.serial import SerialBus
 from rich.logging import RichHandler
 import logging.config
 import sys
@@ -76,8 +79,14 @@ def main():
     logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
 
+    # Socket
+    socket = SerialBus()
+
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
+
+    # Database
+    db = DatabaseManager()
 
     # Routing algorithm
     routing = Dijkstra()
@@ -87,9 +96,12 @@ def main():
         contiki_source=CONTIKI_SOURCE,
         simulation_folder=SIMULATION_FOLDER,
         simulation_script=PYTHON_SCRIPT,
-        db_name='mySDN',
-        db_host='127.0.0.1',
-        db_port=27017,
+        # Database
+        db=db,
+        # socket
+        socket=socket,
+        # Packet dissector
+        packet_dissector=PacketDissector(database=db),
         processing_window=200,
         router=routing,
         tsch_scheduler=tsch_scheduler

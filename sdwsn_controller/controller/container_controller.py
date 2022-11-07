@@ -15,13 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from sdwsn_controller.controller.rl_base_controller import RLBaseController
 from sdwsn_controller.controller.base_controller import BaseController
-from sdwsn_controller.database.db_manager import DatabaseManager
-from sdwsn_controller.serial.serial import SerialBus
-from sdwsn_controller.packet.packet_dissector import PacketDissector
-from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.docker.docker import CoojaDocker
-from sdwsn_controller.routing.dijkstra import Dijkstra
 
 from typing import Dict
 from time import sleep
@@ -30,11 +26,12 @@ import logging
 logger = logging.getLogger('main.'+__name__)
 
 
-class ContainerController(BaseController):
+class ContainerController(BaseController, RLBaseController):
     def __init__(
         self,
         # Container related
         image: str = 'contiker/contiki-ng',
+        container_port: int = 60001,
         command: str = '/bin/sh -c "cd examples/benchmarks/rl-sdwsn && ./run-cooja.py"',
         target: str = '/home/user/contiki-ng',
         source: str = '/Users/fernando/contiki-ng',
@@ -45,24 +42,23 @@ class ContainerController(BaseController):
         detach: bool = True,
         socket_file: str = '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log',
         # Sink/socket communication
-        socket_address: str = '127.0.0.1',
-        socket_port: int = 60001,
+        socket: object = None,
         # Database
-        db_name: str = None,
-        db_host: str = None,
-        db_port: int = None,
-        # Simulation
-        simulation_name: str = 'mySimulation',
+        db: object = None,
+        # RL related
+        reward_processing: object = None,
+        # Packet dissector
+        packet_dissector: object = None,
         # Window
         processing_window: int = 200,
         # Routing
-        router: object = Dijkstra(),
+        router: object = None,
         # TSCH scheduler
-        tsch_scheduler: object = ContentionFreeScheduler(500, 3)
+        tsch_scheduler: object = None
     ):
         container_ports = {
-            'container': socket_port,
-            'host': socket_port
+            'container': container_port,
+            'host': container_port
         }
 
         mount = {
@@ -77,76 +73,22 @@ class ContainerController(BaseController):
         logger.info(f'target: {target}')
         logger.info(f'source: {source}')
         logger.info(f'socket file: {socket_file}')
-        logger.info(f'cooja port: {socket_port}')
-        logger.info(f'DB name: {db_name}')
-        logger.info(f'simulation name: {simulation_name}')
+        logger.info(f'Container port: {container_port}')
 
         # Container
         self.container = CoojaDocker(image=image, command=command, mount=mount,
                                      sysctls=sysctls, ports=container_ports, privileged=privileged, detach=detach,
                                      socket_file=socket_file)
 
-        # We only create a DB if this is explicitly pass to the class.
-        # This is done to speed up the training in the numerical env.
-        if db_name is not None and db_host is not None and db_port is not None:
-            self.__db = DatabaseManager(
-                name=db_name,
-                host=db_host,
-                port=db_port
-            )
-        else:
-            self.__db = None
-
-        # Create packet dissector
-        self.__packet_dissector = PacketDissector(database=self.db)
-
-        # Create TSCH scheduler module
-        self.__tsch_scheduler = tsch_scheduler
-
-        # Create an instance of Router
-        self.__router = router
-
-        # Create a socket/sink communication
-        self.__socket = SerialBus(socket_address, socket_port)
-
-        # Processing window
-        self.__processing_window = processing_window
-
-        super().__init__()
-
-     # Database
-    @property
-    def db(self):
-        return self.__db
-
-    # Packet dissector
-    @property
-    def packet_dissector(self):
-        return self.__packet_dissector
-
-    # TSCH scheduler
-    @property
-    def tsch_scheduler(self):
-        return self.__tsch_scheduler
-
-    # Routing
-    @property
-    def router(self):
-        return self.__router
-
-    # Serial Interface
-    @property
-    def socket(self):
-        return self.__socket
-
-    # Processing window
-    @property
-    def processing_window(self):
-        return self.__processing_window
-
-    @processing_window.setter
-    def processing_window(self, val):
-        self.__processing_window = val
+        super().__init__(
+            socket=socket,
+            db=db,
+            reward_processing=reward_processing,
+            packet_dissector=packet_dissector,
+            processing_window=processing_window,
+            router=router,
+            tsch_scheduler=tsch_scheduler
+        )
 
     # Controller related functions
 

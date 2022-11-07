@@ -17,6 +17,7 @@
 
 from sdwsn_controller.packet.packet import Cell_Packet_Payload
 from sdwsn_controller.packet.packet import RA_Packet_Payload
+from sdwsn_controller.database.database import OBSERVATIONS
 from sdwsn_controller.database.database import NODES_INFO
 from sdwsn_controller.common import common
 from abc import ABC, abstractmethod
@@ -41,19 +42,73 @@ class BaseController(ABC):
 
     def __init__(
         self,
+        # Sink/socket communication
+        socket: object = None,
+        # Database
+        db: object = None,
+        # RL related
+        reward_processing: object = None,
+        # Packet dissector
+        packet_dissector: object = None,
+        # Window
+        processing_window: int = 200,
+        # Routing
+        router: object = None,
+        # TSCH scheduler
+        tsch_scheduler: object = None
     ):
+        # Database
+        self.__db = db
+        if self.__db is not None:
+            logger.info(f'Database added')
+
+        # Create reward module; only for RL
+        self.__reward_processing = reward_processing
+        if reward_processing is not None:
+            self.__reward_processing = reward_processing
+            logger.info(f"reward processing: {self.reward_processing.name}")
+            # Requirements
+            self.__user_requirements = UserRequirements()
+
+        # Create packet dissector
+        self.__packet_dissector = packet_dissector
+        if packet_dissector is not None:
+            logger.info(f'Packet dissector: {self.packet_dissector.name}')
+
+        # Create TSCH scheduler module
+        self.__tsch_scheduler = tsch_scheduler
+        if router is not None:
+            logger.info(f'TSCH scheduler: {self.tsch_scheduler.name}')
+
+        # Create an instance of Router
+        self.__router = router
+        if router is not None:
+            logger.info(f'Routing: {self.router.name}')
+
+        # We only create the socket module if this is explicitly pass to the class.
+        # This is is because numerical env does not use it.
+        self.__socket = socket
+        if socket is not None:
+            logger.info(f'Socket added')
+
+        # Processing window
+        self.__processing_window = processing_window
+        logger.info(f'Processing window: {self.__processing_window}')
+
         self.__is_running = False
         self.__read_socket_thread = None
+
+        super().__init__()
    # ---------------------Database functionalities---------------------------
 
     def init_db(self):
         if self.db is not None:
+            logger.info("Initializing DB")
             self.db.initialize()
 
     @property
-    @abstractmethod
     def db(self):
-        pass
+        return self.__db
 
     # -------------------Packet dissector functionalities--------------------
 
@@ -86,10 +141,10 @@ class BaseController(ABC):
         if self.packet_dissector is not None:
             self.packet_dissector.sequence = 0
 
+    # Packet dissector
     @property
-    @abstractmethod
     def packet_dissector(self):
-        pass
+        return self.__packet_dissector
 
     # --------------------------TSCH functions--------------------------
 
@@ -173,9 +228,8 @@ class BaseController(ABC):
             self.tsch_scheduler.schedule_slot_frame_size = val
 
     @property
-    @abstractmethod
     def tsch_scheduler(self):
-        pass
+        return self.__tsch_scheduler
 
     # --------------------------Routing functions-------------------------
 
@@ -242,9 +296,8 @@ class BaseController(ABC):
             return G
 
     @property
-    @abstractmethod
     def router(self):
-        pass
+        return self.__router
 
     # --------------------------Sink interface----------------------------
 
@@ -294,21 +347,18 @@ class BaseController(ABC):
             logger.info("Socket reading thread exited.")
 
     @property
-    @abstractmethod
     def socket(self):
-        pass
+        return self.__socket
 
     # --------------------------Controller primitives-----------------------
 
     @property
-    @abstractmethod
     def processing_window(self):
-        pass
+        return self.__processing_window
 
     @processing_window.setter
-    @abstractmethod
     def processing_window(self, val):
-        pass
+        self.__processing_window = val
 
     def start(self):
         # Initialize database
@@ -417,3 +467,154 @@ class BaseController(ABC):
                     self.send(data)
                 self.timeout()
             return result
+
+    # --------------------------Reinforcement Learning----------------------
+
+    @property
+    def reward_processing(self):
+        return self.__reward_processing
+
+    def export_observations(self, simulation_name, folder):
+        if self.db is not None:
+            self.db.export_collection(OBSERVATIONS, simulation_name, folder)
+
+    def calculate_reward(self, alpha, beta, delta, _):
+        if self.reward_processing is not None:
+            return self.reward_processing.calculate_reward(alpha, beta, delta, self.cycle_sequence)
+
+    @property
+    def user_requirements(self):
+        return self.__user_requirements.requirements
+
+    @user_requirements.setter
+    def user_requirements(self, val):
+        self.__user_requirements.requirements = val
+
+    @property
+    def alpha(self):
+        return self.__user_requirements.alpha
+
+    @alpha.setter
+    def alpha(self, val):
+        self.__user_requirements.alpha = val
+
+    @property
+    def beta(self):
+        return self.__user_requirements.beta
+
+    @beta.setter
+    def beta(self, val):
+        self.__user_requirements.beta = val
+
+    @property
+    def delta(self):
+        return self.__user_requirements.delta
+
+    @delta.setter
+    def delta(self, val):
+        self.__user_requirements.delta = val
+
+    def save_observations(self, **env_kwargs):
+        if self.db is not None:
+            self.db.save_observations(**env_kwargs)
+
+        self.__update_observations(**env_kwargs)
+
+    def __update_observations(self, timestamp, alpha, beta, delta, power_wam, power_mean,
+                              power_normalized, delay_wam, delay_mean, delay_normalized,
+                              pdr_wam, pdr_mean, current_sf_len, last_ts_in_schedule, reward):
+        self.__timestamp = timestamp
+        self.alpha = alpha
+        self.beta = beta
+        self.delta = delta
+        self.__power_wam = power_wam
+        self.__power_mean = power_mean
+        self.__power_normalized = power_normalized
+        self.__delay_wam = delay_wam
+        self.__delay_mean = delay_mean
+        self.__delay_normalized = delay_normalized
+        self.__pdr_wam = pdr_wam
+        self.__pdr_mean = pdr_mean
+        self.__current_slotframe_size = current_sf_len
+        self.__last_tsch_link = last_ts_in_schedule
+        self.__reward = reward
+
+    def delete_info_collection(self):
+        if self.db is not None:
+            self.db.delete_collection(NODES_INFO)
+
+    def get_state(self):
+        # Let's return the user requirements, last tsch schedule, current slotframe size
+        state = {
+            "user_requirements": self.user_requirements,
+            "alpha": self.alpha,
+            "beta": self.beta,
+            "delta": self.delta,
+            "last_ts_in_schedule": self.__last_tsch_link,
+            "current_sf_len": self.__current_slotframe_size
+        }
+        return state
+
+# User requirements class; this is only for RL
+
+
+class UserRequirements():
+    def __init__(self):
+        pass
+
+    @property
+    def requirements(self):
+        user_req = [
+            self.alpha,
+            self.beta,
+            self.delta
+        ]
+        return np.array(user_req)
+
+    @requirements.setter
+    def requirements(self, val):
+        try:
+            alpha, beta, delta = val
+        except ValueError:
+            raise ValueError("Pass an iterable with three items")
+        else:
+            """ This will run only if no exception was raised """
+            self.alpha = alpha
+            self.beta = beta
+            self.delta = delta
+
+    def check_valid_number(func):
+        def inner(self, val):
+            if val > 1 or val < 0:
+                logger.error("Invalid user requirement value.")
+                return
+
+            return func(self, val)
+        return inner
+
+    @property
+    def alpha(self):
+        return self.__alpha
+
+    @alpha.setter
+    @check_valid_number
+    def alpha(self, val):
+        self.__alpha = val
+
+    @property
+    def beta(self):
+        return self.__beta
+
+    @beta.setter
+    @check_valid_number
+    def beta(self, val):
+        self.__beta = val
+
+    @property
+    def delta(self):
+        return self.__delta
+
+    @delta.setter
+    @check_valid_number
+    def delta(self, val):
+        self.__delta = val

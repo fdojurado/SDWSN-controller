@@ -34,9 +34,17 @@ class RoutingTable(ABC):
     the best way to do this, but for now it is working good.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        name
+    ):
         self.column_names = ['scr', 'dst', 'via']
         self.__routes = pd.DataFrame(columns=self.column_names)
+        self.__name = name
+
+    @property
+    def name(self):
+        return self.__name
 
     @abstractmethod
     def run(self):

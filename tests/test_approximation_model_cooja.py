@@ -17,7 +17,7 @@
 
 # This test obtains the chart for the approximation model in Cooja (Docker).
 
-from sdwsn_controller.controller.rl_container_controller import RLContainerController
+from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 from sdwsn_controller.routing.dijkstra import Dijkstra
 from gym.envs.registration import register
@@ -127,7 +127,7 @@ def main():
     tsch_scheduler = HardCodedScheduler(
         sf_size=args.maximum_slotframe_size, channel_offsets=args.maximum_tsch_channels)
 
-    controller = RLContainerController(
+    controller = ContainerController(
         # Container related
         image=args.docker_image,
         command=simulation_command,

@@ -140,12 +140,22 @@ class Schedule(ABC):
         channel_offsets (int): Maximum number of channels.
     """
 
-    def __init__(self, sf_size, channel_offsets):
+    def __init__(
+            self,
+            sf_size,
+            channel_offsets,
+            name
+    ):
         self.__max_number_timeslots = sf_size
         self.__max_number_channels = channel_offsets
         self.__list_nodes = []
         self.schedule_clear_schedule()
         self.__sf_size = None
+        self.__name = name
+
+    @property
+    def name(self):
+        return self.__name
 
     @abstractmethod
     def run(self):

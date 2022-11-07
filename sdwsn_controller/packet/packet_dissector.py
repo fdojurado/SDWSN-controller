@@ -37,12 +37,18 @@ class Dissector(ABC):
         self,
         cycle_sequence,
         sequence,
-        database
+        database,
+        name
     ):
         self.__cycle_sequence = cycle_sequence
         self.__sequence = sequence
         self.__db = database
+        self.__name = name
         super().__init__()
+
+    @property
+    def name(self):
+        return self.__name
 
     @property
     def sequence(self):
@@ -103,7 +109,8 @@ class PacketDissector(Dissector):
         super().__init__(
             cycle_sequence=cycle_sequence,
             sequence=sequence,
-            database=database
+            database=database,
+            name="Packet Dissector"
         )
 
     def handle_serial_packet(self, data):

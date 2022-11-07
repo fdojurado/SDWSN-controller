@@ -17,11 +17,7 @@
 
 from sdwsn_controller.controller.base_controller import BaseController
 from sdwsn_controller.database.db_manager import DatabaseManager
-from sdwsn_controller.serial.serial import SerialBus
-from sdwsn_controller.packet.packet_dissector import PacketDissector
-from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
-from subprocess import Popen, PIPE, STDOUT, CalledProcessError
-from sdwsn_controller.routing.dijkstra import Dijkstra
+from subprocess import Popen, PIPE, STDOUT
 
 from rich.progress import Progress
 from time import sleep
@@ -41,20 +37,19 @@ class Controller(BaseController):
         simulation_folder: str = 'examples/elise',
         simulation_script: str = 'cooja-elise.csc',
         # Sink/socket communication
-        socket_address: str = '127.0.0.1',
-        socket_port: int = 60001,
+        socket: object = None,
         # Database
-        db_name: str = 'mySDN',
-        db_host: str = '127.0.0.1',
-        db_port: int = 27017,
-        # Simulation
-        simulation_name: str = 'mySimulation',
+        db: object = None,
+        # RL related
+        reward_processing: object = None,
+        # Packet dissector
+        packet_dissector: object = None,
         # Window
         processing_window: int = 200,
         # Routing
-        router: object = Dijkstra(),
+        router: object = None,
         # TSCH scheduler
-        tsch_scheduler: object = ContentionFreeScheduler(500, 3)
+        tsch_scheduler: object = None
     ):
 
         logger.info("Building controller")
@@ -80,71 +75,16 @@ class Controller(BaseController):
         logger.info(f"Cooja path: {self.__cooja_path}")
         logger.info(f"Simulation folder: {self.__simulation_folder}")
         logger.info(f"Simulation script: {self.__simulation_script}")
-        logger.info(f'Socket address: {socket_address}')
-        logger.info(f'Socket port: {socket_port}')
-        logger.info(f'DB name: {db_name}')
-        logger.info(f'DB host: {db_host}')
-        logger.info(f'DB port: {db_port}')
-        logger.info(f'simulation name: {simulation_name}')
-        logger.info(f'Processing window: {processing_window}')
 
-        # Create Database
-        self.__db = DatabaseManager(
-            name=db_name,
-            host=db_host,
-            port=db_port
+        super().__init__(
+            socket=socket,
+            db=db,
+            reward_processing=reward_processing,
+            packet_dissector=packet_dissector,
+            processing_window=processing_window,
+            router=router,
+            tsch_scheduler=tsch_scheduler
         )
-
-        # Create packet dissector
-        self.__packet_dissector = PacketDissector(database=self.db)
-
-        # Create TSCH scheduler module
-        self.__tsch_scheduler = tsch_scheduler
-
-        # Create an instance of Router
-        self.__router = router
-
-        # Create a socket/sink communication
-        self.__socket = SerialBus(socket_address, socket_port)
-
-        # Processing window
-        self.__processing_window = processing_window
-
-        super().__init__()
-
-     # Database
-    @property
-    def db(self):
-        return self.__db
-
-    # Packet dissector
-    @property
-    def packet_dissector(self):
-        return self.__packet_dissector
-
-    # TSCH scheduler
-    @property
-    def tsch_scheduler(self):
-        return self.__tsch_scheduler
-
-    # Routing
-    @property
-    def router(self):
-        return self.__router
-
-    # Serial Interface
-    @property
-    def socket(self):
-        return self.__socket
-
-    # Processing window
-    @property
-    def processing_window(self):
-        return self.__processing_window
-
-    @processing_window.setter
-    def processing_window(self, val):
-        self.__processing_window = val
 
     # Controller related functions
 

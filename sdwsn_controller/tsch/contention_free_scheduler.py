@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger('main.'+__name__)
 
+
 class ContentionFreeScheduler(Schedule):
     def __init__(
             self,
@@ -12,7 +13,8 @@ class ContentionFreeScheduler(Schedule):
     ):
         super().__init__(
             sf_size,
-            channel_offsets)
+            channel_offsets,
+            name="Contention Free Scheduler")
 
     def run(self, path, current_sf_size):
         logger.debug(f"running contention free scheduler for sf size {current_sf_size}")
