@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.controller.rl_numerical_controller import RLNumericalController
+from sdwsn_controller.controller.numerical_controller import NumericalController, NumericalRewardProcessing
+from sdwsn_controller.database.db_manager import DatabaseManager
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3 import DQN, A2C, PPO
 from gym.envs.registration import register
@@ -78,24 +79,29 @@ def main():
     log_dir = args.monitor_log
     os.makedirs(log_dir, exist_ok=True)
 
-    # Controller instance
-    controller = RLNumericalController(
-        db_name=args.db_name,
-        db_host=args.db_host,
-        db_port=args.db_port,
+    # -------------------- setup controller --------------------
+    # Reward processor
+    reward_processing = NumericalRewardProcessing(
         power_weights=np.array(
             [1.14247726e-08, -2.22419840e-06,
-                1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
+             1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
         ),
         delay_weights=np.array(
             # [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,  1.02710258e-04]
             [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,
-                0.85749587960003453947587046868728]
+             0.85749587960003453947587046868728]
         ),
         pdr_weights=np.array(
             # [-2.76382789e-04,  9.64746733e-01]
             [-2.76382789e-04,  -0.8609615946299346738365592202098]
         )
+    )
+    # Database
+    db = DatabaseManager()
+
+    controller = NumericalController(
+        db=db,
+        reward_processing=reward_processing
     )
 
     env_kwargs = {

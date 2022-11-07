@@ -223,5 +223,5 @@ class Env(gym.Env):
         Here, we want to export the observation collections to CSV format
 
         """
-        self.controller.export_db(self.simulation_name, self.folder)
+        self.controller.export_observations(self.simulation_name, self.folder)
         pass
