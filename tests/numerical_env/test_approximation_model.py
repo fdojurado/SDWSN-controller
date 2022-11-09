@@ -1,17 +1,27 @@
-import sys
 import argparse
+
+from gym.envs.registration import register
 import gym
-import os
+
+import logging
+
 import numpy as np
 
-from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer
-from sdwsn_controller.controller.env_numerical_controller import EnvNumericalController
-from stable_baselines3 import DQN
-from stable_baselines3.common.evaluation import evaluate_policy
-from gym.envs.registration import register
+import os
+
+from sdwsn_controller.database.db_manager import DatabaseManager
+from sdwsn_controller.controller.numerical_controller import NumericalController, NumericalRewardProcessing
+
+from signal import signal, SIGINT
+
 from stable_baselines3.common.monitor import Monitor
 
+import sys
+
 MAX_SLOTFRAME_SIZE = 70
+
+logger = logging.getLogger('main.'+__name__)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -29,8 +39,6 @@ def main():
                         help='Path to log monitor data')
     parser.add_argument('-fp', '--output-path', type=str, default='./output/',
                         help='Path to save results')
-    parser.add_argument('-m', '--model', type=str,
-                        help='Path to the trained model to load')
 
     args = parser.parse_args()
 
@@ -53,24 +61,35 @@ def main():
     log_dir = args.monitor_log
     os.makedirs(log_dir, exist_ok=True)
 
-    # Controller instance
-    controller = EnvNumericalController(
-        db_name=args.db_name,
-        db_host=args.db_host,
-        db_port=args.db_port,
+    # -------------------- setup controller --------------------
+    # Reward processor
+    reward_processing = NumericalRewardProcessing(
         power_weights=np.array(
             [1.14247726e-08, -2.22419840e-06,
-                1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
+             1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
         ),
         delay_weights=np.array(
             # [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,  1.02710258e-04]
             [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,
-                0.85749587960003453947587046868728]
+             0.85749587960003453947587046868728]
         ),
         pdr_weights=np.array(
-            # [-2.76382789e-04,  9.64746733e-01]
-            [-2.76382789e-04,  -0.8609615946299346738365592202098]
+            [-2.76382789e-04,  9.64746733e-01]
+            # [-2.76382789e-04,  -0.8609615946299346738365592202098]
         )
+    )
+
+    # Database
+    db = DatabaseManager(
+        name=args.db_name,
+        host=args.db_host,
+        port=args.db_port
+    )
+
+    # Controller instance
+    controller = NumericalController(
+        db=db,
+        reward_processing=reward_processing
     )
 
     env_kwargs = {
@@ -84,12 +103,21 @@ def main():
 
     env = Monitor(env, log_dir)
 
+    # Exit signal
+    def handler(*args):
+        # Handle any cleanup here
+        logger.warning('SIGINT or CTRL-C detected. Shutting down ...')
+        controller.stop()
+        sys.exit(0)
+
+    signal(SIGINT, handler)
+
     env.reset()
     # Get last observations including the SF size
-    _, _, _, last_ts_in_schedule, current_sf_len = controller.get_state()
+    observations = controller.get_state()
     # Current SF size
-    sf_size = current_sf_len
-    last_ts_in_schedule = last_ts_in_schedule
+    sf_size = observations['current_sf_len']
+    last_ts_in_schedule = observations['last_ts_in_schedule']
     controller.user_requirements = (0.4, 0.3, 0.3)
     increase = 1
     for i in range(200):
@@ -104,18 +132,16 @@ def main():
                 action = 1
             else:
                 increase = 1
-                # done = True
-                # obs = env.reset()
 
-        obs, reward, done, info = env.step(action)
-        print(f'Observations: {obs}, reward: {reward}, done: {done}, info: {info}')
+        env.step(action)
         # Get last observations including the SF size
-        _, _, _, last_ts_in_schedule, current_sf_len = controller.get_state()
+        observations = controller.get_state()
         # Current SF size
-        sf_size = current_sf_len
-        print(f'current SF size: {sf_size}')
+        sf_size = observations['current_sf_len']
 
     env.render()
+
+    return
 
 
 if __name__ == '__main__':

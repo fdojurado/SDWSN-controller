@@ -141,8 +141,6 @@ def main():
         db_name=args.db_name,
         db_host=args.db,
         db_port=args.db_port,
-        # Simulation
-        simulation_name=args.simulation_name,
         # Routing
         router=routing,
         # TSCH scheduler
