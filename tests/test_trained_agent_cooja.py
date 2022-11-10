@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-""" 
+"""
 This script test the trained agent in Cooja Network Simulator.
 """
 from sdwsn_controller.controller.container_controller import ContainerController

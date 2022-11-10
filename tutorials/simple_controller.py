@@ -95,11 +95,11 @@ def main():
     routing = Dijkstra()
 
     controller = ContainerController(
-        image=DOCKER_IMAGE,
-        command=run_simulation_file,
-        target=DOCKER_TARGET,
-        source=CONTIKI_SOURCE,
-        socket_file=CONTIKI_SOURCE + '/' + SIMULATION_FOLDER + '/COOJA.log',
+        docker_image=DOCKER_IMAGE,
+        script=run_simulation_file,
+        docker_target=DOCKER_TARGET,
+        contiki_source=CONTIKI_SOURCE,
+        log_file=CONTIKI_SOURCE + '/' + SIMULATION_FOLDER + '/COOJA.log',
         # Database
         db=db,
         # socket
