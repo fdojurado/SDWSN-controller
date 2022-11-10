@@ -25,9 +25,7 @@ from rich.logging import RichHandler
 import logging.config
 import sys
 
-DOCKER_IMAGE = 'contiker/contiki-ng'
 SIMULATION_FOLDER = 'examples/elise'
-DOCKER_TARGET = '/home/user/contiki-ng'
 CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
 PYTHON_SCRIPT = 'cooja-orchestra.csc'
 
