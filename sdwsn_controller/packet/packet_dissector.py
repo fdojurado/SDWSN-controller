@@ -16,13 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # This class allows to read and write from the database
-import struct
-from sdwsn_controller.packet.packet import serial_protocol, sdn_protocols
-from sdwsn_controller.packet.packet import SerialPacket, SDN_IP_Packet
-from sdwsn_controller.packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload
-from sdwsn_controller.packet.packet import SDN_IPH_LEN, SDN_NAPL_LEN
-from abc import ABC, abstractmethod
+from abc import ABC
+
 import logging
+
+from sdwsn_controller.packet.packet import Data_Packet, NA_Packet
+from sdwsn_controller.packet.packet import SerialPacket, SDN_IP_Packet
+from sdwsn_controller.packet.packet import serial_protocol, sdn_protocols
+from sdwsn_controller.packet.packet import SDN_IPH_LEN
+
+import struct
 
 logger = logging.getLogger('main.'+__name__)
 

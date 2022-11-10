@@ -219,7 +219,7 @@ class Env(gym.Env):
                      self.simulation_name+str(number), self.folder, True)
 
     def close(self):
-        """ 
+        """
         Here, we want to export the observation collections to CSV format
 
         """

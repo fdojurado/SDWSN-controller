@@ -33,12 +33,6 @@ logger = logging.getLogger('main.'+__name__)
 
 
 class BaseController(ABC):
-    """
-    The BaseController class is an abstract class. Some functionalities are declared
-    as abstract methods, classes that inherits from the BaseController should take care
-    of them. The controller has four main modules: router, tsch scheduler, packet dissector,
-    and communication interface.
-    """
 
     def __init__(
         self,
@@ -57,6 +51,21 @@ class BaseController(ABC):
         # TSCH scheduler
         tsch_scheduler: object = None
     ):
+        """
+        The BaseController class is an abstract class. Some functionalities are declared
+        as abstract methods, classes that inherits from the BaseController should take care
+        of them. The controller has six main modules: socket, database, reward processing,
+        packet dissector, router, and TSCH scheduler.
+
+        Args:
+            socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
+            db (Database object, optional): Database. Defaults to None.
+            reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
+            packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.
+            processing_window (int, optional): Number of packets for a new cycle. Defaults to 200.
+            router (Router object, optional): Centralized routing algorithm. Defaults to None.
+            tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
+        """
         # Database
         self.__db = db
         if self.__db is not None:
@@ -153,12 +162,12 @@ class BaseController(ABC):
             logger.info("Sending TSCH packet")
             num_pkts = 0
             payload = []
-            rows, cols = (self.tsch_scheduler.schedule_max_number_channels,
-                          self.tsch_scheduler.schedule_max_number_timeslots)
+            rows, cols = (self.tsch_scheduler.scheduler_max_number_channels,
+                          self.tsch_scheduler.scheduler_max_number_timeslots)
             for i in range(rows):
                 for j in range(cols):
-                    if (self.tsch_scheduler.schedule_get_schedule(i, j)):
-                        for elem in self.tsch_scheduler.schedule_get_schedule(i, j):
+                    if (self.tsch_scheduler.scheduler_get_schedule(i, j)):
+                        for elem in self.tsch_scheduler.scheduler_get_schedule(i, j):
                             channel = elem.channeloffset
                             timeslot = elem.timeoffset
                             addr = elem.source
@@ -180,7 +189,7 @@ class BaseController(ABC):
                                 num_pkts += 1
                                 current_sf_size = 0
                                 if num_pkts == 1:
-                                    current_sf_size = self.tsch_scheduler.schedule_slot_frame_size
+                                    current_sf_size = self.tsch_scheduler.scheduler_slot_frame_size
                                 packedData, serial_pkt = common.tsch_build_pkt(
                                     payload, current_sf_size, self.increase_cycle_sequence())
                                 payload = []
@@ -193,7 +202,7 @@ class BaseController(ABC):
                 logger.debug(f'Sending schedule packet {num_pkts}')
                 current_sf_size = 0
                 if num_pkts == 1:
-                    current_sf_size = self.tsch_scheduler.schedule_slot_frame_size
+                    current_sf_size = self.tsch_scheduler.scheduler_slot_frame_size
                 packedData, serial_pkt = common.tsch_build_pkt(
                     payload, current_sf_size, self.increase_cycle_sequence())
                 # Send NC packet
@@ -203,13 +212,13 @@ class BaseController(ABC):
     def compute_tsch_schedule(self, path, current_sf_size):
         if self.tsch_scheduler is not None:
             # We clean previous schedule first
-            self.tsch_scheduler.schedule_clear_schedule()
+            self.tsch_scheduler.scheduler_clear_schedule()
             self.tsch_scheduler.run(path, current_sf_size)
 
     @property
     def last_tsch_link(self):
         if self.tsch_scheduler is not None:
-            return self.tsch_scheduler.schedule_last_active_ts()
+            return self.tsch_scheduler.scheduler_last_active_ts()
 
     @last_tsch_link.setter
     def last_tsch_link(self, val):
@@ -220,12 +229,12 @@ class BaseController(ABC):
     @property
     def current_slotframe_size(self):
         if self.tsch_scheduler is not None:
-            return self.tsch_scheduler.schedule_slot_frame_size
+            return self.tsch_scheduler.scheduler_slot_frame_size
 
     @current_slotframe_size.setter
     def current_slotframe_size(self, val):
         if self.tsch_scheduler is not None:
-            self.tsch_scheduler.schedule_slot_frame_size = val
+            self.tsch_scheduler.scheduler_slot_frame_size = val
 
     @property
     def tsch_scheduler(self):
@@ -238,7 +247,7 @@ class BaseController(ABC):
             logger.info('Sending routes')
             num_pkts = 0
             payload = []
-            for _, row in self.router.routing_table_routes.iterrows():
+            for _, row in self.router.router_routes.iterrows():
                 scr = row['scr']
                 dst = row['dst']
                 via = row['via']

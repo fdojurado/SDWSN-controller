@@ -27,7 +27,7 @@ import logging
 logger = logging.getLogger('main.'+__name__)
 
 
-class RoutingTable(ABC):
+class Router(ABC):
     """
     This is the base class for the routing.
     The routes are stored in a pandas DataFrame. This may not be
@@ -51,14 +51,14 @@ class RoutingTable(ABC):
         pass
 
     @property
-    def routing_table_routes(self):
+    def router_routes(self):
         return self.__routes
 
-    @routing_table_routes.setter
-    def routing_table_routes(self, val):
+    @router_routes.setter
+    def router_routes(self, val):
         self.__routes = val
 
-    def routing_table_add_route(self, scr, dst, via):
+    def router_add_route(self, scr, dst, via):
         """
         This adds a route to the current routing paths.
         This checks whether the route currently exist in the routing table or not.
@@ -73,20 +73,20 @@ class RoutingTable(ABC):
             via (str): The address of the relaying node.
         """
         # Let's first check if the route is already in the dataframe
-        if ((self.routing_table_routes['scr'] == scr) & (self.routing_table_routes['dst'] == dst) & (self.routing_table_routes['via'] == via)).any():
+        if ((self.router_routes['scr'] == scr) & (self.router_routes['dst'] == dst) & (self.router_routes['via'] == via)).any():
             return
         else:
             df = pd.DataFrame([[scr, dst, via]], columns=self.column_names)
-            self.routing_table_routes = pd.concat(
-                [self.routing_table_routes, df], ignore_index=True)  # adding a row
+            self.router_routes = pd.concat(
+                [self.router_routes, df], ignore_index=True)  # adding a row
 
-    def routing_table_print(self):
+    def router_print(self):
         """
         It prints the routes as a pandas DataFrame.
         """
-        logger.info(self.routing_table_routes.to_string())
+        logger.info(self.router_routes.to_string())
 
-    def routing_table_print_table(self):
+    def router_print_table(self):
         """
         Prints a nice table using Rich library.
         """
@@ -96,13 +96,13 @@ class RoutingTable(ABC):
                          style="cyan", no_wrap=True)
         table.add_column("Destination", justify="center", style="magenta")
         table.add_column("Via", justify="left", style="green")
-        for _, row in self.routing_table_routes.iterrows():
+        for _, row in self.router_routes.iterrows():
             table.add_row(row['scr'],
                           row['dst'], row['via'])
 
         logger.info(f"Routing table\n{common.log_table(table)}")
 
-    def routing_table_remove_route(self, scr, dst, via):
+    def router_remove_route(self, scr, dst, via):
         """
         It removes a single route from the routing table
 
@@ -111,19 +111,19 @@ class RoutingTable(ABC):
             dst (str): The address of the destination node.
             via (str): The address of the relaying node.
         """
-        df = self.routing_table_routes
+        df = self.router_routes
         idx = df.index[df['scr'] == scr & df['dst']
                        == dst & df['via'] == via]
         # Check that the index is not empty. Which means we find the target row.
         if(idx.empty):
             logger.warning('route/index not found')
             return
-        self.routing_table_routes = df.drop(idx)
+        self.router_routes = df.drop(idx)
         self.print_routes()
 
-    def routing_table_clear_routes(self):
+    def router_clear_routes(self):
         """
         Clears all routes from the routing table
         """
-        self.routing_table_routes.drop(
-            self.routing_table_routes.index, inplace=True)
+        self.router_routes.drop(
+            self.router_routes.index, inplace=True)
