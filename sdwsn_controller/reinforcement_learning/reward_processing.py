@@ -27,8 +27,16 @@ logger = logging.getLogger('main.'+__name__)
 
 
 class RewardProcessing(ABC):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        name
+    ) -> None:
+        self.__name = name
         super().__init__()
+
+    @property
+    def name(self):
+        return self.__name
 
     @abstractmethod
     def calculate_reward(self):
@@ -55,7 +63,9 @@ class EmulatedRewardProcessing(RewardProcessing):
         self.__power_norm_offset = power_norm_offset
         self.__delay_norm_offset = delay_norm_offset
         self.__reliability_norm_offset = reliability_norm_offset
-        super().__init__()
+        super().__init__(
+            name="Emulated Reward Processing"
+        )
 
     def calculate_reward(self, alpha, beta, delta, sequence):
         # Get the sensor nodes to loop in ascending order

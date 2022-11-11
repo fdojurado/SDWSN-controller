@@ -15,23 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-""" 
+"""
 This script test the trained agent in Cooja Network Simulator.
 """
-import sys
-from sdwsn_controller import about
 from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 from stable_baselines3 import DQN, A2C, PPO
+from gym.envs.registration import register
+from rich.logging import RichHandler
+from sdwsn_controller import about
+from signal import signal, SIGINT
+
+import sys
 import gym
 import pyfiglet
 import os
 import argparse
-from gym.envs.registration import register
 import logging
 import logging.config
-from rich.logging import RichHandler
-from signal import signal, SIGINT
 
 
 def main():
@@ -139,7 +140,7 @@ def main():
     def handler(*args):
         # Handle any cleanup here
         logger.warning('SIGINT or CTRL-C detected. Shutting down ...')
-        controller.container_controller_stop()
+        controller.stop()
         sys.exit(0)
 
     signal(SIGINT, handler)

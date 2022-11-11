@@ -15,13 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.controller.common_controller import CommonController
-from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
+from sdwsn_controller.controller.base_controller import BaseController
 from sdwsn_controller.docker.docker import CoojaDocker
-from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
-from sdwsn_controller.routing.dijkstra import Dijkstra
 
-from rich.progress import Progress
 from typing import Dict
 from time import sleep
 import logging
@@ -29,143 +25,105 @@ import logging
 logger = logging.getLogger('main.'+__name__)
 
 
-class ContainerController(CommonController):
+class ContainerController(BaseController):
     def __init__(
         self,
-        image: str = 'contiker/contiki-ng',
-        command: str = '/bin/sh -c "cd examples/benchmarks/rl-sdwsn && ./run-cooja.py"',
-        target: str = '/home/user/contiki-ng',
-        source: str = '/Users/fernando/contiki-ng',
+        # Container related
+        docker_image: str = 'contiker/contiki-ng',
+        port: int = 60001,
+        script: str = '/bin/sh -c "cd examples/elise && ./run-cooja.py"',
+        docker_target: str = '/home/user/contiki-ng',
+        contiki_source: str = '/Users/fernando/contiki-ng',
         sysctls: Dict = {
             'net.ipv6.conf.all.disable_ipv6': 0
         },
         privileged: bool = True,
         detach: bool = True,
-        socket_file: str = '/Users/fernando/contiki-ng/examples/benchmarks/rl-sdwsn/COOJA.log',
-        cooja_host: str = '127.0.0.1',
-        cooja_port: int = 60001,
-        db_name: str = 'mySDN',
-        db_host: str = '127.0.0.1',
-        db_port: int = 27017,
-        simulation_name: str = 'mySimulation',
+        log_file: str = '/Users/fernando/contiki-ng/examples/elise/COOJA.log',
+        # Sink/socket communication
+        socket: object = None,
+        # Database
+        db: object = None,
+        # RL related
+        reward_processing: object = None,
+        # Packet dissector
+        packet_dissector: object = None,
+        # Window
         processing_window: int = 200,
-        router: object = Dijkstra(),
-        tsch_scheduler: object = ContentionFreeScheduler(500, 3)
+        # Routing
+        router: object = None,
+        # TSCH scheduler
+        tsch_scheduler: object = None
     ):
-        container_ports = {
-            'container': cooja_port,
-            'host': cooja_port
+        """
+        This controller is intended to run with Cooja hosted in Docker (without GUI).
+
+        Args:
+            docker_image (str, optional): Docker image name. Defaults to 'contiker/contiki-ng'.
+            port (int, optional): Port of the sink. Defaults to 60001.
+            script (str, optional): Command to run the simulation script. Defaults to '/bin/sh -c "cd examples/elise && ./run-cooja.py"'.
+            docker_target (str, optional): Contiki-NG folder path in Docker. Defaults to '/home/user/contiki-ng'.
+            contiki_source (str, optional): Contiki-NG source folder. Defaults to '/Users/fernando/contiki-ng'.
+            sysctls (_type_, optional): Kernel parameters to set in the container. Defaults to { 'net.ipv6.conf.all.disable_ipv6': 0 }.
+            privileged (bool, optional): Give extended privileges to this container. Defaults to True.
+            detach (bool, optional): Run container in the background. Defaults to True.
+            log_file (str, optional): Path to the 'COOJA.log' file. Defaults to '/Users/fernando/contiki-ng/examples/elise/COOJA.log'.
+            socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
+            db (Database object, optional): Database. Defaults to None.
+            reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
+            packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.
+            processing_window (int, optional): Number of packets for a new cycle. Defaults to 200.
+            router (Router object, optional): Centralized routing algorithm. Defaults to None.
+            tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
+        """
+        ports = {
+            'container': port,
+            'host': port
         }
 
         mount = {
-            'target': target,
-            'source': source,
+            'target': docker_target,
+            'source': contiki_source,
             'type': 'bind'
         }
 
         logger.info("Building a containerized controller")
-        logger.info(f"Image: {image}")
-        logger.info(f"command: {command}")
-        logger.info(f'target: {target}')
-        logger.info(f'source: {source}')
-        logger.info(f'socket file: {socket_file}')
-        logger.info(f'cooja port: {cooja_port}')
-        logger.info(f'DB name: {db_name}')
-        logger.info(f'simulation name: {simulation_name}')
+        logger.info(f"docker_image: {docker_image}")
+        logger.info(f"script: {script}")
+        logger.info(f'docker_target: {docker_target}')
+        logger.info(f'contiki_source: {contiki_source}')
+        logger.info(f'socket file: {log_file}')
+        logger.info(f'Container port: {port}')
 
-        self.container = CoojaDocker(image=image, command=command, mount=mount,
-                                     sysctls=sysctls, ports=container_ports, privileged=privileged, detach=detach,
-                                     socket_file=socket_file)
-
-        self.__processing_window = processing_window
+        # Container
+        self.container = CoojaDocker(docker_image=docker_image, script=script, mount=mount,
+                                     sysctls=sysctls, ports=ports, privileged=privileged, detach=detach,
+                                     log_file=log_file)
 
         super().__init__(
-            host=cooja_host,
-            port=cooja_port,
-            db_name=db_name,
-            db_host=db_host,
-            db_port=db_port,
-            tsch_scheduler=tsch_scheduler,
-            router=router
+            socket=socket,
+            db=db,
+            reward_processing=reward_processing,
+            packet_dissector=packet_dissector,
+            processing_window=processing_window,
+            router=router,
+            tsch_scheduler=tsch_scheduler
         )
 
-    """ 
-        Controller related functions
-    """
+    # Controller related functions
 
-    def reliable_send(self, data, ack):
-        # Reliable socket data transmission
-        # set retransmission
-        rtx = 0
-        # Send NC packet through serial interface
-        self.send(data)
-        # Result variable to see if the sending went well
-        result = 0
-        while True:
-            if self.packet_dissector.ack_pkt is not None:
-                if (self.packet_dissector.ack_pkt.reserved0 == ack):
-                    logger.debug("correct ACK received")
-                    result = 1
-                    break
-                logger.debug("ACK not received")
-                # We stop sending the current NC packet if
-                # we reached the max RTx or we received ACK
-                if(rtx >= 7):
-                    logger.warning("ACK never received")
-                    break
-                # We resend the packet if retransmission < 7
-                rtx = rtx + 1
-                self.send(data)
-            sleep(1.2)
-        return result
+    def timeout(self):
+        sleep(1.2)
 
-    def wait(self):
-        """
-         We wait for the current cycle to finish
-         """
-        # If we have not received any data after looping 10 times
-        # We return
-        logger.info(f"Starting new cycle")
-
-        result = -1
-
-        with Progress(transient=True) as progress:
-            task1 = progress.add_task(
-                "[red]Waiting for the current cycle to finish...", total=self.__processing_window)
-
-            while not progress.finished:
-                progress.update(task1, completed=self.sequence)
-                if self.sequence >= self.__processing_window:
-                    result = 1
-                    logger.info(f"Cycle completed")
-                    progress.update(task1, completed=100)
-                sleep(0.1)
-
-        # # count = 0
-        # result = -1
-        # while(1):
-        #     # count += 1
-        #     if self.sequence > self.__processing_window:
-        #         result = 1
-        #         break
-        #     # if count > 10:
-        #     #     result = 0
-        #     #     break
-        #     # sleep(1)
-        logger.info(f"cycle finished, result: {result}")
-        return result
-
-    def container_controller_start(self):
+    def start(self):
         self.container.start_container()
-        # Initialize main controller
-        self.start()
+        super().start()
 
-    def container_controller_stop(self):
+    def stop(self):
         self.container.shutdown()
-        # Stop main controller
-        self.stop()
+        super().stop()
 
     def reset(self):
         logger.info('Resetting container, controller, etc.')
-        self.container_controller_stop()
-        self.container_controller_start()
+        self.stop()
+        self.start()

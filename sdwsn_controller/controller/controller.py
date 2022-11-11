@@ -15,208 +15,191 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# The BaseController class is an abstract class. Some functionalities are declared
-# as abstract methods, classes that inherits from the BaseController should take care
-# of them. The controller has four main modules: router, tsch scheduler, packet dissector,
-# and communication interface.
+from sdwsn_controller.controller.base_controller import BaseController
+from subprocess import Popen, PIPE, STDOUT
 
-from abc import ABC, abstractmethod
+from rich.progress import Progress
+from time import sleep
+import logging
+import signal
+import os
 
-from sdwsn_controller.database.database import NODES_INFO
+
+logger = logging.getLogger('main.'+__name__)
 
 
-class BaseController(ABC):
+class Controller(BaseController):
     def __init__(
         self,
+        # Controller related
+        contiki_source: str = '/Users/fernando/contiki-ng',
+        simulation_folder: str = 'examples/elise',
+        simulation_script: str = 'cooja-elise.csc',
+        # Sink/socket communication
+        socket: object = None,
+        # Database
+        db: object = None,
+        # RL related
+        reward_processing: object = None,
+        # Packet dissector
+        packet_dissector: object = None,
+        # Window
+        processing_window: int = 200,
+        # Routing
+        router: object = None,
+        # TSCH scheduler
+        tsch_scheduler: object = None
     ):
-        pass
+        """
+        This controller is intended to run run Cooja natively and without GUI.
 
-    """ Sequence functions """
+        Args:
+            contiki_source (str, optional): Path to the Contiki-NG source folder. Defaults to '/Users/fernando/contiki-ng'.
+            simulation_folder (str, optional): Folder where the .csc file resides. Defaults to 'examples/elise'.
+            simulation_script (str, optional): The .csc file to run. Defaults to 'cooja-elise.csc'.
+            socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
+            db (Database object, optional): Database. Defaults to None.
+            reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
+            packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.
+            processing_window (int, optional): Number of packets for a new cycle. Defaults to 200.
+            router (Router object, optional): Centralized routing algorithm. Defaults to None.
+            tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
+        """
 
-    @abstractmethod
-    def increase_sequence(self):
-        pass
+        logger.info("Building controller")
 
-    @abstractmethod
-    def increase_cycle_sequence(self):
-        pass
+        # Controller related variables
+        self.__proc = None
 
-    @abstractmethod
-    def reset_pkt_sequence(self):
-        pass
+        self.__contiki_source = contiki_source
+        self.__cooja_log = os.path.join(
+            self.__contiki_source, simulation_folder, 'COOJA.log')
+        self.__testlog = os.path.join(
+            self.__contiki_source, simulation_folder, 'COOJA.testlog')
+        self.__simulation_folder = os.path.join(
+            self.__contiki_source, simulation_folder)
+        self.__cooja_path = os.path.normpath(
+            os.path.join(self.__contiki_source, "tools", "cooja"))
+        self.__simulation_script = os.path.join(
+            self.__contiki_source, simulation_folder, simulation_script)
 
-    @abstractmethod
-    def get_cycle_sequence(self):
-        pass
+        logger.info(f"Contiki source: {self.__contiki_source}")
+        logger.info(f"Cooja log: {self.__cooja_log}")
+        logger.info(f"Cooja test log: {self.__testlog}")
+        logger.info(f"Cooja path: {self.__cooja_path}")
+        logger.info(f"Simulation folder: {self.__simulation_folder}")
+        logger.info(f"Simulation script: {self.__simulation_script}")
 
-    """ Database functionalities """
+        super().__init__(
+            socket=socket,
+            db=db,
+            reward_processing=reward_processing,
+            packet_dissector=packet_dissector,
+            processing_window=processing_window,
+            router=router,
+            tsch_scheduler=tsch_scheduler
+        )
 
-    # @abstractmethod
-    # def init_db(self):
-    #     pass
+    # Controller related functions
 
-    # @property
-    @abstractmethod
-    def db(self):
-        pass
+    def timeout(self):
+        sleep(1.2)
 
-    @abstractmethod
-    def export_db(self):
-        pass
+    def start_cooja(self):
+        # cleanup
+        try:
+            os.remove(self.__testlog)
+        except FileNotFoundError as ex:
+            pass
+        except PermissionError as ex:
+            print("Cannot remove previous Cooja output:", ex)
+            return False
 
-    """ Packet dissector functionalities """
+        try:
+            os.remove(self.__cooja_log)
+        except FileNotFoundError as ex:
+            pass
+        except PermissionError as ex:
+            print("Cannot remove previous Cooja log:", ex)
+            return False
 
-    @property
-    @abstractmethod
-    def packet_dissector(self):
-        pass
+        args = " ".join(["cd", self.__cooja_path, "&&", "./gradlew run --args='-nogui=" +
+                         self.__simulation_script, "-contiki=" + self.__contiki_source+" -logdir="+self.__simulation_folder+" -logname=COOJA"+"'"])
 
-    @property
-    @abstractmethod
-    def sequence(self):
-        pass
+        self.__proc = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE,
+                            shell=True, universal_newlines=True, preexec_fn=os.setsid)
 
-    @sequence.setter
-    def sequence(self, num):
-        self.sequence = num
+        status = 0
+        with Progress(transient=True) as progress:
+            task1 = progress.add_task(
+                "[red]Waiting for Cooja to start...", total=300)
 
-    @property
-    @abstractmethod
-    def cycle_sequence(self):
-        pass
+            while not progress.finished:
+                progress.update(task1, advance=1)
+                if os.access(self.__cooja_log, os.R_OK):
+                    status = 1
+                    progress.update(task1, completed=300)
+                sleep(1)
 
-    @cycle_sequence.setter
-    def cycle_sequence(self, num):
-        self.cycle_sequence = num
+        if status == 0:
+            raise Exception(f"Failed to start Cooja.")
 
-    """ Controller primitives """
+        self.__wait_socket_running()
 
-    @abstractmethod
+    def __cooja_socket_status(self):
+        # This method checks whether the socket is currently running in Cooja
+        if not os.access(self.__cooja_log, os.R_OK):
+            logger.warning(
+                'The input file "{}" does not exist'.format(self.__cooja_log))
+
+        is_listening = False
+        is_fatal = False
+
+        with open(self.__cooja_log, "r") as f:
+            contents = f.read()
+            read_line = "Listening on port: " + \
+                str(self.socket.port)
+            fatal_line = "Simulation not loaded"
+            is_listening = read_line in contents
+            # logger.info(f'listening result: {is_listening}')
+            is_fatal = fatal_line in contents
+        return is_listening, is_fatal
+
+    def __wait_socket_running(self):
+        cooja_socket_active, fatal_error = self.__cooja_socket_status()
+        status = 0
+        with Progress(transient=True) as progress:
+            task1 = progress.add_task(
+                "[red]Setting up Cooja simulation...", total=300)
+            while not progress.finished:
+                progress.update(task1, advance=1)
+                cooja_socket_active, fatal_error = self.__cooja_socket_status()
+                if fatal_error:
+                    logger.warning(
+                        "Simulation compilation error, starting over ...")
+                    self.start()
+                if cooja_socket_active == True:
+                    status = 1
+                    progress.update(task1, completed=300)
+
+                sleep(1)
+
+        if status == 0:
+            raise Exception(f"Failed to start the simulation.")
+
+        logger.info("Cooja socket interface is up and running")
+
     def start(self):
-        pass
+        # Get the simulation running
+        self.start_cooja()
+        super().start()
 
-    @abstractmethod
     def stop(self):
-        pass
+        if self.__proc:
+            os.killpg(os.getpgid(self.__proc.pid), signal.SIGTERM)
+        super().stop()
 
-    @abstractmethod
     def reset(self):
-        pass
-
-    @abstractmethod
-    def wait(self):
-        """
-        This abstract should return a value (1 successful)
-        :rtype: integer
-         """
-        pass
-
-    @abstractmethod
-    def wait_seconds(self):
-        pass
-
-    @abstractmethod
-    def send(self):
-        """
-        This abstract should receive a data parameter
-         """
-        pass
-
-    @abstractmethod
-    def reliable_send(self):
-        pass
-
-    """ Reinforcement learning functionalities """
-
-    @abstractmethod
-    def save_observations(self, **env_kwargs):
-        pass
-        # self.db.save_observations(**env_kwargs)
-
-    @abstractmethod
-    def get_state(self):
-        pass
-
-    # @abstractmethod
-    # def get_last_observations(self):
-    #     pass
-        # return self.db.get_last_observations()
-
-    @abstractmethod
-    def delete_info_collection(self):
-        pass
-        # self.db.delete_collection(NODES_INFO)
-
-    @abstractmethod
-    def calculate_reward(self):
-        pass
-
-    @property
-    @abstractmethod
-    def user_requirements(self):
-        pass
-
-    @user_requirements.setter
-    @abstractmethod
-    def user_requirements(self):
-        pass
-
-    @property
-    def last_tsch_link(self):
-        pass
-
-    @last_tsch_link.setter
-    def last_tsch_link(self, val):
-        pass
-
-    @property
-    def current_slotframe_size(self):
-        pass
-
-    @current_slotframe_size.setter
-    def current_slotframe_size(self):
-        pass
-
-    """ Network information methods """
-
-    @abstractmethod
-    def get_network_links(self):
-        pass
-
-    """ Communication interface """
-
-    @abstractmethod
-    def comm_interface_start(self):
-        pass
-
-    @abstractmethod
-    def comm_interface_stop(self):
-        pass
-
-    @abstractmethod
-    def comm_interface_read(self):
-        pass
-
-    """ TSCH scheduler/schedule functions """
-
-    @abstractmethod
-    def send_tsch_schedules(self):
-        pass
-
-    # @abstractmethod
-    # def last_active_tsch_slot(self):
-    #     pass
-
-    @abstractmethod
-    def compute_tsch_schedule(self):
-        pass
-
-    """ Routing functions """
-
-    @abstractmethod
-    def send_routes(self):
-        pass
-
-    @abstractmethod
-    def compute_routes(self, G):
-        pass
+        logger.info('Resetting controller, etc.')
+        self.stop()
+        self.start()

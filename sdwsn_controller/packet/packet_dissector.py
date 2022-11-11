@@ -16,28 +16,105 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # This class allows to read and write from the database
-import struct
-from sdwsn_controller.packet.packet import serial_protocol, sdn_protocols
-from sdwsn_controller.packet.packet import SerialPacket, SDN_IP_Packet
-from sdwsn_controller.packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload
-from sdwsn_controller.packet.packet import SDN_IPH_LEN, SDN_NAPL_LEN
-from sdwsn_controller.database.db_manager import DatabaseManager
+from abc import ABC
+
 import logging
+
+from sdwsn_controller.packet.packet import Data_Packet, NA_Packet
+from sdwsn_controller.packet.packet import SerialPacket, SDN_IP_Packet
+from sdwsn_controller.packet.packet import serial_protocol, sdn_protocols
+from sdwsn_controller.packet.packet import SDN_IPH_LEN
+
+import struct
 
 logger = logging.getLogger('main.'+__name__)
 
 
-class PacketDissector():
+class Dissector(ABC):
+    """
+    Dissect abstract class. This class makes sure every packet dissector
+    has the right constructor - functions.
+    """
+
+    def __init__(
+        self,
+        cycle_sequence,
+        sequence,
+        database,
+        name
+    ):
+        self.__cycle_sequence = cycle_sequence
+        self.__sequence = sequence
+        self.__db = database
+        self.__name = name
+        super().__init__()
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def sequence(self):
+        return self.__sequence
+
+    @sequence.setter
+    def sequence(self, num):
+        self.__sequence = num
+
+    @property
+    def cycle_sequence(self):
+        return self.__cycle_sequence
+
+    @cycle_sequence.setter
+    def cycle_sequence(self, num):
+        self.__cycle_sequence = num
+
+    def reset_pkt_sequence(self):
+        self.sequence = 0
+
+    def get_cycle_sequence(self):
+        return self.cycle_sequence
+
+    @property
+    def db(self):
+        if self.__db is not None:
+            return self.__db
+
+    def save_energy(self, pkt, na_pkt):
+        if self.db is not None:
+            self.db.save_energy(pkt, na_pkt)
+
+    def save_neighbors(self, pkt, na_pkt):
+        if self.db is not None:
+            self.db.save_neighbors(pkt, na_pkt)
+
+    def save_pdr(self, pkt, data_pkt):
+        if self.db is not None:
+            self.db.save_pdr(pkt, data_pkt)
+
+    def save_delay(self, pkt, data_pkt):
+        if self.db is not None:
+            self.db.save_delay(pkt, data_pkt)
+
+    def save_serial_packet(self, serial_pkt):
+        if self.db is not None:
+            self.db.save_serial_packet(serial_pkt.toJSON())
+
+
+class PacketDissector(Dissector):
     def __init__(
             self,
             cycle_sequence: int = 0,
             sequence: int = 0,
-            database: object = DatabaseManager()
+            database: object = None,
     ):
         self.ack_pkt = None
-        self.cycle_sequence = cycle_sequence
-        self.sequence = sequence
-        self.db = database
+        super().__init__(
+            cycle_sequence=cycle_sequence,
+            sequence=sequence,
+            database=database,
+            name="Packet Dissector"
+        )
 
     def handle_serial_packet(self, data):
         # Let's parse serial packet
@@ -73,9 +150,9 @@ class PacketDissector():
                 self.sequence += 1
                 logger.debug(f"num seq (NA): {self.sequence}")
                 # We now build the energy DB
-                self.db.save_energy(pkt, na_pkt)
+                self.save_energy(pkt, na_pkt)
                 # We now build the neighbors DB
-                self.db.save_neighbors(pkt, na_pkt)
+                self.save_neighbors(pkt, na_pkt)
                 return
             case sdn_protocols.SDN_PROTO_DATA:
                 logger.debug("Processing data packet")
@@ -91,9 +168,9 @@ class PacketDissector():
                 self.sequence += 1
                 logger.debug(f"num seq (data): {self.sequence}")
                 # We now build the pdr DB
-                self.db.save_pdr(pkt, data_pkt)
+                self.save_pdr(pkt, data_pkt)
                 # We now build the delay DB
-                self.db.save_delay(pkt, data_pkt)
+                self.save_delay(pkt, data_pkt)
                 return
             case _:
                 logger.warning("sdn IP packet type not found")

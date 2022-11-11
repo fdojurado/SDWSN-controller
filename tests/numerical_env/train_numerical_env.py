@@ -1,57 +1,47 @@
-# To get the parameters, we used Optuna (rl-stablebaseline3-zoo)
-# python3 train.py --algo dqn --env sdwsn-v2 -n 50000 -optimize --n-trials 1000 --n-jobs 2 --sampler tpe --pruner median
-# In dqn.yml, we added
-# Almost Tuned
-# sdwsn-v2:
-#   n_timesteps: !!float 5e4
-#   policy: 'MlpPolicy'
-#   learning_rate: !!float 2.3e-3
-#   batch_size: 64
-#   buffer_size: 100000
-#   learning_starts: 1000
-#   gamma: 0.99
-#   target_update_interval: 10
-#   train_freq: 256
-#   gradient_steps: 128
-#   exploration_fraction: 0.16
-#   exploration_final_eps: 0.04
-#   policy_kwargs: "dict(net_arch=[256, 256])"
-# In import_envs.py, we added,
-# import sys
-# sys.path.append('/Users/fernando/SDWSN-controller')
-# try:
-#     import sdwsn_controller
-#     print("sdwsn package imported")
-# except ImportError:
-#     print("sdwsn package not imported")
-#     sdwsn_gym = None
-# register(
-#         # unique identifier for the env `name-version`
-#         id="sdwsn-v2",
-#         # path to the class for creating the env
-#         # Note: entry_point also accept a class as input (and not only a string)
-#         entry_point="sdwsn_controller.reinforcement_learning.env_numerical:Env",
-#         # Max number of steps per episode, using a `TimeLimitWrapper`
-#         max_episode_steps=50
-#     )
+#!/usr/bin/python3
 #
-import sys
-import argparse
-import gym
-from torch import nn as nn
-import os
-import numpy as np
-from sdwsn_controller.controller.env_numerical_controller import EnvNumericalController
+# Copyright (C) 2022  Fernando Jurado-Lasso <ffjla@dtu.dk>
 
-from sdwsn_controller.reinforcement_learning.wrappers import SaveModelSaveBuffer, SaveOnBestTrainingRewardCallback
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# python3 train.py --algo dqn --env sdwsn-v2 -n 50000 -optimize --n-trials 1000 --n-jobs 2 --sampler tpe --pruner median
+
+from sdwsn_controller.controller.numerical_controller import NumericalController, NumericalRewardProcessing
+from sdwsn_controller.reinforcement_learning.wrappers import SaveOnBestTrainingRewardCallback
 from stable_baselines3 import DQN, A2C, PPO, HerReplayBuffer, DDPG, DQN, SAC, TD3
-from stable_baselines3.common.callbacks import EveryNTimesteps
-from gym.envs.registration import register
-from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.envs import BitFlippingEnv
+from stable_baselines3.common.monitor import Monitor
+from gym.envs.registration import register
+from sdwsn_controller import about
+
+from torch import nn as nn
+import numpy as np
+
+import argparse
+import pyfiglet
+import sys
+import gym
+import os
 
 
 def main():
+
+    # Set banner
+    fig = pyfiglet.Figlet(font='standard')
+    print(fig.renderText('SDWSN Controller'))
+    print(about.__info_for_scripts__)
+
     parser = argparse.ArgumentParser(
         description='This trains the numerical environment based on the polynomial \
         coefficients found for the hard coded schedule.')
@@ -88,21 +78,26 @@ def main():
     monitor_log_dir = args.save_model
     os.makedirs(monitor_log_dir, exist_ok=True)
 
-    # Controller instance
-    controller = EnvNumericalController(
+    # -------------------- setup controller --------------------
+    reward_processing = NumericalRewardProcessing(
         power_weights=np.array(
             [1.14247726e-08, -2.22419840e-06,
-                1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
+             1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
         ),
         delay_weights=np.array(
             # [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,  1.02710258e-04]
             [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,
-                0.85749587960003453947587046868728]
+             0.85749587960003453947587046868728]
         ),
         pdr_weights=np.array(
             # [-2.76382789e-04,  9.64746733e-01]
             [-2.76382789e-04,  -0.8609615946299346738365592202098]
         )
+    )
+
+    # Controller instance
+    controller = NumericalController(
+        reward_processing=reward_processing
     )
 
     env_kwargs = {
@@ -113,15 +108,8 @@ def main():
     # Create an instance of the environment
     env = gym.make('sdwsn-v1', **env_kwargs)
 
-    # Wrap the environment to limit the max steps per episode
-    # env = gym.wrappers.TimeLimit(env, max_episode_steps=5)
-
     env = Monitor(env, monitor_log_dir)
 
-    # Callback to save the model and replay buffer every N steps.
-    # save_model_replay = SaveModelSaveBuffer(save_path=args.save_model)
-    # event_callback = EveryNTimesteps(n_steps=10000, callback=save_model_replay)
-    # Create the callback: check every 1000 steps
     best_model = SaveOnBestTrainingRewardCallback(
         check_freq=1000, log_dir=monitor_log_dir)
 

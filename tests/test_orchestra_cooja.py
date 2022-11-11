@@ -135,7 +135,7 @@ def main():
     def handler(*args):
         # Handle any cleanup here
         logger.warning('SIGINT or CTRL-C detected. Shutting down ...')
-        controller.container_controller_stop()
+        controller.stop()
         sys.exit(0)
 
     signal(SIGINT, handler)

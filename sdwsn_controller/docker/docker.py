@@ -15,31 +15,48 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from contextlib import suppress
-from typing import Dict, Optional, Tuple
-import os
 import docker
 from docker.types import Mount
-from time import sleep
-from rich.progress import Progress
+
 import logging
 
+import os
+
+from rich.progress import Progress
+
+from time import sleep
+from typing import Dict, Optional
+
 logger = logging.getLogger('main.'+__name__)
+
 
 class CoojaDocker():
     def __init__(
         self,
-        image: str,
-        command: str = None,
+        docker_image: str = 'contiker/contiki-ng',
+        script: str = '/bin/sh -c "cd examples/elise && ./run-cooja.py"',
         mount: Optional[Dict] = None,
         sysctls: Optional[Dict] = None,
         ports: Optional[Dict] = None,
         privileged: bool = True,
         detach: bool = True,
-        socket_file: Optional[str] = None
+        log_file: Optional[str] = None
     ):
-        self.image = image
-        self.command = command
+        """
+        This runs Cooja within Docker.
+
+        Args:
+            docker_image (str, optional): Docker image name. Defaults to 'contiker/contiki-ng'.
+            script (str, optional): Command to run the simulation script. Defaults to '/bin/sh -c "cd examples/elise && ./run-cooja.py"'.
+            mount (Optional[Dict], optional): Specification for mounts to be added to the container. Defaults to None.
+            sysctls (Optional[Dict], optional): Kernel parameters to set in the container. Defaults to None.
+            ports (Optional[Dict], optional): Ports to bind inside the container. Defaults to None.
+            privileged (bool, optional): Give extended privileges to this container. Defaults to True.
+            detach (bool, optional): Run container in the background. Defaults to True.
+            log_file (Optional[str], optional): Path to the 'COOJA.log' file. Defaults to None.
+        """
+        self.docker_image = docker_image
+        self.script = script
         self.mount = Mount(
             mount['target'], mount['source'], type=mount['type'])
         self.sysctls = sysctls
@@ -49,11 +66,11 @@ class CoojaDocker():
         self.detach = detach
         self.client = docker.from_env()
         self.container = None
-        self.socket_file = socket_file
+        self.log_file = log_file
 
     def __run_container(self):
         logger.info("Starting container")
-        self.container = self.client.containers.run(self.image, command=self.command,
+        self.container = self.client.containers.run(self.docker_image, command=self.script,
                                                     mounts=[
                                                         self.mount], sysctls=self.sysctls,
                                                     ports=self.ports, privileged=self.privilaged,
@@ -71,7 +88,7 @@ class CoojaDocker():
 
             while not progress.finished:
                 progress.update(task1, advance=1)
-                if os.access(self.socket_file, os.R_OK):
+                if os.access(self.log_file, os.R_OK):
                     status = 1
                     progress.update(task1, completed=300)
                 sleep(1)
@@ -83,14 +100,14 @@ class CoojaDocker():
 
     def __cooja_socket_status(self):
         # This method checks whether the socket is currently running in Cooja
-        if not os.access(self.socket_file, os.R_OK):
+        if not os.access(self.log_file, os.R_OK):
             logger.warning(
-                'The input file "{}" does not exist'.format(self.socket_file))
+                'The input file "{}" does not exist'.format(self.log_file))
 
         is_listening = False
         is_fatal = False
 
-        with open(self.socket_file, "r") as f:
+        with open(self.log_file, "r") as f:
             contents = f.read()
             read_line = "Listening on port: " + \
                 str(self.ports[self.container_port])
