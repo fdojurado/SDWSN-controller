@@ -234,8 +234,7 @@ class Scheduler(ABC):
     def scheduler_list_of_nodes(self, val):
         self.__list_nodes.append(val)
 
-<<<<<<< HEAD:sdwsn_controller/tsch/schedule.py
-    def schedule_check_valid_coordinates(func):
+    def scheduler_check_valid_coordinates(func):
         def inner(self, ch_offset, ts_offset, val=None):
             if ch_offset > self.schedule_max_number_channels or ts_offset > self.schedule_max_number_timeslots:
                 logger.error("Invalid schedule coordinates.")
@@ -244,22 +243,12 @@ class Scheduler(ABC):
             return func(self, ch_offset, ts_offset, val)
         return inner
 
-    @schedule_check_valid_coordinates
-    def schedule_get_schedule(self, ch_offset, ts_offset, val=None):
+    @scheduler_check_valid_coordinates
+    def scheduler_get_schedule(self, ch_offset, ts_offset, val=None):
         return self.__schedule[ch_offset][ts_offset]
 
-    @schedule_check_valid_coordinates
-    def schedule_add_to_schedule(self, ch_offset, ts_offset, val):
-=======
-    def scheduler_get_schedule(self, ch_offset, ts_offset):
-        if ch_offset > self.scheduler_max_number_channels or ts_offset > self.scheduler_max_number_timeslots:
-            raise Exception(f"Invalid schedule coordinates.")
-        return self.__schedule[ch_offset][ts_offset]
-
+    @scheduler_check_valid_coordinates
     def scheduler_add_to_schedule(self, ch_offset, ts_offset, val):
-        if ch_offset > self.scheduler_max_number_channels or ts_offset > self.scheduler_max_number_timeslots:
-            raise Exception(f"Invalid schedule coordinates.")
->>>>>>> refactory-controller:sdwsn_controller/tsch/scheduler.py
         self.__schedule[ch_offset][ts_offset].append(val)
 
     def scheduler_timeslot_free(self, ts):
