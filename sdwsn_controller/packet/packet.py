@@ -19,7 +19,6 @@ from email.policy import strict
 import struct
 import types
 import json
-import sys
 
 # Packet sizes
 SDN_IPH_LEN = 10  # Size of layer 3 packet header */
@@ -63,7 +62,7 @@ def chksum(sum, data, len):
 def sdn_ip_checksum(msg, len):
     sum = chksum(0, msg, len)
     result = 0
-    if(sum == 0):
+    if (sum == 0):
         result = 0xffff
     else:
         result = sum

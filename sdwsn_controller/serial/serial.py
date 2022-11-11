@@ -23,6 +23,7 @@ import logging
 
 logger = logging.getLogger('main.'+__name__)
 
+
 class SerialBus(BusABC):
     def __init__(self, host: str = '127.0.0.1', port: int = 60001):
         self.host = host
@@ -82,13 +83,13 @@ class SerialBus(BusABC):
             # logger.info("rx_byte")
             # logger.info(rx_byte)
             if rx_byte and ord(rx_byte) != 0x7E:
-                if(self.escape_character):
+                if (self.escape_character):
                     self.escape_character = 0
                     a = int.from_bytes(rx_byte, 'big')
                     b = int.from_bytes(b'\x20', 'big')
                     rx_byte = a ^ b
                     rx_byte = rx_byte.to_bytes(1, 'big')
-                elif(rx_byte and ord(rx_byte) == 0x7D):
+                elif (rx_byte and ord(rx_byte) == 0x7D):
                     self.escape_character = 1
                     return 0
 
@@ -129,7 +130,7 @@ class SerialBus(BusABC):
                     return 0
                 return 0
 
-        except socket.error as e:
+        except socket.error as _:
             return None
 
         return 0

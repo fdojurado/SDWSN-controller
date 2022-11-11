@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from abc import abstractclassmethod
 from sdwsn_controller.database.database import Database, PACKETS, NODES_INFO, OBSERVATIONS, SLOTFRAME_LEN
 from sdwsn_controller.packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
 import json
@@ -180,7 +179,7 @@ class DatabaseManager(Database):
         self.update_one(NODES_INFO, filter, update, True, None)
 
     def get_rank(self, addr):
-        if(addr == "1.0"):
+        if (addr == "1.0"):
             return 0
         query = {
             "$and": [

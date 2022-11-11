@@ -131,7 +131,7 @@ class PacketDissector(Dissector):
         # Let's now process the sdn IP packet
         pkt = self.process_sdn_ip_packet(serial_pkt.payload)
         # We exit processing if empty result returned
-        if(not pkt):
+        if (not pkt):
             return
         b = int.from_bytes(b'\x0F', 'big')
         protocol = pkt.vap & b
@@ -183,7 +183,7 @@ class PacketDissector(Dissector):
         logger.debug(repr(pkt))
         # If the reported payload length in the serial header doesn't match the packet size,
         # then we drop the packet.
-        if(len(pkt.payload) < pkt.payload_len):
+        if (len(pkt.payload) < pkt.payload_len):
             logger.debug("packet shorter than reported in serial header")
             return None
         # serial packet succeed
@@ -193,7 +193,7 @@ class PacketDissector(Dissector):
     def process_data_packet(self, pkt):
         # If the reported length in the sdn IP header doesn't match the packet size,
         # then we drop the packet.
-        if(len(pkt.payload) < (pkt.tlen-SDN_IPH_LEN)):
+        if (len(pkt.payload) < (pkt.tlen-SDN_IPH_LEN)):
             logger.warning("Data packet shorter than reported in IP header")
             return
         # Process data packet header
@@ -205,7 +205,7 @@ class PacketDissector(Dissector):
 
     def process_sdn_ip_packet(self, data):
         # We first check the integrity of the HEADER of the sdn IP packet
-        if(self.sdn_ip_checksum(data, SDN_IPH_LEN) != 0xffff):
+        if (self.sdn_ip_checksum(data, SDN_IPH_LEN) != 0xffff):
             logger.warning("bad IP checksum")
             return
         # Parse sdn IP packet
@@ -214,7 +214,7 @@ class PacketDissector(Dissector):
         logger.debug(repr(pkt))
         # If the reported length in the sdn IP header doesn't match the packet size,
         # then we drop the packet.
-        if(len(data) < pkt.tlen):
+        if (len(data) < pkt.tlen):
             logger.warning("packet shorter than reported in IP header")
             return
         # sdn IP packet succeed
@@ -238,7 +238,7 @@ class PacketDissector(Dissector):
     def sdn_ip_checksum(self, msg, len):
         sum = self.chksum(0, msg, len)
         result = 0
-        if(sum == 0):
+        if (sum == 0):
             result = 0xffff
         else:
             result = struct.pack(">i", sum)
@@ -247,7 +247,7 @@ class PacketDissector(Dissector):
     def process_na_packet(self, pkt):
         length = pkt.tlen-SDN_IPH_LEN
         # We first check the integrity of the entire SDN NA packet
-        if(self.sdn_ip_checksum(pkt.payload, length) != 0xffff):
+        if (self.sdn_ip_checksum(pkt.payload, length) != 0xffff):
             logger.warning("bad NA checksum")
             return
         # Parse sdn NA packet
@@ -255,7 +255,7 @@ class PacketDissector(Dissector):
         logger.debug(repr(pkt))
         # If the reported payload length in the sdn NA header does not match the packet size,
         # then we drop the packet.
-        if(len(pkt.payload) < pkt.payload_len):
+        if (len(pkt.payload) < pkt.payload_len):
             logger.warning("NA packet shorter than reported in the header")
             return
         # sdn IP packet succeed

@@ -36,7 +36,7 @@ setup(
     url=about.__github_url__,
     long_description=long_description,
     project_urls={
-        'Documentation':about.__doc_url__ ,
+        'Documentation': about.__doc_url__,
         'Source': about.__github_url__,
         'Tracker': about.__tracker_url__,
     },

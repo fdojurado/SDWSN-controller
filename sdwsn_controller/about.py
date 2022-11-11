@@ -18,7 +18,8 @@
 """This module specifies some information about the package."""
 __project_name__ = 'sdwsn_controller'
 __version__ = '1.0'
-__description__ = 'An open source implementation of the SDWSN controller for the ELISE project (https://github.com/fdojurado/ELISE).'
+__description__ = 'An open source implementation of the SDWSN controller \
+    for the ELISE project (https://github.com/fdojurado/ELISE).'
 __keywords__ = 'SDWSN controller SDN WSN'
 __author__ = 'Fernando Jurado-Lasso'
 __email__ = 'ffjla@dtu.dk'

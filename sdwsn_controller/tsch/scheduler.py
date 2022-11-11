@@ -118,11 +118,11 @@ class Node:
         """
         if self.node_rx_cells:
             for rx in self.node_rx_cells:
-                if(timeoffset == rx.timeoffset):
+                if (timeoffset == rx.timeoffset):
                     return 0
         if self.node_tx_cells:
             for tx in self.node_tx_cells:
-                if(timeoffset == tx.timeoffset):
+                if (timeoffset == tx.timeoffset):
                     return 0
         return 1
 
@@ -175,7 +175,7 @@ class Scheduler(ABC):
         """
         logger.debug(f"adding uc link to node: {node}, destination: {destination}, \
             type: {type} channeloffset: {channeloffset} timeoffset: {timeoffset}")
-        if(not self.scheduler_list_of_nodes):
+        if (not self.scheduler_list_of_nodes):
             sensor = Node(node)
             self.scheduler_list_of_nodes = sensor
             logger.debug("creating new sensor")
@@ -190,10 +190,10 @@ class Scheduler(ABC):
             if (sensor is None):
                 sensor = Node(node)
                 self.scheduler_list_of_nodes = sensor
-        if(type == cell_type.UC_RX):
+        if (type == cell_type.UC_RX):
             rx_cell = sensor.node_add_rx_cell(channeloffset, timeoffset)
             self.scheduler_add_to_schedule(channeloffset, timeoffset, rx_cell)
-        if(type == cell_type.UC_TX and destination is not None):
+        if (type == cell_type.UC_TX and destination is not None):
             tx_cell = sensor.node_add_tx_cell(
                 destination, timeoffset, channeloffset)
             # if(tx_cell is not None):
@@ -376,7 +376,7 @@ class Scheduler(ABC):
         self.__list_nodes = []
 
     def scheduler_format_printing_cell(self, cell):
-        if(cell):
+        if (cell):
             # infr = "Node {fnode}, I'm {age}".format(fnode = cell.source, age = 36)
             match(cell.type):
                 case cell_type.UC_RX:
@@ -438,7 +438,7 @@ class Scheduler(ABC):
                 if (self.scheduler_get_schedule(i, j)):
                     for elem in self.scheduler_get_schedule(i, j):
                         txt = self.scheduler_format_printing_cell(elem)
-                        if(txt is not None):
+                        if (txt is not None):
                             print_schedule[i][j].append(txt)
         logger.info(*print_schedule, sep='\n')
 

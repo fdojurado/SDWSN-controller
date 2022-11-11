@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from numpy import save
 import gym
 import os
 import numpy as np
@@ -33,6 +32,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
       It must contains the file created by the ``Monitor`` wrapper.
     :param verbose: Verbosity level.
     """
+
     def __init__(self, check_freq: int, log_dir: str, verbose: int = 1):
         super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
         self.check_freq = check_freq
@@ -48,22 +48,23 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
 
-          # Retrieve training reward
-          x, y = ts2xy(load_results(self.log_dir), 'timesteps')
-          if len(x) > 0:
-              # Mean training reward over the last 100 episodes
-              mean_reward = np.mean(y[-100:])
-              if self.verbose > 0:
-                print(f"Num timesteps: {self.num_timesteps}")
-                print(f"Best mean reward: {self.best_mean_reward:.2f} - Last mean reward per episode: {mean_reward:.2f}")
+            # Retrieve training reward
+            x, y = ts2xy(load_results(self.log_dir), 'timesteps')
+            if len(x) > 0:
+                # Mean training reward over the last 100 episodes
+                mean_reward = np.mean(y[-100:])
+                if self.verbose > 0:
+                    print(f"Num timesteps: {self.num_timesteps}")
+                    print(
+                        f"Best mean reward: {self.best_mean_reward:.2f} - Last mean reward per episode: {mean_reward:.2f}")
 
-              # New best model, you could save the agent here
-              if mean_reward > self.best_mean_reward:
-                  self.best_mean_reward = mean_reward
-                  # Example for saving best model
-                  if self.verbose > 0:
-                    print(f"Saving new best model to {self.save_path}")
-                  self.model.save(self.save_path)
+                # New best model, you could save the agent here
+                if mean_reward > self.best_mean_reward:
+                    self.best_mean_reward = mean_reward
+                    # Example for saving best model
+                    if self.verbose > 0:
+                        print(f"Saving new best model to {self.save_path}")
+                    self.model.save(self.save_path)
 
         return True
 
@@ -80,11 +81,13 @@ class SaveModelSaveBuffer(BaseCallback):
             os.makedirs(self.save_path, exist_ok=True)
 
     def _on_step(self) -> bool:
-        path = os.path.join(self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps")
+        path = os.path.join(
+            self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps")
         self.model.save(path)
         print(f"Saving model checkpoint to {path}")
         # now save the replay buffer too
-        path = os.path.join(self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps_buffer")
+        path = os.path.join(
+            self.save_path, f"{self.name_prefix}_{self.num_timesteps}_steps_buffer")
         self.model.save_replay_buffer(path)
         print(f"Saving replay buffer checkpoint to {path}")
 

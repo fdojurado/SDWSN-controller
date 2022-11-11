@@ -16,8 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC
-import imp
-from typing import cast, Any, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import Optional
 from time import time
 
 from abc import ABC, abstractmethod

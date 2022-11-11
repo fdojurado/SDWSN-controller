@@ -20,7 +20,6 @@ environment """
 import gym
 from gym import spaces
 import numpy as np
-from time import sleep
 from datetime import datetime
 import random
 from random import randrange

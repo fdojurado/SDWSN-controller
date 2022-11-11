@@ -15,16 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import re
-from numpy import average
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as pl
 import math
-from numpy import arange
-from scipy.optimize import curve_fit
 from sdwsn_controller.database.database import OBSERVATIONS
-from stable_baselines3.common.results_plotter import load_results, ts2xy
 from matplotlib.ticker import FuncFormatter
 
 

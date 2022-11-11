@@ -184,7 +184,8 @@ class BaseController(ABC):
                             cell_packed = cell_pkt.pack()
                             payload = cell_packed
                             if len(payload) > 90:
-                                logger.debug(f'Sending schedule packet {num_pkts}')
+                                logger.debug(
+                                    f'Sending schedule packet {num_pkts}')
                                 # We send the current payload
                                 num_pkts += 1
                                 current_sf_size = 0
@@ -344,10 +345,10 @@ class BaseController(ABC):
 
     def comm_interface_read(self):
         if self.socket is not None:
-            while(1):
+            while (1):
                 try:
                     msg = self.socket.recv(0.1)
-                    if(len(msg) > 0):
+                    if (len(msg) > 0):
                         self.packet_dissector.handle_serial_packet(msg)
                 except TypeError:
                     pass
@@ -468,7 +469,7 @@ class BaseController(ABC):
                     logger.debug("ACK not received")
                     # We stop sending the current NC packet if
                     # we reached the max RTx or we received ACK
-                    if(rtx >= 7):
+                    if (rtx >= 7):
                         logger.warning("ACK never received")
                         break
                     # We resend the packet if retransmission < 7

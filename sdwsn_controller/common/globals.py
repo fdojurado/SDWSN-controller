@@ -1,6 +1,8 @@
 import numpy as np
 
 # Global variables
+
+
 def globals_initialize():
     print("initializing globals")
     global routes_matrix, nbr_rssi_matrix, nbr_etx_matrix, \

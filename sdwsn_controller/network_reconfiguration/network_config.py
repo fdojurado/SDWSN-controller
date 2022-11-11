@@ -15,16 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from logging import exception
 # from src.sdwsn_forwarding_table.forwarding_table import FWD_TABLE
 # from controller.routing.routing import *
 # from src.sdwsn_network_reconfiguration.queue import Queue
 from sdwsn_controller.packet.packet_dissector import *
 from sdwsn_controller.packet.packet import SerialPacket, Cell_Packet, Cell_Packet_Payload, SDN_SAH_LEN, SDN_RAH_LEN, RA_Packet, RA_Packet_Payload
-import networkx as nx
-from time import sleep
-import pandas as pd
-import queue  # or Queue in Python 2
 import types
 # Generate random number for ack
 from random import randrange
