@@ -223,7 +223,7 @@ class Scheduler(ABC):
     @scheduler_slot_frame_size.setter
     def scheduler_slot_frame_size(self, val):
         if val <= 0 or val > self.scheduler_max_number_timeslots:
-            raise Exception(f"Invalid slotframe size.")
+            raise Exception("Invalid slotframe size.")
         self.__sf_size = val
 
     @property

@@ -112,7 +112,7 @@ class TimeLimitWrapper(gym.Wrapper):
 
     def reset(self):
         """
-        Reset the environment 
+        Reset the environment
         """
         self.num_episodes += 1
         # Stop the serial reading thread

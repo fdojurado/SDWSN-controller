@@ -180,7 +180,7 @@ class Env(gym.Env):
         # We now save the observations with reward None
         _, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
             self.controller.alpha, self.controller.beta, self.controller.delta, slotframe_size)
-       # Append to the observations
+        # Append to the observations
         sample_time = datetime.now().timestamp() * 1000.0
         observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
