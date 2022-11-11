@@ -47,7 +47,8 @@ class CoojaDocker():
 
         Args:
             docker_image (str, optional): Docker image name. Defaults to 'contiker/contiki-ng'.
-            script (str, optional): Command to run the simulation script. Defaults to '/bin/sh -c "cd examples/elise && ./run-cooja.py"'.
+            script (str, optional): Command to run the simulation script. Defaults to  \
+                '/bin/sh -c "cd examples/elise && ./run-cooja.py"'.
             mount (Optional[Dict], optional): Specification for mounts to be added to the container. Defaults to None.
             sysctls (Optional[Dict], optional): Kernel parameters to set in the container. Defaults to None.
             ports (Optional[Dict], optional): Ports to bind inside the container. Defaults to None.
@@ -94,7 +95,7 @@ class CoojaDocker():
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start Cooja.")
+            raise Exception("Failed to start Cooja.")
 
         self.__wait_socket_running()
 
@@ -131,14 +132,14 @@ class CoojaDocker():
                         "Simulation compilation error, starting over ...")
                     # self.client.containers.prune()  # Remove previous containers
                     self.start_container()
-                if cooja_socket_active == True:
+                if cooja_socket_active:
                     status = 1
                     progress.update(task1, completed=300)
 
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start the simulation.")
+            raise Exception("Failed to start the simulation.")
 
         logger.info("Cooja socket interface is up and running")
 

@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from email.policy import strict
 import struct
 import types
 import json
@@ -125,7 +124,8 @@ class SerialPacket:
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
         return "SerialPacket(addr={}, pkt_chksum={}, message_type={}, payload_len={}, reserved0={}, reserved1={}, payload={})".format(
-            hex(self.addr), self.pkt_chksum, self.message_type, self.payload_len, self.reserved0, self.reserved1, self.payload)
+            hex(self.addr), self.pkt_chksum, self.message_type,
+            self.payload_len, self.reserved0, self.reserved1, self.payload)
 
     @classmethod
     def unpack(cls, packed_data):
@@ -276,7 +276,8 @@ class Cell_Packet_Payload:
     def pack(self):
         if self.payload:
             packed = struct.pack('>bBBB2s2s'+str(len(self.payload)) +
-                                 's', self.type, self.channel, self.timeslot, self.padding, self.scr, self.dst, bytes(self.payload))
+                                 's', self.type, self.channel, self.timeslot,
+                                 self.padding, self.scr, self.dst, bytes(self.payload))
         else:
             packed = struct.pack('!bBBB2s2s', self.type, self.channel,
                                  self.timeslot, self.padding, self.scr, self.dst)
@@ -304,7 +305,8 @@ class Data_Packet:
     def unpack(cls, packed_data):
         cycle_seq, seq, temp, humidity, light, asn_ls2b, asn_ms2b = struct.unpack(
             '!HBBBBHH', packed_data)
-        return cls(cycle_seq=cycle_seq, seq=seq, temp=temp, humidity=humidity, light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
+        return cls(cycle_seq=cycle_seq, seq=seq, temp=temp, humidity=humidity,
+                   light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
 
 
 class NA_Packet:
@@ -329,7 +331,8 @@ class NA_Packet:
     def unpack(cls, packed_data, length):
         payload_len, rank, energy, cycle_seq, seq, _, pkt_chksum, payload = struct.unpack(
             '!BBHHBBH' + str(length-SDN_NAH_LEN) + 's', packed_data)
-        return cls(payload, payload_len=payload_len, rank=rank, energy=energy, cycle_seq=cycle_seq, seq=seq, pkt_chksum=pkt_chksum)
+        return cls(payload, payload_len=payload_len, rank=rank, energy=energy,
+                   cycle_seq=cycle_seq, seq=seq, pkt_chksum=pkt_chksum)
 
 
 class NA_Packet_Payload:
