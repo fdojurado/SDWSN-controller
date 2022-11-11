@@ -68,7 +68,7 @@ class Node:
     def node_add_rx_cell(self, channeloffset, timeoffset):
         """
         Adds a Rx cell to the sensor node. This doesn't verify
-        whether a Rx cell for the given (ch,ts) already exist 
+        whether a Rx cell for the given (ch,ts) already exist
         or not. This has to be done by the scheduler.
 
         Args:
