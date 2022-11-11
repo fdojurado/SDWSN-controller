@@ -61,13 +61,16 @@ class ContainerController(BaseController):
         Args:
             docker_image (str, optional): Docker image name. Defaults to 'contiker/contiki-ng'.
             port (int, optional): Port of the sink. Defaults to 60001.
-            script (str, optional): Command to run the simulation script. Defaults to '/bin/sh -c "cd examples/elise && ./run-cooja.py"'.
+            script (str, optional): Command to run the simulation script. Defaults to \
+                '/bin/sh -c "cd examples/elise && ./run-cooja.py"'.
             docker_target (str, optional): Contiki-NG folder path in Docker. Defaults to '/home/user/contiki-ng'.
             contiki_source (str, optional): Contiki-NG source folder. Defaults to '/Users/fernando/contiki-ng'.
-            sysctls (_type_, optional): Kernel parameters to set in the container. Defaults to { 'net.ipv6.conf.all.disable_ipv6': 0 }.
+            sysctls (_type_, optional): Kernel parameters to set in the container. Defaults to \
+                { 'net.ipv6.conf.all.disable_ipv6': 0 }.
             privileged (bool, optional): Give extended privileges to this container. Defaults to True.
             detach (bool, optional): Run container in the background. Defaults to True.
-            log_file (str, optional): Path to the 'COOJA.log' file. Defaults to '/Users/fernando/contiki-ng/examples/elise/COOJA.log'.
+            log_file (str, optional): Path to the 'COOJA.log' file. Defaults to \
+                '/Users/fernando/contiki-ng/examples/elise/COOJA.log'.
             socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
             db (Database object, optional): Database. Defaults to None.
             reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.

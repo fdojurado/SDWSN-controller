@@ -130,7 +130,7 @@ class SerialBus(BusABC):
                     return 0
                 return 0
 
-        except socket.error as _:
+        except socket.error:
             return None
 
         return 0

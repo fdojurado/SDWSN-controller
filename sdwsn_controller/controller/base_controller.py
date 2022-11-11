@@ -69,7 +69,7 @@ class BaseController(ABC):
         # Database
         self.__db = db
         if self.__db is not None:
-            logger.info(f'Database added')
+            logger.info('Database added')
 
         # Create reward module; only for RL
         self.__reward_processing = reward_processing
@@ -98,7 +98,7 @@ class BaseController(ABC):
         # This is is because numerical env does not use it.
         self.__socket = socket
         if socket is not None:
-            logger.info(f'Socket added')
+            logger.info('Socket added')
 
         # Processing window
         self.__processing_window = processing_window
@@ -108,7 +108,7 @@ class BaseController(ABC):
         self.__read_socket_thread = None
 
         super().__init__()
-   # ---------------------Database functionalities---------------------------
+    # ---------------------Database functionalities---------------------------
 
     def init_db(self):
         if self.db is not None:
@@ -425,7 +425,7 @@ class BaseController(ABC):
                     progress.update(task1, completed=self.sequence)
                     if self.sequence >= self.processing_window:
                         result = 1
-                        logger.info(f"Cycle completed")
+                        logger.info("Cycle completed")
                         progress.update(task1, completed=100)
                     sleep(0.1)
             logger.info(f"cycle finished, result: {result}")

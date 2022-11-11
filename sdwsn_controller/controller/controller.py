@@ -109,7 +109,7 @@ class Controller(BaseController):
         # cleanup
         try:
             os.remove(self.__testlog)
-        except FileNotFoundError as ex:
+        except FileNotFoundError as _:
             pass
         except PermissionError as ex:
             print("Cannot remove previous Cooja output:", ex)
@@ -117,14 +117,15 @@ class Controller(BaseController):
 
         try:
             os.remove(self.__cooja_log)
-        except FileNotFoundError as ex:
+        except FileNotFoundError as _:
             pass
         except PermissionError as ex:
             print("Cannot remove previous Cooja log:", ex)
             return False
 
         args = " ".join(["cd", self.__cooja_path, "&&", "./gradlew run --args='-nogui=" +
-                         self.__simulation_script, "-contiki=" + self.__contiki_source+" -logdir="+self.__simulation_folder+" -logname=COOJA"+"'"])
+                         self.__simulation_script, "-contiki=" + self.__contiki_source+" -logdir=" +
+                         self.__simulation_folder+" -logname=COOJA"+"'"])
 
         self.__proc = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE,
                             shell=True, universal_newlines=True, preexec_fn=os.setsid)
@@ -142,7 +143,7 @@ class Controller(BaseController):
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start Cooja.")
+            raise Exception("Failed to start Cooja.")
 
         self.__wait_socket_running()
 
@@ -178,14 +179,14 @@ class Controller(BaseController):
                     logger.warning(
                         "Simulation compilation error, starting over ...")
                     self.start()
-                if cooja_socket_active == True:
+                if cooja_socket_active:
                     status = 1
                     progress.update(task1, completed=300)
 
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start the simulation.")
+            raise Exception("Failed to start the simulation.")
 
         logger.info("Cooja socket interface is up and running")
 
