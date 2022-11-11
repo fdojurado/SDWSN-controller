@@ -3,13 +3,18 @@ name: CI
 run-name: ${{ github.actor }} is doing CI
 
 # Run the workflow on:
-#   * Any PR against master, develop or candidate release branch
-#   * Any push (or merge) on master and develop
+#   * Any PR against main, develop or candidate release branch
+#   * Any push (or merge) on main and develop
 on:
   push:
-    branches: [master, develop]
+    branches: [main, develop]
   pull_request:
-    branches: [master, develop, release-*]
+    branches: [main, develop, release-*]
+
+env:
+  CONTIKI_NG: ${{ github.workspace }}/contiki-ng
+  SDWSN-controller: ${{ github.workspace }}/sdwsn-controller
+  DOCKER_BASE_IMG: contiker/contiki-ng
 
 # We use a single job with a matrix with elements corresponding to our tests
 # The job will be replicated as many times as there are elements in the matrix
@@ -19,28 +24,124 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
-    # Python version
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11"]
-
     steps:
+      - name: Install development tools for Contiki-NG
+        run: |
+          sudo apt-get update && \
+          sudo apt-get -qq -y --no-install-recommends install ca-certificates > /dev/null && \
+          sudo apt-get -qq -y --no-install-recommends install \
+            build-essential \
+          gdb \
+          git \
+          iputils-ping \
+          less \
+          lib32z1 \
+          libcanberra-gtk-module \
+          libcoap2-bin \
+          libpng-dev \
+          libxtst6 \
+          mosquitto \
+          mosquitto-clients \
+          mtr-tiny \
+          net-tools \
+          python3-dev \
+          python3-pip \
+          python3-setuptools \
+          python3-serial \
+          rlwrap \
+          sudo \
+          screen \
+          srecord \
+          udev \
+          unzip \
+          libusb-1.0-0 \
+          valgrind \
+          wget \
+          smitools \
+          snmp \
+          snmp-mibs-downloader \
+          openjdk-17-jdk \
+            ca-certificates-java \
+            java-common \
+            libnss3 \
+            libnspr4 \
+            libsqlite3-0 \
+            > /dev/null && \
+          sudo apt-get -qq -y --no-install-recommends install \
+            ant \
+            > /dev/null && \
+          sudo apt-get -qq clean
+      - name: Setup jdk-17
+        uses: actions/setup-java@main
+        with:
+          java-version: 17
+          distribution: "adopt"
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
+        with:
+          repository: "fdojurado/contiki-ng"
+          path: ${{ env.CONTIKI_NG }}
+          token: ${{ secrets.DATA_PLANE }}
+          fetch-depth: 2
+          submodules: "recursive"
+          persist-credentials: false
+          lfs: true
+      - name: check contents in elise
+        run: |
+          cd ${{ env.CONTIKI_NG }}
+          cd examples/elise
+          ls
+      - uses: actions/checkout@v3
+        with:
+          path: ${{ env.SDWSN-controller }}
+          fetch-depth: 2
+          submodules: "recursive"
+          persist-credentials: false
+          lfs: true
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          cd ${{ env.SDWSN-controller }}
+          python -m pip install .
       - name: Lint with flake8
         run: |
+          pwd
+          ls
+          cd ${{ env.SDWSN-controller }}
           # stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.8.0
+        with:
+          mongodb-version: "6.0"
+      - name: Try to download image from dockerhub
+        run: |
+          echo "Using $DOCKER_BASE_IMG for this run"
+          echo "Pulling image $DOCKER_BASE_IMG from dockerhub";
+          docker pull $DOCKER_BASE_IMG
       - name: Test with pytest
         run: |
+          cd ${{ env.SDWSN-controller }}
           pytest
+      - name: Persist logs1
+        if: ${{ failure() }}
+        run: |
+          pwd
+          ls
+          cd ${{ env.SDWSN-controller }}
+          ls
+          cat my.log
+          cat my_container.log
+          cd ${{ env.CONTIKI_NG }}
+          cd examples/elise
+          ls
+          cat cooja-orchestra-temp.csc
+          cat COOJA.log
+        shell: bash

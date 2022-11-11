@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import imp
 from sdwsn_controller.reinforcement_learning.env import Env
 from random import randint
 from sdwsn_controller.controller.env_numerical_controller import EnvNumericalController

@@ -16,7 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from sdwsn_controller.controller.common_controller import CommonController
-from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
+from sdwsn_controller.tsch.contention_free_scheduler \
+    import ContentionFreeScheduler
 
 from time import sleep
 
@@ -24,6 +25,7 @@ from rich.progress import Progress
 import logging
 
 logger = logging.getLogger('main.'+__name__)
+
 
 class FitIoTLABController(CommonController):
     def __init__(
@@ -70,7 +72,7 @@ class FitIoTLABController(CommonController):
                 logger.debug("ACK not received")
                 # We stop sending the current NC packet if
                 # we reached the max RTx or we received ACK
-                if(rtx >= 7):
+                if (rtx >= 7):
                     logger.warning("ACK never received")
                     break
                 # We resend the packet if retransmission < 7
@@ -91,13 +93,14 @@ class FitIoTLABController(CommonController):
 
         with Progress(transient=True) as progress:
             task1 = progress.add_task(
-                "[red]Waiting for the current cycle, in the FIT IoT LAB, to finish...", total=self.__processing_window)
+                "[red]Waiting for the current cycle, in the FIT IoT LAB" +
+                ", to finish...", total=self.__processing_window)
 
             while not progress.finished:
                 progress.update(task1, completed=self.sequence)
                 if self.sequence >= self.__processing_window:
                     result = 1
-                    logger.info(f"Cycle completed")
+                    logger.info("Cycle completed")
                     progress.update(task1, completed=100)
                 sleep(0.1)
         logger.info(f"cycle finished, result: {result}")

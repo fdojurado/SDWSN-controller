@@ -17,6 +17,7 @@
 
 from sdwsn_controller.controller.base_controller import BaseController
 from subprocess import Popen, PIPE, STDOUT
+import subprocess
 
 from rich.progress import Progress
 from time import sleep
@@ -57,7 +58,7 @@ class Controller(BaseController):
             contiki_source (str, optional): Path to the Contiki-NG source folder. Defaults to '/Users/fernando/contiki-ng'.
             simulation_folder (str, optional): Folder where the .csc file resides. Defaults to 'examples/elise'.
             simulation_script (str, optional): The .csc file to run. Defaults to 'cooja-elise.csc'.
-            socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
+            socket (SinkComm object, optional): Serial connection to the sink. Defaults to None.
             db (Database object, optional): Database. Defaults to None.
             reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
             packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.
@@ -82,6 +83,10 @@ class Controller(BaseController):
             os.path.join(self.__contiki_source, "tools", "cooja"))
         self.__simulation_script = os.path.join(
             self.__contiki_source, simulation_folder, simulation_script)
+
+        self.__new_simulation_script = None
+        # Hack to get the port number
+        self.__port = socket.port
 
         logger.info(f"Contiki source: {self.__contiki_source}")
         logger.info(f"Cooja log: {self.__cooja_log}")
@@ -109,22 +114,35 @@ class Controller(BaseController):
         # cleanup
         try:
             os.remove(self.__testlog)
-        except FileNotFoundError as ex:
+        except FileNotFoundError:
             pass
         except PermissionError as ex:
-            print("Cannot remove previous Cooja output:", ex)
+            logger.info("Cannot remove previous Cooja output:", ex)
             return False
 
         try:
             os.remove(self.__cooja_log)
-        except FileNotFoundError as ex:
+        except FileNotFoundError:
             pass
         except PermissionError as ex:
-            print("Cannot remove previous Cooja log:", ex)
+            logger.info("Cannot remove previous Cooja log:", ex)
             return False
 
-        args = " ".join(["cd", self.__cooja_path, "&&", "./gradlew run --args='-nogui=" +
-                         self.__simulation_script, "-contiki=" + self.__contiki_source+" -logdir="+self.__simulation_folder+" -logname=COOJA"+"'"])
+        # We need to overwrite the port of the serial socket in the
+        # csc simulation file
+        with open(self.__simulation_script, "r") as input_file:
+            self.__new_simulation_script = self.__simulation_script.split('.')
+            self.__new_simulation_script = "".join(
+                [self.__new_simulation_script[0], "-temp.csc"])
+            filedata = input_file.read()
+            # Replace the target string
+            filedata = filedata.replace(str(60001), str(self.__port))
+            with open(self.__new_simulation_script, "w") as new_tmp_file:
+                new_tmp_file.write(filedata)
+
+        args = " ".join(["cd", self.__cooja_path, "&&", "exec ./gradlew run --args='-nogui=" +
+                         self.__new_simulation_script, "-contiki=" + self.__contiki_source+" -logdir=" +
+                         self.__simulation_folder+" -logname=COOJA"+"'"])
 
         self.__proc = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE,
                             shell=True, universal_newlines=True, preexec_fn=os.setsid)
@@ -142,7 +160,7 @@ class Controller(BaseController):
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start Cooja.")
+            raise Exception("Failed to start Cooja.")
 
         self.__wait_socket_running()
 
@@ -178,14 +196,14 @@ class Controller(BaseController):
                     logger.warning(
                         "Simulation compilation error, starting over ...")
                     self.start()
-                if cooja_socket_active == True:
+                if cooja_socket_active:
                     status = 1
                     progress.update(task1, completed=300)
 
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start the simulation.")
+            raise Exception("Failed to start the simulation.")
 
         logger.info("Cooja socket interface is up and running")
 
@@ -196,7 +214,20 @@ class Controller(BaseController):
 
     def stop(self):
         if self.__proc:
-            os.killpg(os.getpgid(self.__proc.pid), signal.SIGTERM)
+            try:
+                self.__proc.communicate(timeout=15)
+            except subprocess.TimeoutExpired:
+                self.__proc.kill()
+                self.__proc.communicate()
+        # Delete the tmp simulation csc file if exists
+        if self.__new_simulation_script is not None:
+            if os.path.exists(self.__new_simulation_script):
+                os.remove(self.__new_simulation_script)
+        # Delete COOJA.log and COOJA.testlog
+        if os.path.exists(self.__cooja_log):
+            os.remove(self.__cooja_log)
+        if os.path.exists(self.__testlog):
+            os.remove(self.__testlog)
         super().stop()
 
     def reset(self):

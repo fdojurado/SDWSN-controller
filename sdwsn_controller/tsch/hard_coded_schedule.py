@@ -2,6 +2,8 @@ from sdwsn_controller.tsch.scheduler import Scheduler, cell_type
 import logging
 
 logger = logging.getLogger('main.'+__name__)
+
+
 class HardCodedScheduler(Scheduler):
     def __init__(
             self,
@@ -13,7 +15,8 @@ class HardCodedScheduler(Scheduler):
             channel_offsets)
 
     def run(self, path, current_sf_size):
-        logger.debug(f"running hard coded scheduler for sf size {current_sf_size}")
+        logger.debug(
+            f"running hard coded scheduler for sf size {current_sf_size}")
         # Set the slotframe size
         self.scheduler_slot_frame_size = current_sf_size
         # Schedule Tx - Node 2 - 1

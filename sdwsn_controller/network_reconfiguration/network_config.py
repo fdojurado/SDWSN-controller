@@ -15,22 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from logging import exception
 # from src.sdwsn_forwarding_table.forwarding_table import FWD_TABLE
 # from controller.routing.routing import *
 # from src.sdwsn_network_reconfiguration.queue import Queue
-from sdwsn_controller.packet.packet_dissector import *
-from sdwsn_controller.packet.packet import SerialPacket, Cell_Packet, Cell_Packet_Payload, SDN_SAH_LEN, SDN_RAH_LEN, RA_Packet, RA_Packet_Payload
-import networkx as nx
-from time import sleep
-import pandas as pd
-import queue  # or Queue in Python 2
-import types
+
+import json
+
+from sdwsn_controller.controller import BaseController
+from sdwsn_controller.packet.packet import sdn_protocols
+from sdwsn_controller.packet.packet import SDN_IP_Packet, SerialPacket, Cell_Packet,\
+    Cell_Packet_Payload, SDN_SAH_LEN, SDN_RAH_LEN, RA_Packet, RA_Packet_Payload, SDN_IPH_LEN
+from sdwsn_controller.sink_communication.sink_comm import SinkComm
+
 # Generate random number for ack
 from random import randrange
-import json
-from sdwsn_controller.controller import BaseController
-from sdwsn_controller.serial.serial import SerialBus
+
+import types
 
 
 """ TODO: Set the maximum routes per node (e.g., 10).
@@ -46,7 +46,7 @@ job_type.ROUTING = 1
 class NetworkReconfig(BaseController):
     def __init__(
         self,
-        serial_interface: type[SerialBus]
+        serial_interface: type[SinkComm]
     ):
         super().__init__(
             serial_interface=serial_interface
@@ -99,8 +99,8 @@ class NetworkReconfig(BaseController):
         # Let's loop into routes
         payload = []
         for cell in schedules['cells']:
-            cell_pkt = Cell_Packet_Payload(type=int(cell['type']), channel=int(cell['channel']), timeslot=int(cell['timeslot']),
-                                           scr=cell['addr'], dst=cell['dest'], payload=payload)
+            cell_pkt = Cell_Packet_Payload(type=int(cell['type']), channel=int(cell['channel']),
+                                           timeslot=int(cell['timeslot']), scr=cell['addr'], dst=cell['dest'], payload=payload)
             cell_packed = cell_pkt.pack()
             payload = cell_packed
         return payload

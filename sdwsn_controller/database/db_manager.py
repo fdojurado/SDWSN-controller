@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from abc import abstractclassmethod
 from sdwsn_controller.database.database import Database, PACKETS, NODES_INFO, OBSERVATIONS, SLOTFRAME_LEN
 from sdwsn_controller.packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
 import json
@@ -180,7 +179,7 @@ class DatabaseManager(Database):
         self.update_one(NODES_INFO, filter, update, True, None)
 
     def get_rank(self, addr):
-        if(addr == "1.0"):
+        if (addr == "1.0"):
             return 0
         query = {
             "$and": [
@@ -203,34 +202,34 @@ class DatabaseManager(Database):
         for doc in db:
             return doc["slotframe_len"]
 
-    def get_last_power_consumption(self, node):
-        query = {
-            "$and": [
-                {"node_id": node},
-                {"energy": {"$exists": True}}
-            ]
-        }
-        db = self.find_one(NODES_INFO, query)
-        if db is None:
-            return None
-        # get last seq in DB
-        pipeline = [
-            {"$match": {"node_id": node}},
-            {"$unwind": "$energy"},
-            {"$sort": {"energy.timestamp": -1}},
-            {"$limit": 1},
-            {'$project':
-             {
-                 "_id": 1,
-                 'timestamp': '$energy.timestamp',
-                 'ewma_energy': '$energy.ewma_energy',
-                 'ewma_energy_normalized': '$energy.ewma_energy_normalized'
-             }
-             }
-        ]
-        db = self.aggregate(NODES_INFO, pipeline)
-        for doc in db:
-            return doc
+    # def get_last_power_consumption(self, node):
+    #     query = {
+    #         "$and": [
+    #             {"node_id": node},
+    #             {"energy": {"$exists": True}}
+    #         ]
+    #     }
+    #     db = self.find_one(NODES_INFO, query)
+    #     if db is None:
+    #         return None
+    #     # get last seq in DB
+    #     pipeline = [
+    #         {"$match": {"node_id": node}},
+    #         {"$unwind": "$energy"},
+    #         {"$sort": {"energy.timestamp": -1}},
+    #         {"$limit": 1},
+    #         {'$project':
+    #          {
+    #              "_id": 1,
+    #              'timestamp': '$energy.timestamp',
+    #              'ewma_energy': '$energy.ewma_energy',
+    #              'ewma_energy_normalized': '$energy.ewma_energy_normalized'
+    #          }
+    #          }
+    #     ]
+    #     db = self.aggregate(NODES_INFO, pipeline)
+    #     for doc in db:
+    #         return doc
 
     def get_last_delay(self, node):
         query = {
@@ -433,6 +432,7 @@ class DatabaseManager(Database):
         }
         db = self.find_one(NODES_INFO, query)
         if db is None:
+            # FIXME: 3000 should not be set here
             power_samples.append((node, 3000))
             return
         # Get last n samples after the timestamp

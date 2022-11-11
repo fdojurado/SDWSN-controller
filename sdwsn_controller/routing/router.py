@@ -73,7 +73,8 @@ class Router(ABC):
             via (str): The address of the relaying node.
         """
         # Let's first check if the route is already in the dataframe
-        if ((self.router_routes['scr'] == scr) & (self.router_routes['dst'] == dst) & (self.router_routes['via'] == via)).any():
+        if ((self.router_routes['scr'] == scr) & (self.router_routes['dst'] == dst) &
+                (self.router_routes['via'] == via)).any():
             return
         else:
             df = pd.DataFrame([[scr, dst, via]], columns=self.column_names)
@@ -115,7 +116,7 @@ class Router(ABC):
         idx = df.index[df['scr'] == scr & df['dst']
                        == dst & df['via'] == via]
         # Check that the index is not empty. Which means we find the target row.
-        if(idx.empty):
+        if (idx.empty):
             logger.warning('route/index not found')
             return
         self.router_routes = df.drop(idx)
