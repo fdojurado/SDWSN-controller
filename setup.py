@@ -27,24 +27,24 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 
 setup(
-    name=__project_name__,
-    version=__version__,
-    description=__description__,
-    license=__license__,
-    author=__author__,
-    author_email=__email__,
-    url=__github_url__,
+    name=about.__project_name__,
+    version=about.__version__,
+    description=about.__description__,
+    license=about.__license__,
+    author=about.__author__,
+    author_email=about.__email__,
+    url=about.__github_url__,
     long_description=long_description,
     project_urls={
-        'Documentation':__doc_url__ ,
-        'Source': __github_url__,
-        'Tracker': __tracker_url__,
+        'Documentation':about.__doc_url__ ,
+        'Source': about.__github_url__,
+        'Tracker': about.__tracker_url__,
     },
     # packages=['elise'],  # same as name
     install_requires=requirements,
     packages=find_packages(include=['sdwsn_controller', 'sdwsn_controller.*']),
     # packages=['sdwsn_controller', 'sdwsn_controller.tests'],
     # package_dir={'': SRC_ROOT},
-    keywords=__keywords__,
+    keywords=about.__keywords__,
     python_requires='>=3.10'
 )
