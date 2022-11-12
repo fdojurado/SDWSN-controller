@@ -15,12 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from abc import ABC
-from typing import Optional
-from time import time
-
 from abc import ABC, abstractmethod
+
 import logging
+
+from time import time
+from typing import Optional
+
 
 LOG = logging.getLogger(__name__)
 
