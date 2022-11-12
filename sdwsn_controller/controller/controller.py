@@ -109,7 +109,7 @@ class Controller(BaseController):
         # cleanup
         try:
             os.remove(self.__testlog)
-        except FileNotFoundError as _:
+        except FileNotFoundError:
             pass
         except PermissionError as ex:
             print("Cannot remove previous Cooja output:", ex)
@@ -117,7 +117,7 @@ class Controller(BaseController):
 
         try:
             os.remove(self.__cooja_log)
-        except FileNotFoundError as _:
+        except FileNotFoundError:
             pass
         except PermissionError as ex:
             print("Cannot remove previous Cooja log:", ex)

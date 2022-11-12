@@ -123,7 +123,8 @@ class SerialPacket:
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "SerialPacket(addr={}, pkt_chksum={}, message_type={}, payload_len={}, reserved0={}, reserved1={}, payload={})".format(
+        return "SerialPacket(addr={}, pkt_chksum={}, message_type={}, \
+        payload_len={}, reserved0={}, reserved1={}, payload={})".format(
             hex(self.addr), self.pkt_chksum, self.message_type,
             self.payload_len, self.reserved0, self.reserved1, self.payload)
 
