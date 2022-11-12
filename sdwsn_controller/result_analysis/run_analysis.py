@@ -715,7 +715,7 @@ def plot_episode_reward(df, title, path):
 
 
 def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name, degree, txt_loc, y1_limit=None):
-    """ 
+    """
     We try to fit the curves for power, delay and
     PDR.
     """
