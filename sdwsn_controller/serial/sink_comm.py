@@ -18,13 +18,13 @@
 import socket
 import sys
 # import logging
-from sdwsn_controller.bus import BusABC
+from sdwsn_controller.serial.sink_abc import SinkABC
 import logging
 
 logger = logging.getLogger('main.'+__name__)
 
 
-class SerialBus(BusABC):
+class SinkComm(SinkABC):
     def __init__(self, host: str = '127.0.0.1', port: int = 60001):
         self.host = host
         self.port = port
@@ -63,19 +63,13 @@ class SerialBus(BusABC):
 
     def _recv_internal(self, timeout):
         """
-        Read a message from the serial device.
-        :param timeout:
-            .. warning::
-                This parameter will be ignored. The timeout value of the
-                channel is used.
-        :returns:
-            Received message and False (because not filtering as taken place).
-            .. warning::
-                Flags like is_extended_id, is_remote_frame and is_error_frame
-                will not be set over this function, the flags in the return
-                message are the default values.
-        :rtype:
-            Tuple[can.Message, Bool]
+        Read a message from the sink.
+
+        Args:
+            timeout (_type_):  Seconds to wait for a message.
+
+        Returns:
+            int, Message: Message received.
         """
         try:
             # ser.read can return an empty string
@@ -139,7 +133,10 @@ class SerialBus(BusABC):
 
     def send(self, data):
         """
-        Send a message over the serial device.
+        Transmit a message to the sink
+
+        Args:
+            data (Message): Message object to transmit.
         """
         logger.info('Sending message over the serial interface')
         byte_msg = bytearray()
@@ -172,7 +169,7 @@ class SerialBus(BusABC):
 
     def shutdown(self) -> None:
         """
-        Close the serial interface.
+        Shutdown the sink communication interface.
         """
         if self.ser is not None:
             self.empty_socket()

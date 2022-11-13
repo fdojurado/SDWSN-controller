@@ -20,7 +20,7 @@ from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.serial.serial import SerialBus
+from sdwsn_controller.serial.sink_comm import SinkComm
 from rich.logging import RichHandler
 import logging.config
 import sys
@@ -78,7 +78,7 @@ def main():
     # -------------------- setup controller --------------------
 
     # Socket
-    socket = SerialBus()
+    socket = SinkComm()
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()

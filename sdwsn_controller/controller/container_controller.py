@@ -71,7 +71,7 @@ class ContainerController(BaseController):
             detach (bool, optional): Run container in the background. Defaults to True.
             log_file (str, optional): Path to the 'COOJA.log' file. Defaults to \
                 '/Users/fernando/contiki-ng/examples/elise/COOJA.log'.
-            socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
+            socket (SinkComm object, optional): Serial connection to the sink. Defaults to None.
             db (Database object, optional): Database. Defaults to None.
             reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
             packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.

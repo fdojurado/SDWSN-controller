@@ -25,7 +25,7 @@ from sdwsn_controller.controller import BaseController
 from sdwsn_controller.packet.packet import sdn_protocols
 from sdwsn_controller.packet.packet import SDN_IP_Packet, SerialPacket, Cell_Packet,\
     Cell_Packet_Payload, SDN_SAH_LEN, SDN_RAH_LEN, RA_Packet, RA_Packet_Payload, SDN_IPH_LEN
-from sdwsn_controller.serial.serial import SerialBus
+from sdwsn_controller.serial.sink_comm import SinkComm
 
 # Generate random number for ack
 from random import randrange
@@ -46,7 +46,7 @@ job_type.ROUTING = 1
 class NetworkReconfig(BaseController):
     def __init__(
         self,
-        serial_interface: type[SerialBus]
+        serial_interface: type[SinkComm]
     ):
         super().__init__(
             serial_interface=serial_interface

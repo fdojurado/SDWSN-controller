@@ -58,7 +58,7 @@ class BaseController(ABC):
         packet dissector, router, and TSCH scheduler.
 
         Args:
-            socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
+            socket (SinkComm object, optional): Serial connection to the sink. Defaults to None.
             db (Database object, optional): Database. Defaults to None.
             reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
             packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.

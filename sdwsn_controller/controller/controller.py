@@ -57,7 +57,7 @@ class Controller(BaseController):
             contiki_source (str, optional): Path to the Contiki-NG source folder. Defaults to '/Users/fernando/contiki-ng'.
             simulation_folder (str, optional): Folder where the .csc file resides. Defaults to 'examples/elise'.
             simulation_script (str, optional): The .csc file to run. Defaults to 'cooja-elise.csc'.
-            socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
+            socket (SinkComm object, optional): Serial connection to the sink. Defaults to None.
             db (Database object, optional): Database. Defaults to None.
             reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
             packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.
