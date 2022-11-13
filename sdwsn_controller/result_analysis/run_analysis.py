@@ -128,8 +128,10 @@ def plot(df, name, path):
     beta_weight = df['beta'].iloc[0]
     delta_weight = df['delta'].iloc[0]
     last_ts = df['last_ts_in_schedule'].iloc[0]
-    fig.suptitle(r'$\alpha={},\beta={},\delta={},last~ts={}, reward={}$'.format(
-        alpha_weight, beta_weight, delta_weight, last_ts, episode_reward), fontsize=title_font_size)
+    fig.suptitle(r'$\alpha={},\beta={},\delta={},last~ts={}, reward={}$'.
+                 format(alpha_weight, beta_weight, delta_weight,
+                        last_ts, episode_reward),
+                 fontsize=title_font_size)
     # $\alpha=0.8,\beta=0.1,\delta=0.1$
     # First char is the reward and slotframe size over time
     # values = values * -1
@@ -157,7 +159,8 @@ def plot(df, name, path):
     axs[0, 1].set_xlabel('Cycles', fontsize=x_axis_font_size,
                          fontstyle=axis_labels_fontstyle)
     axs[0, 1].set_ylabel(
-        'Power [mW]', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+        'Power [mW]', fontsize=y_axis_font_size,
+        fontstyle=axis_labels_fontstyle)
     axs[0, 1].tick_params(axis='both', which='major',
                           labelsize=ticks_font_size)
     axs2 = axs[0, 1].twinx()
@@ -177,7 +180,8 @@ def plot(df, name, path):
     axs[1, 0].set_xlabel('Cycles', fontsize=x_axis_font_size,
                          fontstyle=axis_labels_fontstyle)
     axs[1, 0].set_ylabel(
-        'delay [ms]', fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+        'delay [ms]', fontsize=y_axis_font_size,
+        fontstyle=axis_labels_fontstyle)
     axs[1, 0].tick_params(axis='both', which='major',
                           labelsize=ticks_font_size)
     axs2 = axs[1, 0].twinx()
@@ -263,8 +267,10 @@ def plot_against_sf_size(df, name, path):
     beta_weight = df['beta'].iloc[0]
     delta_weight = df['delta'].iloc[0]
     last_ts = df['last_ts_in_schedule'].iloc[0]
-    fig.suptitle(r'$\alpha={},\beta={},\delta={},last~ts={}, reward={}$'.format(
-        alpha_weight, beta_weight, delta_weight, last_ts, episode_reward), fontsize=title_font_size)
+    fig.suptitle(r'$\alpha={},\beta={},\delta={},last~ts={}, reward={}$'
+                 .format(alpha_weight, beta_weight, delta_weight,
+                         last_ts, episode_reward),
+                 fontsize=title_font_size)
     # $\alpha=0.8,\beta=0.1,\delta=0.1$
     # First plot is the reward vs. slotframe size
     axs[0, 0].set_title('Reward vs SF size',
