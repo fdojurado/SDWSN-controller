@@ -251,7 +251,6 @@ def plot_against_sf_size(df, name, path):
     y_axis_font_size = 8
     ticks_font_size = 7
     data_marker_size = 1.5
-    legend_font_size = 6
     title_fontweight = 'bold'
     axis_labels_fontstyle = 'italic'
     # Drop first row
@@ -356,13 +355,11 @@ def plot_against_sf_size(df, name, path):
 
 def plot_training_progress(df, title, path):
 
-    title_font_size = 8
     x_axis_font_size = 14
     y_axis_font_size = 14
     ticks_font_size = 12
     data_marker_size = 3.5
     legend_font_size = 12
-    title_fontweight = 'bold'
     axis_labels_fontstyle = 'normal'
 
     def millions(x, pos):
@@ -371,7 +368,7 @@ def plot_training_progress(df, title, path):
 
     formatter = FuncFormatter(millions)
 
-    fig, axs = pl.subplots(layout='constrained')
+    _, axs = pl.subplots(layout='constrained')
 
     x1 = df['Step1']
     y1 = df['Value1']
@@ -414,15 +411,13 @@ def plot_training_progress(df, title, path):
 #######################################################
 
 
-def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_legend, text_loc, ci=False, y1_limit=None, label_loc=None):
-    title_font_size = 8
+def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name,
+                 y2_legend, text_loc, ci=False, y1_limit=None, label_loc=None):
     x_axis_font_size = 14
     y_axis_font_size = 14
     ticks_font_size = 12
     data_marker_size = 3.5
     legend_font_size = 12
-    annotate_font_size = 8
-    title_fontweight = 'bold'
     axis_labels_fontstyle = 'normal'
 
     fig, ax = pl.subplots()
@@ -490,7 +485,8 @@ def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_leg
         label_loc = 'best'
 
     ax.legend([l1, l2], [y1_legend,
-                         y2_legend], loc=label_loc, fontsize=legend_font_size, facecolor='white', framealpha=1)
+                         y2_legend], loc=label_loc, fontsize=legend_font_size,
+              facecolor='white', framealpha=1)
 
     ax.grid(True, 'major', 'both', linestyle='--',
             color='0.75', linewidth=0.6)
@@ -538,13 +534,17 @@ def plot_results(df, title, path, x, y1, y1_name, y1_legend, y2, y2_name, y2_leg
     # ax.annotate("1", xy=(20, text_loc[0]), fontsize=annotate_font_size, ha="center")
 
     ax.text(20, text_loc[0], r'$1$', style='italic',
-            bbox={'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
+            bbox={'facecolor': 'red', 'alpha': 0.6, 'pad': 3},
+            fontsize=legend_font_size)
     ax.text(60, text_loc[1], r'$2$', style='italic', bbox={
-            'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
+            'facecolor': 'red', 'alpha': 0.6, 'pad': 3},
+            fontsize=legend_font_size)
     ax.text(100, text_loc[2], r'$3$', style='italic', bbox={
-            'facecolor': 'red', 'alpha': 0.6, 'pad': 3}, fontsize=legend_font_size)
+            'facecolor': 'red', 'alpha': 0.6, 'pad': 3},
+            fontsize=legend_font_size)
     ax.text(140, text_loc[3], r'$4$', style='italic', bbox={
-            'facecolor': 'red', 'alpha': 0.6, 'pad': 2}, fontsize=legend_font_size)
+            'facecolor': 'red', 'alpha': 0.6, 'pad': 2},
+            fontsize=legend_font_size)
 
     # if annotate is True:
     #     circle_rad = 16  # This is the radius, in points
@@ -580,14 +580,8 @@ def plot_results_bar_chart(df, title, path,
                            x, y1, y1_name,
                            orch_df,
                            y1_limit=None):
-    title_font_size = 8
-    x_axis_font_size = 14
     y_axis_font_size = 17
     ticks_font_size = 12.8
-    data_marker_size = 3.5
-    legend_font_size = 12
-    annotate_font_size = 8
-    title_fontweight = 'bold'
     axis_labels_fontstyle = 'normal'
 
     fig, ax = pl.subplots()
@@ -631,10 +625,14 @@ def plot_results_bar_chart(df, title, path,
     reliability_std = df.std()
     reliability_error_plus = 1.96*reliability_std/math.sqrt(155-135)
 
-    x_axis = ['Balanced\n'+r'$\alpha=0.4,$'+'\n'+r'$\beta=0.3,$'+'\n'+r'$\gamma = 0.3$',
-              'Delay\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.8,$'+'\n'+r'$\gamma = 0.1$',
-              'Power\n'+r'$\alpha=0.8,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.1$',
-              'Reliability\n'+r'$\alpha=0.1,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.8$',
+    x_axis = ['Balanced\n' +
+              r'$\alpha=0.4,$'+'\n'+r'$\beta=0.3,$'+'\n'+r'$\gamma = 0.3$',
+              'Delay\n' +
+              r'$\alpha=0.1,$'+'\n'+r'$\beta=0.8,$'+'\n'+r'$\gamma = 0.1$',
+              'Power\n' +
+              r'$\alpha=0.8,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.1$',
+              'Reliability\n' +
+              r'$\alpha=0.1,$'+'\n'+r'$\beta=0.1,$'+'\n'+r'$\gamma = 0.8$',
               'Orchestra']
 
     ax.grid(True, 'major', 'both', linestyle='--',
@@ -661,8 +659,8 @@ def plot_results_bar_chart(df, title, path,
 
     bar_colors = ['C0', 'C0', 'C0', 'C0', 'C3']
 
-    l1 = ax.bar(x_axis, means, yerr=errors, zorder=3,  color=bar_colors, alpha=0.95,
-                edgecolor="black", linewidth=0.5)
+    ax.bar(x_axis, means, yerr=errors, zorder=3,  color=bar_colors, alpha=0.95,
+           edgecolor="black", linewidth=0.5)
     pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
     pl.close()
@@ -676,11 +674,10 @@ def plot_episode_reward(df, title, path):
     y_axis_font_size = 8
     ticks_font_size = 7
     data_marker_size = 1.5
-    legend_font_size = 6
     title_fontweight = 'bold'
     axis_labels_fontstyle = 'italic'
 
-    fig, (ax1, ax2) = pl.subplots(1, 2, layout='constrained')
+    _, (ax1, ax2) = pl.subplots(1, 2, layout='constrained')
 
     ax1.set_title('Reward vs. timesteps',
                   fontsize=title_font_size, fontweight=title_fontweight)
@@ -719,18 +716,13 @@ def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name, degree, txt_loc, y
     We try to fit the curves for power, delay and
     PDR.
     """
-    title_font_size = 8
     x_axis_font_size = 14
     y_axis_font_size = 14
     ticks_font_size = 12
-    data_marker_size = 3.5
-    legend_font_size = 12
-    annotate_font_size = 8
     equation_font_size = 7.4
-    title_fontweight = 'bold'
     axis_labels_fontstyle = 'normal'
 
-    fig, ax = pl.subplots(layout='constrained', figsize=(6.4, 2))
+    _, ax = pl.subplots(layout='constrained', figsize=(6.4, 2))
     # fig.subplots_adjust(right=0.85)
 
     ax.tick_params(axis='both', which='major',
@@ -772,7 +764,8 @@ def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name, degree, txt_loc, y
     ax.plot(x, power_trendpoly(x), zorder=3)
 
     ax.text(txt_loc[0], txt_loc[1], txt, style='italic',
-            bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3}, fontsize=equation_font_size)
+            bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3},
+            fontsize=equation_font_size)
 
     ax.grid(True, 'major', 'both', linestyle='--',
             color='0.75', linewidth=0.6, zorder=0)
