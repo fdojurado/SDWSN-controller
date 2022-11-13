@@ -66,7 +66,8 @@ class SerialBus(BusABC):
         Read a message from the serial device.
         :param timeout:
             .. warning::
-                This parameter will be ignored. The timeout value of the channel is used.
+                This parameter will be ignored. The timeout value of the
+                channel is used.
         :returns:
             Received message and False (because not filtering as taken place).
             .. warning::
@@ -99,7 +100,8 @@ class SerialBus(BusABC):
                     self.frame_length = self.frame_length + 1
                 else:
                     self.overflow = 1
-                    # logger.info("Packet size overflow: %u bytes\n", self.frame_length)
+                    # logger.info("Packet size overflow: %u bytes\n",
+                    #   self.frame_length)
                     return 0
             else:
                 # logger.info("FRAME_BOUNDARY_OCTET detected")
@@ -165,7 +167,7 @@ class SerialBus(BusABC):
         try:
             while self.recv(0.1):
                 pass
-        except:
+        except TypeError:
             pass
 
     def shutdown(self) -> None:
