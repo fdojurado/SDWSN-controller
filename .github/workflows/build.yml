@@ -75,7 +75,6 @@ jobs:
           sudo apt-get -qq -y --no-install-recommends install \
             ant \
             > /dev/null && \
-          rm graalvm-ce-java17_amd64_22.2.0-0.deb && \
           sudo apt-get -qq clean
       - name: Install dependencies
         run: |
