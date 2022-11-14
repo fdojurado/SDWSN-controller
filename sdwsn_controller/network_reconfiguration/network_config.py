@@ -25,7 +25,7 @@ from sdwsn_controller.controller import BaseController
 from sdwsn_controller.packet.packet import sdn_protocols
 from sdwsn_controller.packet.packet import SDN_IP_Packet, SerialPacket, Cell_Packet,\
     Cell_Packet_Payload, SDN_SAH_LEN, SDN_RAH_LEN, RA_Packet, RA_Packet_Payload, SDN_IPH_LEN
-from sdwsn_controller.serial.sink_comm import SinkComm
+from sdwsn_controller.sink_communication.sink_comm import SinkComm
 
 # Generate random number for ack
 from random import randrange

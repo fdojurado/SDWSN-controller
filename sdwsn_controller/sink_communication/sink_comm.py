@@ -18,7 +18,7 @@
 import socket
 import sys
 # import logging
-from sdwsn_controller.serial.sink_abc import SinkABC
+from sdwsn_controller.sink_communication.sink_abc import SinkABC
 import logging
 
 logger = logging.getLogger('main.'+__name__)

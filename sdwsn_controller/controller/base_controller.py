@@ -15,19 +15,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.packet.packet import Cell_Packet_Payload
-from sdwsn_controller.packet.packet import RA_Packet_Payload
+from abc import ABC, abstractmethod
+
+import logging
+
+import networkx as nx
+import numpy as np
+
+from sdwsn_controller.common import common
+from sdwsn_controller.database.database import Database
 from sdwsn_controller.database.database import OBSERVATIONS
 from sdwsn_controller.database.database import NODES_INFO
-from sdwsn_controller.common import common
-from abc import ABC, abstractmethod
+from sdwsn_controller.packet.packet_dissector import PacketDissector
+from sdwsn_controller.packet.packet import Cell_Packet_Payload
+from sdwsn_controller.packet.packet import RA_Packet_Payload
+from sdwsn_controller.reinforcement_learning.reward_processing \
+    import RewardProcessing
+from sdwsn_controller.routing.router import Router
+from sdwsn_controller.sink_communication.sink_abc import SinkABC
+from sdwsn_controller.tsch.scheduler import Scheduler
+
 from rich.progress import Progress
+
 from time import sleep
-import numpy as np
-import networkx as nx
 
 import threading
-import logging
 
 logger = logging.getLogger('main.'+__name__)
 
@@ -52,29 +64,37 @@ class BaseController(ABC):
         tsch_scheduler: object = None
     ):
         """
-        The BaseController class is an abstract class. Some functionalities are declared
-        as abstract methods, classes that inherits from the BaseController should take care
-        of them. The controller has six main modules: socket, database, reward processing,
-        packet dissector, router, and TSCH scheduler.
+        The BaseController class is an abstract class. Some functionalities are
+        declared as abstract methods, classes that inherits from the
+        BaseController should take care of them. The controller has six main
+        modules: socket, database, reward processing, packet dissector, router,
+        and TSCH scheduler.
 
         Args:
-            socket (SinkComm object, optional): Serial connection to the sink. Defaults to None.
+            socket (SinkComm object, optional): Serial connection to the sink.
+                Defaults to None.
             db (Database object, optional): Database. Defaults to None.
-            reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
-            packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.
-            processing_window (int, optional): Number of packets for a new cycle. Defaults to 200.
-            router (Router object, optional): Centralized routing algorithm. Defaults to None.
-            tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
+            reward_processing (RewardProcessing object, optional):Reward
+                processing for RL. Defaults to None.
+            packet_dissector (Dissector object, optional): Packet dissector.
+                Defaults to None.
+            processing_window (int, optional): Number of packets for a
+                new cycle. Defaults to 200.
+            router (Router object, optional): Centralized routing algorithm.
+                Defaults to None.
+            tsch_scheduler (Scheduler object, optional): Centralized
+                TSCH scheduler. Defaults to None.
         """
         # Database
         self.__db = db
         if self.__db is not None:
+            assert isinstance(self.__db, Database)
             logger.info('Database added')
 
         # Create reward module; only for RL
         self.__reward_processing = reward_processing
         if reward_processing is not None:
-            self.__reward_processing = reward_processing
+            assert isinstance(self.__reward_processing, RewardProcessing)
             logger.info(f"reward processing: {self.reward_processing.name}")
             # Requirements
             self.__user_requirements = UserRequirements()
@@ -82,26 +102,31 @@ class BaseController(ABC):
         # Create packet dissector
         self.__packet_dissector = packet_dissector
         if packet_dissector is not None:
+            assert isinstance(self.__packet_dissector, PacketDissector)
             logger.info(f'Packet dissector: {self.packet_dissector.name}')
 
         # Create TSCH scheduler module
         self.__tsch_scheduler = tsch_scheduler
         if router is not None:
+            assert isinstance(self.__tsch_scheduler, Scheduler)
             logger.info(f'TSCH scheduler: {self.tsch_scheduler.name}')
 
         # Create an instance of Router
         self.__router = router
         if router is not None:
+            assert isinstance(self.__router, Router)
             logger.info(f'Routing: {self.router.name}')
 
-        # We only create the socket module if this is explicitly pass to the class.
-        # This is is because numerical env does not use it.
-        self.__socket = socket
+        # We only create the socket module if this is explicitly pass to the
+        # class. This is is because numerical env does not use it.
+        self.__sink_comm = socket
         if socket is not None:
+            assert isinstance(self.__sink_comm, SinkABC)
             logger.info('Socket added')
 
         # Processing window
         self.__processing_window = processing_window
+        assert isinstance(self.__processing_window, int)
         logger.info(f'Processing window: {self.__processing_window}')
 
         self.__is_running = False
@@ -358,7 +383,7 @@ class BaseController(ABC):
 
     @property
     def socket(self):
-        return self.__socket
+        return self.__sink_comm
 
     # --------------------------Controller primitives-----------------------
 

@@ -19,7 +19,8 @@ class Cell:
     destination address, and coordinates.
     """
 
-    def __init__(self, source=None, type=None, destination=None, channeloffset=None, timeoffset=None):
+    def __init__(self, source=None, type=None,
+                 destination=None, channeloffset=None, timeoffset=None):
         self.source = source
         self.type = type
         self.destination = destination
@@ -27,8 +28,9 @@ class Cell:
         self.channeloffset = channeloffset
 
     def __repr__(self):
-        return "Cell(source={}, type={}, dest={}, timeoffset={}, channeloffset={})".format(
-            self.source, self.type, self.destination, self.timeoffset, self.channeloffset)
+        return f"Cell(source={self.source}, type={self.type}, \
+            dest={self.destination}, timeoffset={self.timeoffset}, \
+            channeloffset={self.channeloffset}"
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
@@ -99,9 +101,11 @@ class Node:
             Cell: The cell created.
         """
         logger.debug(
-            f"Adding Tx cell for node destination {destination} at ch:{channeloffset}, ts:{timeoffset}")
-        tx_cell = Cell(source=self.node, type=cell_type.UC_TX, destination=destination,
-                       timeoffset=timeoffset, channeloffset=channeloffset)
+            f"Adding Tx cell for node destination {destination} \
+                at ch:{channeloffset}, ts:{timeoffset}")
+        tx_cell = Cell(source=self.node, type=cell_type.UC_TX,
+                       destination=destination, timeoffset=timeoffset,
+                       channeloffset=channeloffset)
 
         self.node_tx_cells.append(tx_cell)
         return tx_cell
@@ -162,19 +166,23 @@ class Scheduler(ABC):
     def run(self):
         pass
 
-    def scheduler_add_uc(self, node, type, channeloffset, timeoffset, destination=None):
-        """ This adds a unicast link to the schedule. This does not do any verification
-        on the status of the link to add. This has to be done by the scheduler.
+    def scheduler_add_uc(self, node, type, channeloffset, timeoffset,
+                         destination=None):
+        """ This adds a unicast link to the schedule. This does not do any
+        verification on the status of the link to add. This has to be done
+        by the scheduler.
 
         Args:
             node (str): This is the node to add the given type of link.
             type (cell_type): The type of link (Rx, Tx)
             channeloffset (int): The channel offset.
             timeoffset (int): The channel timeoffset.
-            destination (str, optional): Destination node for Tx links. Defaults to None.
+            destination (str, optional): Destination node for Tx links.
+                Defaults to None.
         """
-        logger.debug(f"adding uc link to node: {node}, destination: {destination}, \
-            type: {type} channeloffset: {channeloffset} timeoffset: {timeoffset}")
+        logger.debug(f"adding uc link to node: {node}, \
+                destination: {destination}, type: {type} \
+                channeloffset: {channeloffset} timeoffset: {timeoffset}")
         if (not self.scheduler_list_of_nodes):
             sensor = Node(node)
             self.scheduler_list_of_nodes = sensor
@@ -236,7 +244,8 @@ class Scheduler(ABC):
 
     def scheduler_check_valid_coordinates(func):
         def inner(self, ch_offset, ts_offset, val=None):
-            if ch_offset > self.schedule_max_number_channels or ts_offset > self.schedule_max_number_timeslots:
+            if ch_offset > self.scheduler_max_number_channels or \
+                    ts_offset > self.scheduler_max_number_timeslots:
                 logger.error("Invalid schedule coordinates.")
                 return
 
@@ -522,7 +531,8 @@ class Scheduler(ABC):
         df.fillna('-', inplace=True)
 
         table = Table(
-            title="TSCH schedules (Row -> Channels, Columns -> Timeoffsets)", show_lines=True)
+            title="TSCH schedules (Row -> Channels, Columns -> Timeoffsets)",
+            show_lines=True)
 
         show_index = True
 

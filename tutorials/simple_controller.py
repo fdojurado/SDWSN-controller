@@ -20,7 +20,7 @@ from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.serial.sink_comm import SinkComm
+from sdwsn_controller.sink_communication.sink_comm import SinkComm
 from rich.logging import RichHandler
 import logging.config
 import sys
