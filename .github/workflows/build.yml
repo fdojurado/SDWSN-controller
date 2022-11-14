@@ -85,6 +85,8 @@ jobs:
         run: |
           pwd
           ls
+          cd tests
+          ls
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
