@@ -30,6 +30,12 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install development tools for Contiki-NG
+        run: |
+          sudo apt-get -qq -y --no-install-recommends install ca-certificates > /dev/null && \
+          sudo apt-get -qq -y --no-install-recommends install \
+            build-essential \
+          sudo apt-get update -y
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -42,12 +48,6 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      - name: Install development tools for Contiki-NG
-        run: |
-          sudo apt-get -qq -y --no-install-recommends install ca-certificates > /dev/null && \
-          sduo apt-get -qq -y --no-install-recommends install \
-            build-essential \
-          sudo apt-get update -y
       - name: Test with pytest
         run: |
           pytest
