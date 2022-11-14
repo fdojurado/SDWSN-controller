@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from contextlib import closing
 import socket
 import sys
 # import logging
@@ -169,7 +170,7 @@ class SinkComm(SinkABC):
 
     def shutdown(self) -> None:
         """
-        Shutdown the sink communication interface.
+        Close the serial interface.
         """
         if self.ser is not None:
             self.empty_socket()

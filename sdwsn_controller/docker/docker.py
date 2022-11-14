@@ -69,6 +69,17 @@ class CoojaDocker():
         self.container = None
         self.log_file = log_file
 
+        logger.info(f"docker_image: {self.docker_image}")
+        logger.info(f"script: {self.script}")
+        logger.info(f"Mount target: {mount['target']}")
+        logger.info(f"Mount source: {mount['source']}")
+        logger.info(f"Mount type: {mount['type']}")
+        logger.info(f'sysctls: {self.sysctls}')
+        logger.info(f'Container port: {self.container_port}')
+        logger.info(f'Ports: {self.ports }')
+        logger.info(f'detach: {self.detach }')
+        logger.info(f'log_file: {self.log_file}')
+
     def __run_container(self):
         logger.info("Starting container")
         self.container = self.client.containers.run(self.docker_image, command=self.script,

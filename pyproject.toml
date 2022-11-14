@@ -41,12 +41,29 @@ keywords = [
     "SDN",
     "SDN-IoT",
 ]
-dynamic = ["dependencies"]
+# dynamic = ["dependencies"]
+
+dependencies = [
+    'stable-baselines3[extra]',
+    'matplotlib',
+    'docker',
+    'gym',
+    'networkx',
+    'pandas',
+    'plac',
+    'pyfiglet',
+    'pymongo',
+    'python-daemon',
+    'rich',
+    'tomli',
+]
 
 [project.urls]
 "Documentation" = "https://github.com/fdojurado/SDWSN-controller/wiki"
 "Source" = "https://github.com/fdojurado/SDWSN-controller"
 "Bug Tracker" = "https://github.com/fdojurado/SDWSN-controller/issues"
 
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]

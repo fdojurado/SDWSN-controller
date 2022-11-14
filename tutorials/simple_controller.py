@@ -29,7 +29,8 @@ DOCKER_IMAGE = 'contiker/contiki-ng'
 SIMULATION_FOLDER = 'examples/elise'
 DOCKER_TARGET = '/home/user/contiki-ng'
 CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
-PYTHON_SCRIPT = './run-cooja.py cooja-orchestra.csc'
+SIMULATION_SCRIPT = 'cooja-orchestra.csc'
+PORT = 60003
 
 
 def run_data_plane(controller):
@@ -78,12 +79,9 @@ def main():
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
-    # Script that run inside the container - simulation file as argument
-    run_simulation_file = '/bin/sh -c '+'"cd ' + \
-        SIMULATION_FOLDER+' && ' + PYTHON_SCRIPT + '"'
 
     # Socket
-    socket = SinkComm()
+    socket = SinkComm(port=PORT)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
@@ -96,10 +94,10 @@ def main():
 
     controller = ContainerController(
         docker_image=DOCKER_IMAGE,
-        script=run_simulation_file,
+        simulation_script=SIMULATION_SCRIPT,
+        simulation_folder=SIMULATION_FOLDER,
         docker_target=DOCKER_TARGET,
         contiki_source=CONTIKI_SOURCE,
-        log_file=CONTIKI_SOURCE + '/' + SIMULATION_FOLDER + '/COOJA.log',
         # Database
         db=db,
         # socket

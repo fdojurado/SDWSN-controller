@@ -15,12 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
+
+import os
+
 from sdwsn_controller.controller.base_controller import BaseController
 from sdwsn_controller.docker.docker import CoojaDocker
 
-from typing import Dict
 from time import sleep
-import logging
+from typing import Dict
 
 logger = logging.getLogger('main.'+__name__)
 
@@ -30,8 +33,9 @@ class ContainerController(BaseController):
         self,
         # Container related
         docker_image: str = 'contiker/contiki-ng',
-        port: int = 60001,
-        script: str = '/bin/sh -c "cd examples/elise && ./run-cooja.py"',
+        # script: str = '/bin/sh -c "cd examples/elise && ./run-cooja.py"',
+        simulation_folder: str = None,
+        simulation_script: str = None,
         docker_target: str = '/home/user/contiki-ng',
         contiki_source: str = '/Users/fernando/contiki-ng',
         sysctls: Dict = {
@@ -39,7 +43,6 @@ class ContainerController(BaseController):
         },
         privileged: bool = True,
         detach: bool = True,
-        log_file: str = '/Users/fernando/contiki-ng/examples/elise/COOJA.log',
         # Sink/socket communication
         socket: object = None,
         # Database
@@ -60,7 +63,6 @@ class ContainerController(BaseController):
 
         Args:
             docker_image (str, optional): Docker image name. Defaults to 'contiker/contiki-ng'.
-            port (int, optional): Port of the sink. Defaults to 60001.
             script (str, optional): Command to run the simulation script. Defaults to \
                 '/bin/sh -c "cd examples/elise && ./run-cooja.py"'.
             docker_target (str, optional): Contiki-NG folder path in Docker. Defaults to '/home/user/contiki-ng'.
@@ -80,8 +82,8 @@ class ContainerController(BaseController):
             tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
         """
         ports = {
-            'container': port,
-            'host': port
+            'container': socket.port,
+            'host': socket.port
         }
 
         mount = {
@@ -91,17 +93,26 @@ class ContainerController(BaseController):
         }
 
         logger.info("Building a containerized controller")
-        logger.info(f"docker_image: {docker_image}")
-        logger.info(f"script: {script}")
-        logger.info(f'docker_target: {docker_target}')
-        logger.info(f'contiki_source: {contiki_source}')
-        logger.info(f'socket file: {log_file}')
-        logger.info(f'Container port: {port}')
+        self.__contiki_source = contiki_source
+        self.__cooja_log = os.path.join(
+            self.__contiki_source, simulation_folder, 'COOJA.log')
+        self.__testlog = os.path.join(
+            self.__contiki_source, simulation_folder, 'COOJA.testlog')
+        self.__simulation_folder_container = simulation_folder
+        self.__simulation_script = os.path.join(
+            self.__contiki_source, simulation_folder, simulation_script)
+        self.__new_simulation_script = None
+        run_simulation_file = '/bin/sh -c '+'"cd ' + \
+            self.__simulation_folder_container+' && ./run-cooja.py ' +\
+            simulation_script + '"'
+
+        # Hack to get the port number
+        self.__port = socket.port
 
         # Container
-        self.container = CoojaDocker(docker_image=docker_image, script=script, mount=mount,
+        self.container = CoojaDocker(docker_image=docker_image, script=run_simulation_file, mount=mount,
                                      sysctls=sysctls, ports=ports, privileged=privileged, detach=detach,
-                                     log_file=log_file)
+                                     log_file=self.__cooja_log)
 
         super().__init__(
             socket=socket,
@@ -119,11 +130,38 @@ class ContainerController(BaseController):
         sleep(1.2)
 
     def start(self):
+        # We need to overwrite the port of the serial socket in the
+        # csc simulation file
+        with open(self.__simulation_script, "r") as input_file:
+            self.__new_simulation_script = self.__simulation_script.split('.')
+            self.__new_simulation_script = "".join(
+                [self.__new_simulation_script[0], "-temp.csc"])
+            filedata = input_file.read()
+            # Replace the target string
+            filedata = filedata.replace(str(60001), str(self.__port))
+            with open(self.__new_simulation_script, "w") as new_tmp_file:
+                new_tmp_file.write(filedata)
+
+        # Overwrite the simulation script
+        self.container.script = '/bin/sh -c '+'"cd ' + \
+            self.__simulation_folder_container+' && ./run-cooja.py ' + \
+            self.__new_simulation_script.split('/')[-1] + '"'
+        logger.info(f"new script: {self.container.script}")
+
         self.container.start_container()
         super().start()
 
     def stop(self):
         self.container.shutdown()
+        # Delete the tmp simulation csc file if exists
+        if self.__new_simulation_script is not None:
+            if os.path.exists(self.__new_simulation_script):
+                os.remove(self.__new_simulation_script)
+        # Delete COOJA.log and COOJA.testlog
+        if os.path.exists(self.__cooja_log):
+            os.remove(self.__cooja_log)
+        if os.path.exists(self.__testlog):
+            os.remove(self.__testlog)
         super().stop()
 
     def reset(self):

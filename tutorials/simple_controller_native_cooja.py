@@ -78,7 +78,7 @@ def main():
     # -------------------- setup controller --------------------
 
     # Socket
-    socket = SinkComm()
+    socket = SinkComm(port=60002)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
@@ -88,6 +88,9 @@ def main():
 
     # Routing algorithm
     routing = Dijkstra()
+
+    # Packet dissector
+    pkt_dissector = PacketDissector(database=db)
 
     controller = Controller(
         # Controller related
@@ -99,7 +102,7 @@ def main():
         # socket
         socket=socket,
         # Packet dissector
-        packet_dissector=PacketDissector(database=db),
+        packet_dissector=pkt_dissector,
         processing_window=200,
         router=routing,
         tsch_scheduler=tsch_scheduler
