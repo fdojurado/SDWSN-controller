@@ -44,9 +44,10 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Install development tools for Contiki-NG
         run: |
-          apt-get -qq -y --no-install-recommends install ca-certificates > /dev/null && \
-          apt-get -qq -y --no-install-recommends install \
+          sudo apt-get -qq -y --no-install-recommends install ca-certificates > /dev/null && \
+          sduo apt-get -qq -y --no-install-recommends install \
             build-essential \
+          sudo apt-get update -y
       - name: Test with pytest
         run: |
           pytest
