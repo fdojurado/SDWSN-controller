@@ -76,6 +76,9 @@ jobs:
             ant \
             > /dev/null && \
           sudo apt-get -qq clean
+      - name: Where am I
+        run: |
+          pwd
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
