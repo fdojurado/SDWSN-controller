@@ -77,9 +77,14 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: 'new-tests'
+          fetch-depth: 2
+          submodules: 'recursive'
+          persist-credentials: false
+          lfs: true
       - name: Where am I 2
         run: |
           pwd
+          ls
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
