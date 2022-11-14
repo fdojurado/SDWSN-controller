@@ -65,8 +65,7 @@ jobs:
           smitools \
           snmp \
           snmp-mibs-downloader \
-          sudo apt-get -qq -y --no-install-recommends openjdk-17-jdk && \
-          sudo apt-get -qq -y --no-install-recommends install \
+          openjdk-17-jdk \
             ca-certificates-java \
             java-common \
             libnss3 \
