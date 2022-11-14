@@ -42,6 +42,13 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Install development tools for Contiki-NG
+        run: |
+          sudo apt-get update -y
+          sudo apt install -y build-essential doxygen git git-lfs curl wireshark python-serial srecord rlwrap
+          wget -nv http://simonduq.github.io/resources/mspgcc-4.7.2-compiled.tar.bz2 && tar xjf mspgcc*.tar.bz2 -C /tmp/ && cp -f -r /tmp/msp430/* /usr/local/ && rm -rf /tmp/msp430 mspgcc*.tar.bz2
+          sudo apt install -y default-jdk ant
+          sudo apt install -y openjdk-17-jdk
       - name: Test with pytest
         run: |
           pytest
