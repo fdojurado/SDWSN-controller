@@ -32,10 +32,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install development tools for Contiki-NG
         run: |
+          sudo apt-get update && \
           sudo apt-get -qq -y --no-install-recommends install ca-certificates > /dev/null && \
           sudo apt-get -qq -y --no-install-recommends install \
             build-essential \
-          sudo apt-get update -y
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
