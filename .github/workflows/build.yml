@@ -13,6 +13,7 @@ on:
     
 env:
   CONTIKI_NG: ${{ github.workspace }}/contiki-ng
+  SDWSN-controller: ${{ github.workspace }}/sdwsn-controller
 
 # We use a single job with a matrix with elements corresponding to our tests
 # The job will be replicated as many times as there are elements in the matrix
@@ -93,6 +94,7 @@ jobs:
           ls
       - uses: actions/checkout@v3
         with:
+          path: ${{ env.SDWSN-controller }}
           ref: "new-tests"
           fetch-depth: 2
           submodules: "recursive"
