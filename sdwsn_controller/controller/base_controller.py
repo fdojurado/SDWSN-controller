@@ -26,7 +26,7 @@ from sdwsn_controller.common import common
 from sdwsn_controller.database.database import Database
 from sdwsn_controller.database.database import OBSERVATIONS
 from sdwsn_controller.database.database import NODES_INFO
-from sdwsn_controller.packet.packet_dissector import PacketDissector
+from sdwsn_controller.packet.packet_dissector import Dissector
 from sdwsn_controller.packet.packet import Cell_Packet_Payload
 from sdwsn_controller.packet.packet import RA_Packet_Payload
 from sdwsn_controller.reinforcement_learning.reward_processing \
@@ -102,7 +102,7 @@ class BaseController(ABC):
         # Create packet dissector
         self.__packet_dissector = packet_dissector
         if packet_dissector is not None:
-            assert isinstance(self.__packet_dissector, PacketDissector)
+            assert isinstance(self.__packet_dissector, Dissector)
             logger.info(f'Packet dissector: {self.packet_dissector.name}')
 
         # Create TSCH scheduler module
