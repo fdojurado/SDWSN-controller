@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
-from sdwsn_controller.packet.packet_dissector import PacketDissector, Dissector
+from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.routing.dijkstra import Dijkstra

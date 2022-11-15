@@ -127,6 +127,8 @@ class Controller(BaseController):
                          self.__simulation_script, "-contiki=" + self.__contiki_source+" -logdir=" +
                          self.__simulation_folder+" -logname=COOJA"+"'"])
 
+        print(f"args:{args}")
+
         self.__proc = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE,
                             shell=True, universal_newlines=True, preexec_fn=os.setsid)
 
