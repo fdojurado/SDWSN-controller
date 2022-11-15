@@ -55,8 +55,9 @@ def test_native_controller():
     run_simulation_file = '/bin/sh -c '+'"cd ' + \
         simulation_folder+' && ' + python_script + '"'
 
-    # Socket
-    socket = SinkComm()
+    # Socket - use different socket to avoid interfering with the native
+    # controller
+    socket = SinkComm(port=60020)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
