@@ -106,7 +106,7 @@ class PacketDissector(Dissector):
             self,
             cycle_sequence: int = 0,
             sequence: int = 0,
-            database: object = None,
+            database: object = None
     ):
         self.ack_pkt = None
         super().__init__(

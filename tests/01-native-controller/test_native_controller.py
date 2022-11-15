@@ -50,7 +50,7 @@ def test_native_controller():
     routing = Dijkstra()
 
     # Packet dissector
-    packet_dissector = PacketDissector(database=db),
+    packet_dissector = PacketDissector(database=db)
 
     controller = Controller(
         # Controller related

@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
-from sdwsn_controller.packet.packet_dissector import PacketDissector
+from sdwsn_controller.packet.packet_dissector import PacketDissector, Dissector
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.routing.dijkstra import Dijkstra
@@ -89,6 +89,9 @@ def main():
     # Routing algorithm
     routing = Dijkstra()
 
+    # Packet dissector
+    pkt_dissector = PacketDissector(database=db)
+
     controller = Controller(
         # Controller related
         contiki_source=CONTIKI_SOURCE,
@@ -99,7 +102,7 @@ def main():
         # socket
         socket=socket,
         # Packet dissector
-        packet_dissector=PacketDissector(database=db),
+        packet_dissector=pkt_dissector,
         processing_window=200,
         router=routing,
         tsch_scheduler=tsch_scheduler
