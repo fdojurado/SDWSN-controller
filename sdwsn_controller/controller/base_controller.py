@@ -183,6 +183,7 @@ class BaseController(ABC):
     # --------------------------TSCH functions--------------------------
 
     def send_tsch_schedules(self):
+        # FIXME: Function is too complex. We need to split this function.
         """
         It sends the TSCH links to the sink.
 
