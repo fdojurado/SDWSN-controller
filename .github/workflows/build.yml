@@ -14,6 +14,7 @@ on:
 env:
   CONTIKI_NG: ${{ github.workspace }}/contiki-ng
   SDWSN-controller: ${{ github.workspace }}/sdwsn-controller
+  DOCKER_BASE_IMG: contiker/contiki-ng
 
 # We use a single job with a matrix with elements corresponding to our tests
 # The job will be replicated as many times as there are elements in the matrix
@@ -29,9 +30,6 @@ jobs:
         python-version: ["3.10", "3.11"]
 
     steps:
-      - name: Print workspace
-        run: |
-          echo $GITHUB_WORKSPACE
       - name: Install development tools for Contiki-NG
         run: |
           sudo apt-get update && \
@@ -83,9 +81,6 @@ jobs:
         with:
           java-version: 17
           distribution: 'adopt'
-      - name: Java version
-        run: |
-          java -version
       - uses: actions/checkout@v3
         with:
           repository: "fdojurado/contiki-ng"
@@ -96,10 +91,6 @@ jobs:
           submodules: "recursive"
           persist-credentials: false
           lfs: true
-      - name: Where am I
-        run: |
-          pwd
-          ls
       - uses: actions/checkout@v3
         with:
           path: ${{ env.SDWSN-controller }}
@@ -108,10 +99,6 @@ jobs:
           submodules: "recursive"
           persist-credentials: false
           lfs: true
-      - name: Where am I 2
-        run: |
-          pwd
-          ls
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -136,7 +123,11 @@ jobs:
         uses: supercharge/mongodb-github-action@1.8.0
         with:
           mongodb-version: '6.0'
+      - name: Try to download image from dockerhub
+        run: |
+          echo "Using $DOCKER_BASE_IMG for this run"
+          echo "Pulling image $DOCKER_BASE_IMG from dockerhub";
+          docker pull $DOCKER_IMG
       - name: Test with pytest
         run: |
-          cd ${{ env.SDWSN-controller }}
           pytest
