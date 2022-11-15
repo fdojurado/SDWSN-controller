@@ -2,6 +2,10 @@ import networkx as nx
 
 import os
 
+from rich.logging import RichHandler
+import logging.config
+import logging.handlers
+
 from sdwsn_controller.controller.container_controller \
     import ContainerController
 from sdwsn_controller.database.db_manager import DatabaseManager
@@ -10,6 +14,8 @@ from sdwsn_controller.routing.dijkstra import Dijkstra
 from sdwsn_controller.sink_communication.sink_comm import SinkComm
 from sdwsn_controller.tsch.contention_free_scheduler \
     import ContentionFreeScheduler
+
+logger = logging.getLogger('main')
 
 
 def run_data_plane(controller):
@@ -43,6 +49,25 @@ def run_data_plane(controller):
 
 
 def test_native_controller():
+    # -------------------- Create logger --------------------
+    formatter = logging.Formatter(
+        '%(asctime)s - %(message)s')
+    logger.setLevel(logging.DEBUG)
+
+    stream_handler = RichHandler(rich_tracebacks=True)
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(formatter)
+
+    logFilePath = "my.log"
+    formatter = logging.Formatter(
+        '%(asctime)s | %(name)s |  %(levelname)s: %(message)s')
+    file_handler = logging.handlers.TimedRotatingFileHandler(
+        filename=logFilePath, when='midnight', backupCount=30)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
     assert os.getenv('CONTIKI_NG')
     contiki_source = os.getenv('CONTIKI_NG')
     assert os.getenv('DOCKER_BASE_IMG')
