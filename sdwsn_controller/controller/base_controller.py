@@ -183,8 +183,15 @@ class BaseController(ABC):
     # --------------------------TSCH functions--------------------------
 
     def send_tsch_schedules(self):
+        """
+        It sends the TSCH links to the sink.
+
+        Returns:
+            int: 1 is successful; 0 otherwise.
+        """
         if self.tsch_scheduler is not None:
             logger.info("Sending TSCH packet")
+            sent = 0
             num_pkts = 0
             payload = []
             rows, cols = (self.tsch_scheduler.scheduler_max_number_channels,
@@ -220,8 +227,9 @@ class BaseController(ABC):
                                     payload, current_sf_size, self.increase_cycle_sequence())
                                 payload = []
                                 # Send NC packet
-                                self.reliable_send(
-                                    packedData, serial_pkt.reserved0+1)
+                                if self.reliable_send(
+                                        packedData, serial_pkt.reserved0+1):
+                                    sent += 1
             # Send the remain payload if there is one
             if payload:
                 num_pkts += 1
@@ -232,8 +240,13 @@ class BaseController(ABC):
                 packedData, serial_pkt = common.tsch_build_pkt(
                     payload, current_sf_size, self.increase_cycle_sequence())
                 # Send NC packet
-                self.reliable_send(
-                    packedData, serial_pkt.reserved0+1)
+                if self.reliable_send(
+                        packedData, serial_pkt.reserved0+1):
+                    sent += 1
+            if sent == num_pkts:
+                return 1
+            else:
+                return 0
 
     def compute_tsch_schedule(self, path, current_sf_size):
         if self.tsch_scheduler is not None:
@@ -269,8 +282,15 @@ class BaseController(ABC):
     # --------------------------Routing functions-------------------------
 
     def send_routes(self):
+        """
+        It sends the routing paths to the sink.
+
+        Returns:
+            int: 1 is successful; 0 otherwise.
+        """
         if self.router is not None:
             logger.info('Sending routes')
+            sent = 0
             num_pkts = 0
             payload = []
             for _, row in self.router.router_routes.iterrows():
@@ -292,8 +312,9 @@ class BaseController(ABC):
                         payload, self.increase_cycle_sequence())
                     payload = []
                     # Send NC packet
-                    self.reliable_send(
-                        packedData, serial_pkt.reserved0+1)
+                    if self.reliable_send(
+                            packedData, serial_pkt.reserved0+1):
+                        sent += 1
             # Send the remain payload if there is one
             if payload:
                 num_pkts += 1
@@ -301,8 +322,13 @@ class BaseController(ABC):
                 packedData, serial_pkt = common.routing_build_pkt(
                     payload, self.increase_cycle_sequence())
                 # Send NC packet
-                self.reliable_send(
-                    packedData, serial_pkt.reserved0+1)
+                if self.reliable_send(
+                        packedData, serial_pkt.reserved0+1):
+                    sent += 1
+            if sent == num_pkts:
+                return 1
+            else:
+                return 0
 
     def compute_routes(self, G):
         if self.router is not None:

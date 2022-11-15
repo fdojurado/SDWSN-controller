@@ -1,10 +1,6 @@
-import logging
-import logging.config
-import logging.handlers
+import networkx as nx
 
 import os
-
-from rich.logging import RichHandler
 
 from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.database.db_manager import DatabaseManager
@@ -18,23 +14,31 @@ from sdwsn_controller.tsch.contention_free_scheduler \
 def run_data_plane(controller):
     controller.reset()
     # We now wait until we reach the processing_window
-    controller.wait()
+    wait = controller.wait()
+    assert wait == 1
     # We get the network links, useful when calculating the routing
     G = controller.get_network_links()
+    assert nx.is_empty(G) is False
     # Run the dijkstra algorithm with the current links
     path = controller.compute_routes(G)
+    assert len(path) != set()
     # Set the slotframe size - (Max # of sensor in WSN is 10)
     slotframe_size = 12
     # We now set the TSCH schedules for the current routing
     controller.compute_tsch_schedule(path, slotframe_size)
+    links = controller.tsch_scheduler.scheduler_get_list_ts_in_use()
+    assert len(links) != 0
     # Send the entire routes
-    controller.send_routes()
+    routes_sent = controller.send_routes()
+    assert routes_sent == 1
     # Send the entire TSCH schedule
-    controller.send_tsch_schedules()
+    tsch_sent = controller.send_tsch_schedules()
+    assert tsch_sent == 1
     # Reset packet sequence
     controller.reset_pkt_sequence()
     # Wait for the network to settle
-    controller.wait()
+    wait = controller.wait()
+    assert wait == 1
 
 
 def test_native_controller():
@@ -42,27 +46,6 @@ def test_native_controller():
     contiki_source = os.getenv('CONTIKI_NG')
     simulation_folder = 'examples/elise'
     python_script = 'cooja-orchestra.csc'
-    # -------------------- Create logger --------------------
-    logger = logging.getLogger('main')
-
-    formatter = logging.Formatter(
-        '%(asctime)s - %(message)s')
-    logger.setLevel(logging.DEBUG)
-
-    stream_handler = RichHandler(rich_tracebacks=True)
-    stream_handler.setLevel(logging.INFO)
-    stream_handler.setFormatter(formatter)
-
-    logFilePath = "my.log"
-    formatter = logging.Formatter(
-        '%(asctime)s | %(name)s |  %(levelname)s: %(message)s')
-    file_handler = logging.handlers.TimedRotatingFileHandler(
-        filename=logFilePath, when='midnight', backupCount=30)
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.DEBUG)
-
-    logger.addHandler(file_handler)
-    logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
     # Socket
     socket = SinkComm()

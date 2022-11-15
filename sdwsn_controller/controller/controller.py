@@ -112,7 +112,7 @@ class Controller(BaseController):
         except FileNotFoundError:
             pass
         except PermissionError as ex:
-            print("Cannot remove previous Cooja output:", ex)
+            logger.info("Cannot remove previous Cooja output:", ex)
             return False
 
         try:
@@ -120,14 +120,12 @@ class Controller(BaseController):
         except FileNotFoundError:
             pass
         except PermissionError as ex:
-            print("Cannot remove previous Cooja log:", ex)
+            logger.info("Cannot remove previous Cooja log:", ex)
             return False
 
         args = " ".join(["cd", self.__cooja_path, "&&", "./gradlew run --args='-nogui=" +
                          self.__simulation_script, "-contiki=" + self.__contiki_source+" -logdir=" +
                          self.__simulation_folder+" -logname=COOJA"+"'"])
-
-        print(f"args:{args}")
 
         self.__proc = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE,
                             shell=True, universal_newlines=True, preexec_fn=os.setsid)
