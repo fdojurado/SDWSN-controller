@@ -48,7 +48,7 @@ def run_data_plane(controller):
     assert wait == 1
 
 
-def test_native_controller():
+def test_container_controller():
     # -------------------- Create logger --------------------
     formatter = logging.Formatter(
         '%(asctime)s - %(message)s')
