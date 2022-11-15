@@ -1,4 +1,8 @@
+import logging
+
 import os
+
+from rich.logging import RichHandler
 
 from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.database.db_manager import DatabaseManager
@@ -36,6 +40,27 @@ def test_native_controller():
     contiki_source = os.getenv('CONTIKI_NG')
     simulation_folder = 'examples/elise'
     python_script = 'cooja-orchestra.csc'
+    # -------------------- Create logger --------------------
+    logger = logging.getLogger('main')
+
+    formatter = logging.Formatter(
+        '%(asctime)s - %(message)s')
+    logger.setLevel(logging.DEBUG)
+
+    stream_handler = RichHandler(rich_tracebacks=True)
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(formatter)
+
+    logFilePath = "my.log"
+    formatter = logging.Formatter(
+        '%(asctime)s | %(name)s |  %(levelname)s: %(message)s')
+    file_handler = logging.handlers.TimedRotatingFileHandler(
+        filename=logFilePath, when='midnight', backupCount=30)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
     # Socket
     socket = SinkComm()
