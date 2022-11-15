@@ -75,7 +75,7 @@ def test_container_controller():
     docker_target = '/home/user/contiki-ng'
     # use different port number to avoid interfering with
     # the native controller
-    port = 60020
+    port = 60001
     simulation_folder = 'examples/elise'
     python_script = './run-cooja.py cooja-orchestra.csc'
     # -------------------- setup controller --------------------

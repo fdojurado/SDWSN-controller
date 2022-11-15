@@ -46,6 +46,7 @@ def test_native_controller():
     contiki_source = os.getenv('CONTIKI_NG')
     simulation_folder = 'examples/elise'
     python_script = 'cooja-orchestra.csc'
+    print("starting native controller")
     # -------------------- setup controller --------------------
     # Socket
     socket = SinkComm()
