@@ -62,3 +62,8 @@ dependencies = [
 "Documentation" = "https://github.com/fdojurado/SDWSN-controller/wiki"
 "Source" = "https://github.com/fdojurado/SDWSN-controller"
 "Bug Tracker" = "https://github.com/fdojurado/SDWSN-controller/issues"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
