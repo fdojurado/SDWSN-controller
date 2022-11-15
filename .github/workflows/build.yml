@@ -78,6 +78,10 @@ jobs:
             ant \
             > /dev/null && \
           sudo apt-get -qq clean
+      - name: Install java 17 jdk
+        run: |
+          wget https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.deb
+          sudo sudo dpkg -i jdk-17_linux-x64_bin.deb
       - name: Java version
         run: |
           java -version
