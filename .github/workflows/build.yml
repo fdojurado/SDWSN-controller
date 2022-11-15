@@ -127,7 +127,7 @@ jobs:
         run: |
           echo "Using $DOCKER_BASE_IMG for this run"
           echo "Pulling image $DOCKER_BASE_IMG from dockerhub";
-          docker pull $DOCKER_IMG
+          docker pull $DOCKER_BASE_IMG
       - name: Test with pytest
         run: |
           pytest
