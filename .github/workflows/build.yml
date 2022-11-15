@@ -10,7 +10,7 @@ on:
     branches: [master, develop, fix-flake8-error, new-tests]
   pull_request:
     branches: [master, develop, release-*]
-    
+
 env:
   CONTIKI_NG: ${{ github.workspace }}/contiki-ng
   SDWSN-controller: ${{ github.workspace }}/sdwsn-controller
@@ -80,7 +80,7 @@ jobs:
         uses: actions/setup-java@main
         with:
           java-version: 17
-          distribution: 'adopt'
+          distribution: "adopt"
       - uses: actions/checkout@v3
         with:
           repository: "fdojurado/contiki-ng"
@@ -122,7 +122,7 @@ jobs:
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.8.0
         with:
-          mongodb-version: '6.0'
+          mongodb-version: "6.0"
       - name: Try to download image from dockerhub
         run: |
           echo "Using $DOCKER_BASE_IMG for this run"
@@ -130,4 +130,5 @@ jobs:
           docker pull $DOCKER_BASE_IMG
       - name: Test with pytest
         run: |
+          cd ${{ env.SDWSN-controller }}
           pytest
