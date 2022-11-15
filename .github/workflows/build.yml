@@ -10,6 +10,9 @@ on:
     branches: [master, develop, fix-flake8-error, new-tests]
   pull_request:
     branches: [master, develop, release-*]
+    
+env:
+  CONTIKI_NG: ${{ github.workspace }}/contiki-ng
 
 # We use a single job with a matrix with elements corresponding to our tests
 # The job will be replicated as many times as there are elements in the matrix
@@ -77,7 +80,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           repository: "fdojurado/contiki-ng"
-          path: contiki-ng
+          path: ${{ env.CONTIKI_NG }}
           token: ${{ secrets.DATA_PLANE }}
           ref: "develop"
           fetch-depth: 2
