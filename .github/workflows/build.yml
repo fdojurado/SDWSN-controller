@@ -132,10 +132,12 @@ jobs:
         run: |
           cd ${{ env.SDWSN-controller }}
           pytest
-      - name: Persist logs
+      - name: Persist logs1
         if: ${{ failure() }}
         run: |
           pwd
+          ls
+          cd ${{ env.SDWSN-controller }}
           ls
           cat my.log
         shell: bash
