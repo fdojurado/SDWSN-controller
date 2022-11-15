@@ -71,19 +71,19 @@ jobs:
             ant \
             > /dev/null && \
           sudo apt-get -qq clean
+      - uses: actions/checkout@v3
+        with:
+          repository: "fdojurado/contiki-ng"
+          ref: "develop"
       - name: Where am I
         run: |
           pwd
-      - uses: actions/checkout@master
-        with:
-          name: fdojurado/contiki-ng
-          ref: 'develop'
-
+          ls
       - uses: actions/checkout@v3
         with:
-          ref: 'new-tests'
+          ref: "new-tests"
           fetch-depth: 2
-          submodules: 'recursive'
+          submodules: "recursive"
           persist-credentials: false
           lfs: true
       - name: Where am I 2
