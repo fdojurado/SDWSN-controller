@@ -52,7 +52,7 @@ def test_native_controller():
     # the native controller
     port = 60020
     simulation_folder = 'examples/elise'
-    python_script = 'cooja-orchestra.csc'
+    python_script = './run-cooja.py cooja-orchestra.csc'
     # -------------------- setup controller --------------------
     # Script that run inside the container - simulation file as argument
     run_simulation_file = '/bin/sh -c '+'"cd ' + \
