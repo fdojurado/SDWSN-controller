@@ -25,6 +25,9 @@ jobs:
         python-version: ["3.10", "3.11"]
 
     steps:
+      - name: Print workspace
+        run: |
+          echo $GITHUB_WORKSPACE
       - name: Install development tools for Contiki-NG
         run: |
           sudo apt-get update && \
@@ -74,6 +77,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           repository: "fdojurado/contiki-ng"
+          path: contiki-ng
           token: ${{ secrets.DATA_PLANE }}
           ref: "develop"
           fetch-depth: 2
