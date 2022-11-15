@@ -92,6 +92,9 @@ jobs:
         run: |
           pwd
           ls
+      - name: Run gradlew
+        run: |
+          cd /home/runner/work/SDWSN-controller/SDWSN-controller/contiki-ng/tools/cooja && ./gradlew run --args='-nogui=/home/runner/work/SDWSN-controller/SDWSN-controller/contiki-ng/examples/elise/cooja-orchestra.csc -contiki=/home/runner/work/SDWSN-controller/SDWSN-controller/contiki-ng -logdir=/home/runner/work/SDWSN-controller/SDWSN-controller/contiki-ng/examples/elise -logname=COOJA'
       - uses: actions/checkout@v3
         with:
           path: ${{ env.SDWSN-controller }}
