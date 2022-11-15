@@ -48,6 +48,9 @@ def test_native_controller():
     assert os.getenv('DOCKER_BASE_IMG')
     docker_image = os.getenv('DOCKER_BASE_IMG')
     docker_target = '/home/user/contiki-ng'
+    # use different port number to avoid interfering with
+    # the native controller
+    port = 60020
     simulation_folder = 'examples/elise'
     python_script = 'cooja-orchestra.csc'
     # -------------------- setup controller --------------------
@@ -55,9 +58,8 @@ def test_native_controller():
     run_simulation_file = '/bin/sh -c '+'"cd ' + \
         simulation_folder+' && ' + python_script + '"'
 
-    # Socket - use different socket to avoid interfering with the native
-    # controller
-    socket = SinkComm(port=60020)
+    # Socket
+    socket = SinkComm(port=port)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
@@ -73,6 +75,7 @@ def test_native_controller():
 
     controller = ContainerController(
         docker_image=docker_image,
+        port=port,
         script=run_simulation_file,
         docker_target=docker_target,
         contiki_source=contiki_source,
