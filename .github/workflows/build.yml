@@ -140,4 +140,8 @@ jobs:
           cd ${{ env.SDWSN-controller }}
           ls
           cat my.log
+          cd ${{ env.CONTIKI_NG }}
+          cd examples/elise
+          ls
+          cat COOJA.log
         shell: bash
