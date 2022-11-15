@@ -78,6 +78,9 @@ jobs:
             ant \
             > /dev/null && \
           sudo apt-get -qq clean
+      - name: Java version
+        run: |
+          java -version
       - uses: actions/checkout@v3
         with:
           repository: "fdojurado/contiki-ng"
