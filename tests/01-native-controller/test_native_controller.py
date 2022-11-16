@@ -11,6 +11,9 @@ from sdwsn_controller.tsch.contention_free_scheduler \
     import ContentionFreeScheduler
 
 
+from subprocess import Popen, PIPE
+
+
 def run_data_plane(controller):
     controller.reset()
     # We now wait until we reach the processing_window
@@ -83,3 +86,6 @@ def test_native_controller():
     run_data_plane(controller)
 
     controller.stop()
+
+    Popen(['netstat', '-vanp', 'tcp', '|', 'grep', '60001'], stdout=PIPE)
+    # p2 = Popen(["grep", "LISTEN"], stdin=p1.stdout, stdout=PIPE)
