@@ -86,7 +86,7 @@ jobs:
           repository: "fdojurado/contiki-ng"
           path: ${{ env.CONTIKI_NG }}
           token: ${{ secrets.DATA_PLANE }}
-          ref: "develop"
+          ref: "privilege-gradle"
           fetch-depth: 2
           submodules: "recursive"
           persist-credentials: false
