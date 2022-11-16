@@ -78,6 +78,8 @@ class CoojaDocker():
                                                     detach=self.detach)
         # self.container.wait(timeout=10)
         logger.info(f'container: {self.container}')
+        for log in self.container.logs(stream=True, stdout=True, stderr=True):
+            print(log.strip())
 
     def start_container(self):
         # self.client.containers.prune()  # Remove previous containers
