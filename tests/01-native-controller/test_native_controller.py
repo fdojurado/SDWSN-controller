@@ -16,6 +16,8 @@ from rich.logging import RichHandler
 import logging.config
 import logging.handlers
 
+import time
+
 logger = logging.getLogger('native_controller')
 
 
@@ -120,6 +122,11 @@ def test_native_controller():
     logger.info('closing controller')
 
     controller.stop()
+
+    time.sleep(10)
+
+    logger.info('closed controller')
+
 
     Popen(['netstat', '-vanp', 'tcp', '|', 'grep', '60001'], stdout=PIPE)
     # p2 = Popen(["grep", "LISTEN"], stdin=p1.stdout, stdout=PIPE)
