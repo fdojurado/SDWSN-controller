@@ -91,12 +91,6 @@ class ContainerController(BaseController):
         }
 
         logger.info("Building a containerized controller")
-        logger.info(f"docker_image: {docker_image}")
-        logger.info(f"script: {script}")
-        logger.info(f'docker_target: {docker_target}')
-        logger.info(f'contiki_source: {contiki_source}')
-        logger.info(f'socket file: {log_file}')
-        logger.info(f'Container port: {port}')
 
         # Container
         self.container = CoojaDocker(docker_image=docker_image, script=script, mount=mount,
