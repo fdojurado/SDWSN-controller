@@ -15,7 +15,7 @@ from sdwsn_controller.sink_communication.sink_comm import SinkComm
 from sdwsn_controller.tsch.contention_free_scheduler \
     import ContentionFreeScheduler
 
-logger = logging.getLogger('main')
+logger = logging.getLogger('container_controller')
 
 
 def run_data_plane(controller):
@@ -78,6 +78,7 @@ def test_container_controller():
     port = 60001
     simulation_folder = 'examples/elise'
     python_script = './run-cooja.py cooja-orchestra.csc'
+    logger.info("starting container controller")
     # -------------------- setup controller --------------------
     # Script that run inside the container - simulation file as argument
     run_simulation_file = '/bin/sh -c '+'"cd ' + \

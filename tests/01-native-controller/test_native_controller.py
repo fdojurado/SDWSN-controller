@@ -117,6 +117,8 @@ def test_native_controller():
     # Let's start the data plane first
     run_data_plane(controller)
 
+    logger.info('closing controller')
+
     controller.stop()
 
     Popen(['netstat', '-vanp', 'tcp', '|', 'grep', '60001'], stdout=PIPE)

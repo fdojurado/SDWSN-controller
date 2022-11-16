@@ -197,6 +197,7 @@ class Controller(BaseController):
 
     def stop(self):
         if self.__proc:
+            self.__proc.kill()
             os.killpg(os.getpgid(self.__proc.pid), signal.SIGTERM)
         super().stop()
 
