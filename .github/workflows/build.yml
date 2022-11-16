@@ -91,6 +91,11 @@ jobs:
           submodules: "recursive"
           persist-credentials: false
           lfs: true
+      - name: check contents in elise
+        run: |
+          cd ${{ env.CONTIKI_NG }}
+          cd examples/elise
+          ls
       - uses: actions/checkout@v3
         with:
           path: ${{ env.SDWSN-controller }}
