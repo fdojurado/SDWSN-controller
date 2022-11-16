@@ -35,6 +35,7 @@ def run_data_plane(controller):
     # Run the dijkstra algorithm with the current links
     logger.info("before compute routes")
     path = controller.compute_routes(G)
+    logger.info(f'paths: {path}')
     assert len(path) != set()
     # Set the slotframe size - (Max # of sensor in WSN is 10)
     slotframe_size = 12
@@ -42,6 +43,7 @@ def run_data_plane(controller):
     logger.info("before computes tsch")
     controller.compute_tsch_schedule(path, slotframe_size)
     links = controller.tsch_scheduler.scheduler_get_list_ts_in_use()
+    logger.info(f'links: {links}')
     assert len(links) != 0
     # Send the entire routes
     logger.info("before send routes")
