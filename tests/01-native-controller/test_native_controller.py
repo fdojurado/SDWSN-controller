@@ -80,6 +80,6 @@ def test_native_controller():
     )
     # --------------------Start data plane ------------------------
     # Let's start the data plane first
-    run_data_plane(controller)
+    # run_data_plane(controller)
 
     controller.stop()
