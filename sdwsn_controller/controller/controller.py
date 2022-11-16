@@ -196,9 +196,9 @@ class Controller(BaseController):
         super().start()
 
     def stop(self):
-        super().stop()
         if self.__proc:
             os.killpg(os.getpgid(self.__proc.pid), signal.SIGTERM)
+        super().stop()
 
     def reset(self):
         logger.info('Resetting controller, etc.')
