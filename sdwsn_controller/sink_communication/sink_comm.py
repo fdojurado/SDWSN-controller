@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from contextlib import closing
 import socket
 import sys
 # import logging
@@ -174,6 +175,12 @@ class SinkComm(SinkABC):
         if self.ser is not None:
             self.empty_socket()
             logger.info("socket buffer is now empty, we close ...")
+            with closing(self.ser) as sock:
+                server_address = (self.host, self.port)
+                if sock.connect_ex(server_address) == 0:
+                    logger.info("Port is open")
+                else:
+                    logger.info("Port is not open")
             self.ser.close()
             # self.ser.shutdown(socket.SHUT_RDWR)
 
