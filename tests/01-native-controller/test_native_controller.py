@@ -2,6 +2,7 @@ from subprocess import Popen, PIPE
 import networkx as nx
 
 import os
+import sys
 
 from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.database.db_manager import DatabaseManager
@@ -126,6 +127,7 @@ def test_native_controller():
     controller.stop()
 
     logger.info('closed controller')
+    sys.exit()
 
     # Popen(['netstat', '-vanp', 'tcp', '|', 'grep', '60001'], stdout=PIPE)
     # p2 = Popen(["grep", "LISTEN"], stdin=p1.stdout, stdout=PIPE)
