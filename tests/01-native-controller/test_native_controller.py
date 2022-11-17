@@ -19,6 +19,9 @@ import logging.handlers
 
 from time import sleep
 
+from psutil import process_iter
+from signal import SIGTERM  # or SIGKILL
+
 logger = logging.getLogger('native_controller')
 
 
@@ -127,6 +130,11 @@ def test_native_controller():
     controller.stop()
 
     logger.info('closed controller')
+    for proc in process_iter():
+        for conns in proc.connections(kind='inet'):
+            if conns.laddr.port == 60001:
+                proc.send_signal(SIGTERM)  # or SIGKILL
+
     sys.exit(0)
 
     # Popen(['netstat', '-vanp', 'tcp', '|', 'grep', '60001'], stdout=PIPE)
