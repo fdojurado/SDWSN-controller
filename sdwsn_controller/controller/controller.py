@@ -123,7 +123,7 @@ class Controller(BaseController):
             logger.info("Cannot remove previous Cooja log:", ex)
             return False
 
-        args = " ".join(["cd", self.__cooja_path, "&&", "./gradlew run --args='-nogui=" +
+        args = " ".join(["cd", self.__cooja_path, "&&", "exec ./gradlew run --args='-nogui=" +
                          self.__simulation_script, "-contiki=" + self.__contiki_source+" -logdir=" +
                          self.__simulation_folder+" -logname=COOJA"+"'"])
 
@@ -197,7 +197,7 @@ class Controller(BaseController):
 
     def stop(self):
         if self.__proc:
-            # self.__proc.kill()
+            self.__proc.kill()
             os.killpg(os.getpgid(self.__proc.pid), signal.SIGTERM)
         super().stop()
 

@@ -39,6 +39,7 @@ class SinkComm(SinkABC):
 
     def connect(self):
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.ser.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_address = (self.host, self.port)
         self.result = self.ser.connect_ex(server_address)
         return self.result
