@@ -127,7 +127,7 @@ def test_native_controller():
     controller.stop()
 
     logger.info('closed controller')
-    sys.exit()
+    sys.exit(0)
 
     # Popen(['netstat', '-vanp', 'tcp', '|', 'grep', '60001'], stdout=PIPE)
     # p2 = Popen(["grep", "LISTEN"], stdin=p1.stdout, stdout=PIPE)
