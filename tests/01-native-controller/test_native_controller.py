@@ -16,7 +16,7 @@ from rich.logging import RichHandler
 import logging.config
 import logging.handlers
 
-import time
+from time import sleep
 
 logger = logging.getLogger('native_controller')
 
@@ -125,7 +125,7 @@ def test_native_controller():
 
     controller.stop()
 
-    time.sleep(10)
+    sleep(1)
 
     logger.info('closed controller')
 
