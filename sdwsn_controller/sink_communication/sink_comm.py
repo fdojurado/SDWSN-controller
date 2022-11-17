@@ -175,14 +175,21 @@ class SinkComm(SinkABC):
         if self.ser is not None:
             self.empty_socket()
             logger.info("socket buffer is now empty, we close ...")
-            with closing(self.ser) as sock:
-                server_address = (self.host, self.port)
-                if sock.connect_ex(server_address) == 0:
-                    logger.info("Port is open")
-                else:
-                    logger.info("Port is not open")
             self.ser.close()
             # self.ser.shutdown(socket.SHUT_RDWR)
+            # with closing(self.ser) as sock:
+            # with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+            # try:
+            #     result = socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect_ex((self.host, self.port))
+            #     if result == 0:
+            #         print(
+            #             "Port {} is *** OPEN *** on host: {}".format(self.port, self.host))
+            #     else:
+            #         print("Port {} is not open on host: {}, result: {}".format(
+            #             self.port, self.host, result))
+            # except socket.gaierror:
+            #     print(
+            #         "Port {} check returns a network *** ERROR *** on host: {}".format(self.port, self.host))
 
     # def read(self):
     #     while(1):
