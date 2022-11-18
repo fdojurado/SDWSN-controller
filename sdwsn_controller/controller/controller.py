@@ -83,6 +83,10 @@ class Controller(BaseController):
         self.__simulation_script = os.path.join(
             self.__contiki_source, simulation_folder, simulation_script)
 
+        self.__new_simulation_script = None
+        # Hack to get the port number
+        self.__port = socket.port
+
         logger.info(f"Contiki source: {self.__contiki_source}")
         logger.info(f"Cooja log: {self.__cooja_log}")
         logger.info(f"Cooja test log: {self.__testlog}")
@@ -123,8 +127,20 @@ class Controller(BaseController):
             logger.info("Cannot remove previous Cooja log:", ex)
             return False
 
+        # We need to overwrite the port of the serial socket in the
+        # csc simulation file
+        with open(self.__simulation_script, "r") as input_file:
+            self.__new_simulation_script = self.__simulation_script.split('.')
+            self.__new_simulation_script = "".join(
+                [self.__new_simulation_script[0], "-temp.csc"])
+            filedata = input_file.read()
+            # Replace the target string
+            filedata = filedata.replace(str(60001), str(self.__port))
+            with open(self.__new_simulation_script, "w") as new_tmp_file:
+                new_tmp_file.write(filedata)
+
         args = " ".join(["cd", self.__cooja_path, "&&", "exec ./gradlew run --args='-nogui=" +
-                         self.__simulation_script, "-contiki=" + self.__contiki_source+" -logdir=" +
+                         self.__new_simulation_script, "-contiki=" + self.__contiki_source+" -logdir=" +
                          self.__simulation_folder+" -logname=COOJA"+"'"])
 
         self.__proc = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE,
@@ -199,6 +215,10 @@ class Controller(BaseController):
         if self.__proc:
             self.__proc.kill()
             os.killpg(os.getpgid(self.__proc.pid), signal.SIGTERM)
+        # Delete the tmp simulation csc file if exists
+        if self.__new_simulation_script is not None:
+            if os.path.exists(self.__new_simulation_script):
+                os.remove(self.__new_simulation_script)
         super().stop()
 
     def reset(self):

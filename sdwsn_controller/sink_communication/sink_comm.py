@@ -39,7 +39,6 @@ class SinkComm(SinkABC):
 
     def connect(self):
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.ser.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_address = (self.host, self.port)
         self.result = self.ser.connect_ex(server_address)
         return self.result
@@ -171,26 +170,13 @@ class SinkComm(SinkABC):
 
     def shutdown(self) -> None:
         """
-        Shutdown the sink communication interface.
+        Close the serial interface.
         """
         if self.ser is not None:
             self.empty_socket()
             logger.info("socket buffer is now empty, we close ...")
             self.ser.close()
             # self.ser.shutdown(socket.SHUT_RDWR)
-            # with closing(self.ser) as sock:
-            # with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
-            # try:
-            #     result = socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect_ex((self.host, self.port))
-            #     if result == 0:
-            #         print(
-            #             "Port {} is *** OPEN *** on host: {}".format(self.port, self.host))
-            #     else:
-            #         print("Port {} is not open on host: {}, result: {}".format(
-            #             self.port, self.host, result))
-            # except socket.gaierror:
-            #     print(
-            #         "Port {} check returns a network *** ERROR *** on host: {}".format(self.port, self.host))
 
     # def read(self):
     #     while(1):

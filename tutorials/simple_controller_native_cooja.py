@@ -78,7 +78,7 @@ def main():
     # -------------------- setup controller --------------------
 
     # Socket
-    socket = SinkComm()
+    socket = SinkComm(port=60002)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()

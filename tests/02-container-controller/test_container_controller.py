@@ -17,6 +17,10 @@ from sdwsn_controller.tsch.contention_free_scheduler \
 
 logger = logging.getLogger('container_controller')
 
+# This number has to be unique across all test
+# otherwise, the github actions will fail
+PORT = 60003
+
 
 def run_data_plane(controller):
     controller.reset()
@@ -75,17 +79,13 @@ def test_container_controller():
     docker_target = '/home/user/contiki-ng'
     # use different port number to avoid interfering with
     # the native controller
-    port = 60001
     simulation_folder = 'examples/elise'
-    python_script = './run-cooja.py cooja-orchestra.csc'
+    simulation_script = 'cooja-orchestra.csc'
     logger.info("starting container controller")
     # -------------------- setup controller --------------------
-    # Script that run inside the container - simulation file as argument
-    run_simulation_file = '/bin/sh -c '+'"cd ' + \
-        simulation_folder+' && ' + python_script + '"'
 
     # Socket
-    socket = SinkComm(port=port)
+    socket = SinkComm(port=PORT)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
@@ -101,8 +101,8 @@ def test_container_controller():
 
     controller = ContainerController(
         docker_image=docker_image,
-        port=port,
-        script=run_simulation_file,
+        simulation_script=simulation_script,
+        simulation_folder=simulation_folder,
         docker_target=docker_target,
         contiki_source=contiki_source,
         log_file=contiki_source + '/' + simulation_folder + '/COOJA.log',

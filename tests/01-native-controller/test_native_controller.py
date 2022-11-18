@@ -1,8 +1,6 @@
-from subprocess import Popen, PIPE
 import networkx as nx
 
 import os
-import sys
 
 from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.database.db_manager import DatabaseManager
@@ -17,12 +15,12 @@ from rich.logging import RichHandler
 import logging.config
 import logging.handlers
 
-from time import sleep
-
-from psutil import process_iter
-from signal import SIGTERM  # or SIGKILL
 
 logger = logging.getLogger('native_controller')
+
+# This number has to be unique across all test
+# otherwise, the github actions will fail
+PORT = 60002
 
 
 def run_data_plane(controller):
@@ -92,7 +90,7 @@ def test_native_controller():
     logger.info("starting native controller")
     # -------------------- setup controller --------------------
     # Socket
-    socket = SinkComm()
+    socket = SinkComm(port=PORT)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
@@ -128,14 +126,3 @@ def test_native_controller():
     logger.info('closing controller')
 
     controller.stop()
-
-    logger.info('closed controller')
-    for proc in process_iter():
-        for conns in proc.connections(kind='inet'):
-            if conns.laddr.port == 60001:
-                proc.send_signal(SIGTERM)  # or SIGKILL
-
-    sys.exit(0)
-
-    # Popen(['netstat', '-vanp', 'tcp', '|', 'grep', '60001'], stdout=PIPE)
-    # p2 = Popen(["grep", "LISTEN"], stdin=p1.stdout, stdout=PIPE)
