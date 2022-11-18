@@ -214,13 +214,11 @@ class Controller(BaseController):
 
     def stop(self):
         if self.__proc:
-            logger.info(f'process running:{self.__proc.poll()}')
             try:
                 self.__proc.communicate(timeout=15)
             except subprocess.TimeoutExpired:
                 self.__proc.kill()
                 self.__proc.communicate()
-            logger.info(f'process running2:{self.__proc.poll()}')
         # Delete the tmp simulation csc file if exists
         if self.__new_simulation_script is not None:
             if os.path.exists(self.__new_simulation_script):
