@@ -43,7 +43,6 @@ class ContainerController(BaseController):
         },
         privileged: bool = True,
         detach: bool = True,
-        log_file: str = '/Users/fernando/contiki-ng/examples/elise/COOJA.log',
         # Sink/socket communication
         socket: object = None,
         # Database
@@ -95,6 +94,10 @@ class ContainerController(BaseController):
 
         logger.info("Building a containerized controller")
         self.__contiki_source = contiki_source
+        self.__cooja_log = os.path.join(
+            self.__contiki_source, simulation_folder, 'COOJA.log')
+        self.__testlog = os.path.join(
+            self.__contiki_source, simulation_folder, 'COOJA.testlog')
         self.__simulation_folder_container = simulation_folder
         self.__simulation_script = os.path.join(
             self.__contiki_source, simulation_folder, simulation_script)
@@ -102,13 +105,14 @@ class ContainerController(BaseController):
         run_simulation_file = '/bin/sh -c '+'"cd ' + \
             self.__simulation_folder_container+' && ./run-cooja.py ' +\
             simulation_script + '"'
+
         # Hack to get the port number
         self.__port = socket.port
 
         # Container
         self.container = CoojaDocker(docker_image=docker_image, script=run_simulation_file, mount=mount,
                                      sysctls=sysctls, ports=ports, privileged=privileged, detach=detach,
-                                     log_file=log_file)
+                                     log_file=self.__cooja_log)
 
         super().__init__(
             socket=socket,
@@ -153,6 +157,11 @@ class ContainerController(BaseController):
         if self.__new_simulation_script is not None:
             if os.path.exists(self.__new_simulation_script):
                 os.remove(self.__new_simulation_script)
+        # Delete COOJA.log and COOJA.testlog
+        if os.path.exists(self.__cooja_log):
+            os.remove(self.__cooja_log)
+        if os.path.exists(self.__testlog):
+            os.remove(self.__testlog)
         super().stop()
 
     def reset(self):

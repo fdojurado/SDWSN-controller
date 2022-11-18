@@ -98,7 +98,6 @@ def main():
         simulation_folder=SIMULATION_FOLDER,
         docker_target=DOCKER_TARGET,
         contiki_source=CONTIKI_SOURCE,
-        log_file=CONTIKI_SOURCE + '/' + SIMULATION_FOLDER + '/COOJA.log',
         # Database
         db=db,
         # socket

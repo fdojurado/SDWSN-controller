@@ -106,7 +106,6 @@ def test_container_controller():
         simulation_folder=simulation_folder,
         docker_target=docker_target,
         contiki_source=contiki_source,
-        log_file=contiki_source + '/' + simulation_folder + '/COOJA.log',
         # Database
         db=db,
         # socket

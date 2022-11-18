@@ -17,6 +17,7 @@
 
 from sdwsn_controller.controller.base_controller import BaseController
 from subprocess import Popen, PIPE, STDOUT
+import subprocess
 
 from rich.progress import Progress
 from time import sleep
@@ -213,12 +214,22 @@ class Controller(BaseController):
 
     def stop(self):
         if self.__proc:
-            self.__proc.kill()
-            os.killpg(os.getpgid(self.__proc.pid), signal.SIGTERM)
+            logger.info(f'process running:{self.__proc.poll()}')
+            try:
+                self.__proc.communicate(timeout=15)
+            except subprocess.TimeoutExpired:
+                self.__proc.kill()
+                self.__proc.communicate()
+            logger.info(f'process running2:{self.__proc.poll()}')
         # Delete the tmp simulation csc file if exists
         if self.__new_simulation_script is not None:
             if os.path.exists(self.__new_simulation_script):
                 os.remove(self.__new_simulation_script)
+        # Delete COOJA.log and COOJA.testlog
+        if os.path.exists(self.__cooja_log):
+            os.remove(self.__cooja_log)
+        if os.path.exists(self.__testlog):
+            os.remove(self.__testlog)
         super().stop()
 
     def reset(self):
