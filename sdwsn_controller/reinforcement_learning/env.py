@@ -20,13 +20,12 @@ environment """
 import gym
 from gym import spaces
 import numpy as np
-from time import sleep
 from datetime import datetime
 import random
 from random import randrange
 
 from sdwsn_controller.common import common
-from sdwsn_controller.result_analysis.run_analysis import run_analysis
+from sdwsn_controller.result_analysis import run_analysis
 
 # These are the size of other schedules in orchestra
 eb_size = 397
@@ -181,7 +180,7 @@ class Env(gym.Env):
         # We now save the observations with reward None
         _, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
             self.controller.alpha, self.controller.beta, self.controller.delta, slotframe_size)
-       # Append to the observations
+        # Append to the observations
         sample_time = datetime.now().timestamp() * 1000.0
         observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
@@ -215,8 +214,9 @@ class Env(gym.Env):
         # agent is represented as a cross, rest as a dot
         print('rendering')
         number = random.randint(0, 100)
-        run_analysis(self.controller.db,
-                     self.simulation_name+str(number), self.folder, True)
+        run_analysis.run_analysis(self.controller.db,
+                                  self.simulation_name+str(number),
+                                  self.folder, True)
 
     def close(self):
         """

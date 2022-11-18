@@ -19,7 +19,8 @@ class Cell:
     destination address, and coordinates.
     """
 
-    def __init__(self, source=None, type=None, destination=None, channeloffset=None, timeoffset=None):
+    def __init__(self, source=None, type=None,
+                 destination=None, channeloffset=None, timeoffset=None):
         self.source = source
         self.type = type
         self.destination = destination
@@ -27,8 +28,9 @@ class Cell:
         self.channeloffset = channeloffset
 
     def __repr__(self):
-        return "Cell(source={}, type={}, dest={}, timeoffset={}, channeloffset={})".format(
-            self.source, self.type, self.destination, self.timeoffset, self.channeloffset)
+        return f"Cell(source={self.source}, type={self.type}, \
+            dest={self.destination}, timeoffset={self.timeoffset}, \
+            channeloffset={self.channeloffset}"
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
@@ -68,7 +70,7 @@ class Node:
     def node_add_rx_cell(self, channeloffset, timeoffset):
         """
         Adds a Rx cell to the sensor node. This doesn't verify
-        whether a Rx cell for the given (ch,ts) already exist 
+        whether a Rx cell for the given (ch,ts) already exist
         or not. This has to be done by the scheduler.
 
         Args:
@@ -99,9 +101,11 @@ class Node:
             Cell: The cell created.
         """
         logger.debug(
-            f"Adding Tx cell for node destination {destination} at ch:{channeloffset}, ts:{timeoffset}")
-        tx_cell = Cell(source=self.node, type=cell_type.UC_TX, destination=destination,
-                       timeoffset=timeoffset, channeloffset=channeloffset)
+            f"Adding Tx cell for node destination {destination} \
+                at ch:{channeloffset}, ts:{timeoffset}")
+        tx_cell = Cell(source=self.node, type=cell_type.UC_TX,
+                       destination=destination, timeoffset=timeoffset,
+                       channeloffset=channeloffset)
 
         self.node_tx_cells.append(tx_cell)
         return tx_cell
@@ -118,11 +122,11 @@ class Node:
         """
         if self.node_rx_cells:
             for rx in self.node_rx_cells:
-                if(timeoffset == rx.timeoffset):
+                if (timeoffset == rx.timeoffset):
                     return 0
         if self.node_tx_cells:
             for tx in self.node_tx_cells:
-                if(timeoffset == tx.timeoffset):
+                if (timeoffset == tx.timeoffset):
                     return 0
         return 1
 
@@ -162,20 +166,24 @@ class Scheduler(ABC):
     def run(self):
         pass
 
-    def scheduler_add_uc(self, node, type, channeloffset, timeoffset, destination=None):
-        """ This adds a unicast link to the schedule. This does not do any verification
-        on the status of the link to add. This has to be done by the scheduler.
+    def scheduler_add_uc(self, node, type, channeloffset, timeoffset,
+                         destination=None):
+        """ This adds a unicast link to the schedule. This does not do any
+        verification on the status of the link to add. This has to be done
+        by the scheduler.
 
         Args:
             node (str): This is the node to add the given type of link.
             type (cell_type): The type of link (Rx, Tx)
             channeloffset (int): The channel offset.
             timeoffset (int): The channel timeoffset.
-            destination (str, optional): Destination node for Tx links. Defaults to None.
+            destination (str, optional): Destination node for Tx links.
+                Defaults to None.
         """
-        logger.debug(f"adding uc link to node: {node}, destination: {destination}, \
-            type: {type} channeloffset: {channeloffset} timeoffset: {timeoffset}")
-        if(not self.scheduler_list_of_nodes):
+        logger.debug(f"adding uc link to node: {node}, \
+                destination: {destination}, type: {type} \
+                channeloffset: {channeloffset} timeoffset: {timeoffset}")
+        if (not self.scheduler_list_of_nodes):
             sensor = Node(node)
             self.scheduler_list_of_nodes = sensor
             logger.debug("creating new sensor")
@@ -190,10 +198,10 @@ class Scheduler(ABC):
             if (sensor is None):
                 sensor = Node(node)
                 self.scheduler_list_of_nodes = sensor
-        if(type == cell_type.UC_RX):
+        if (type == cell_type.UC_RX):
             rx_cell = sensor.node_add_rx_cell(channeloffset, timeoffset)
             self.scheduler_add_to_schedule(channeloffset, timeoffset, rx_cell)
-        if(type == cell_type.UC_TX and destination is not None):
+        if (type == cell_type.UC_TX and destination is not None):
             tx_cell = sensor.node_add_tx_cell(
                 destination, timeoffset, channeloffset)
             # if(tx_cell is not None):
@@ -223,7 +231,7 @@ class Scheduler(ABC):
     @scheduler_slot_frame_size.setter
     def scheduler_slot_frame_size(self, val):
         if val <= 0 or val > self.scheduler_max_number_timeslots:
-            raise Exception(f"Invalid slotframe size.")
+            raise Exception("Invalid slotframe size.")
         self.__sf_size = val
 
     @property
@@ -236,7 +244,8 @@ class Scheduler(ABC):
 
     def scheduler_check_valid_coordinates(func):
         def inner(self, ch_offset, ts_offset, val=None):
-            if ch_offset > self.schedule_max_number_channels or ts_offset > self.schedule_max_number_timeslots:
+            if ch_offset > self.scheduler_max_number_channels or \
+                    ts_offset > self.scheduler_max_number_timeslots:
                 logger.error("Invalid schedule coordinates.")
                 return
 
@@ -376,7 +385,7 @@ class Scheduler(ABC):
         self.__list_nodes = []
 
     def scheduler_format_printing_cell(self, cell):
-        if(cell):
+        if (cell):
             # infr = "Node {fnode}, I'm {age}".format(fnode = cell.source, age = 36)
             match(cell.type):
                 case cell_type.UC_RX:
@@ -438,7 +447,7 @@ class Scheduler(ABC):
                 if (self.scheduler_get_schedule(i, j)):
                     for elem in self.scheduler_get_schedule(i, j):
                         txt = self.scheduler_format_printing_cell(elem)
-                        if(txt is not None):
+                        if (txt is not None):
                             print_schedule[i][j].append(txt)
         logger.info(*print_schedule, sep='\n')
 
@@ -522,7 +531,8 @@ class Scheduler(ABC):
         df.fillna('-', inplace=True)
 
         table = Table(
-            title="TSCH schedules (Row -> Channels, Columns -> Timeoffsets)", show_lines=True)
+            title="TSCH schedules (Row -> Channels, Columns -> Timeoffsets)",
+            show_lines=True)
 
         show_index = True
 

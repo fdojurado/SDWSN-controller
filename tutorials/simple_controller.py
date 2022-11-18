@@ -20,7 +20,7 @@ from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.serial.serial import SerialBus
+from sdwsn_controller.sink_communication.sink_comm import SinkComm
 from rich.logging import RichHandler
 import logging.config
 import sys
@@ -29,7 +29,8 @@ DOCKER_IMAGE = 'contiker/contiki-ng'
 SIMULATION_FOLDER = 'examples/elise'
 DOCKER_TARGET = '/home/user/contiki-ng'
 CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
-PYTHON_SCRIPT = './run-cooja.py cooja-orchestra.csc'
+SIMULATION_SCRIPT = 'cooja-orchestra.csc'
+PORT = 60003
 
 
 def run_data_plane(controller):
@@ -78,12 +79,9 @@ def main():
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
-    # Script that run inside the container - simulation file as argument
-    run_simulation_file = '/bin/sh -c '+'"cd ' + \
-        SIMULATION_FOLDER+' && ' + PYTHON_SCRIPT + '"'
 
     # Socket
-    socket = SerialBus()
+    socket = SinkComm(port=PORT)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
@@ -96,10 +94,10 @@ def main():
 
     controller = ContainerController(
         docker_image=DOCKER_IMAGE,
-        script=run_simulation_file,
+        simulation_script=SIMULATION_SCRIPT,
+        simulation_folder=SIMULATION_FOLDER,
         docker_target=DOCKER_TARGET,
         contiki_source=CONTIKI_SOURCE,
-        log_file=CONTIKI_SOURCE + '/' + SIMULATION_FOLDER + '/COOJA.log',
         # Database
         db=db,
         # socket

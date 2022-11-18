@@ -17,10 +17,11 @@ class ContentionFreeScheduler(Scheduler):
             name="Contention Free Scheduler")
 
     def run(self, path, current_sf_size):
-        logger.debug(f"running contention free scheduler for sf size {current_sf_size}")
+        logger.debug(
+            f"running contention free scheduler for sf size {current_sf_size}")
         self.scheduler_slot_frame_size = current_sf_size
         for _, p in path.items():
-            if(len(p) >= 2):
+            if (len(p) >= 2):
                 logger.debug(f"try to add uc for {p}")
                 for i in range(len(p)-1):
                     # Tx node
@@ -32,18 +33,21 @@ class ContentionFreeScheduler(Scheduler):
                     logger.debug(f'link {tx_node}-{rx_node}')
                     # We first check whether the Tx-Rx link already exists.
                     if not self.scheduler_link_exists(tx_node, rx_node):
-                        logger.debug(f'link {tx_node}-{rx_node} does not exists')
+                        logger.debug(
+                            f'link {tx_node}-{rx_node} does not exists')
                         # Random Tx link to RX if it is available
                         ts = random.randrange(0,
                                               current_sf_size-1)
                         ch = random.randrange(0,
                                               self.scheduler_max_number_channels-1)
                         # Let's first check whether this timeslot is already in use in the schedule
-                        while(not self.scheduler_timeslot_free(ts)):
+                        while (not self.scheduler_timeslot_free(ts)):
                             ts = random.randrange(0, current_sf_size-1)
-                            logger.debug(f"ts already in use, we now try ts={ts}")
+                            logger.debug(
+                                f"ts already in use, we now try ts={ts}")
                         # We have found an empty timeslot
-                        logger.debug(f'empty time slot {ts} found for {tx_node}-{rx_node}')
+                        logger.debug(
+                            f'empty time slot {ts} found for {tx_node}-{rx_node}')
                         # Schedule Tx
                         self.scheduler_add_uc(
                             tx_node, cell_type.UC_TX, ch, ts, rx_node)

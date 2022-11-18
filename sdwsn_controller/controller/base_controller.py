@@ -15,19 +15,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.packet.packet import Cell_Packet_Payload
-from sdwsn_controller.packet.packet import RA_Packet_Payload
+from abc import ABC, abstractmethod
+
+import logging
+
+import networkx as nx
+import numpy as np
+
+from sdwsn_controller.common import common
+from sdwsn_controller.database.database import Database
 from sdwsn_controller.database.database import OBSERVATIONS
 from sdwsn_controller.database.database import NODES_INFO
-from sdwsn_controller.common import common
-from abc import ABC, abstractmethod
+from sdwsn_controller.packet.packet_dissector import Dissector
+from sdwsn_controller.packet.packet import Cell_Packet_Payload
+from sdwsn_controller.packet.packet import RA_Packet_Payload
+from sdwsn_controller.reinforcement_learning.reward_processing \
+    import RewardProcessing
+from sdwsn_controller.routing.router import Router
+from sdwsn_controller.sink_communication.sink_abc import SinkABC
+from sdwsn_controller.tsch.scheduler import Scheduler
+
 from rich.progress import Progress
+
 from time import sleep
-import numpy as np
-import networkx as nx
 
 import threading
-import logging
 
 logger = logging.getLogger('main.'+__name__)
 
@@ -52,29 +64,37 @@ class BaseController(ABC):
         tsch_scheduler: object = None
     ):
         """
-        The BaseController class is an abstract class. Some functionalities are declared
-        as abstract methods, classes that inherits from the BaseController should take care
-        of them. The controller has six main modules: socket, database, reward processing,
-        packet dissector, router, and TSCH scheduler.
+        The BaseController class is an abstract class. Some functionalities are
+        declared as abstract methods, classes that inherits from the
+        BaseController should take care of them. The controller has six main
+        modules: socket, database, reward processing, packet dissector, router,
+        and TSCH scheduler.
 
         Args:
-            socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
+            socket (SinkComm object, optional): Serial connection to the sink.
+                Defaults to None.
             db (Database object, optional): Database. Defaults to None.
-            reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
-            packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.
-            processing_window (int, optional): Number of packets for a new cycle. Defaults to 200.
-            router (Router object, optional): Centralized routing algorithm. Defaults to None.
-            tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
+            reward_processing (RewardProcessing object, optional):Reward
+                processing for RL. Defaults to None.
+            packet_dissector (Dissector object, optional): Packet dissector.
+                Defaults to None.
+            processing_window (int, optional): Number of packets for a
+                new cycle. Defaults to 200.
+            router (Router object, optional): Centralized routing algorithm.
+                Defaults to None.
+            tsch_scheduler (Scheduler object, optional): Centralized
+                TSCH scheduler. Defaults to None.
         """
         # Database
         self.__db = db
         if self.__db is not None:
-            logger.info(f'Database added')
+            assert isinstance(self.__db, Database)
+            logger.info('Database added')
 
         # Create reward module; only for RL
         self.__reward_processing = reward_processing
         if reward_processing is not None:
-            self.__reward_processing = reward_processing
+            assert isinstance(self.__reward_processing, RewardProcessing)
             logger.info(f"reward processing: {self.reward_processing.name}")
             # Requirements
             self.__user_requirements = UserRequirements()
@@ -82,33 +102,38 @@ class BaseController(ABC):
         # Create packet dissector
         self.__packet_dissector = packet_dissector
         if packet_dissector is not None:
+            assert isinstance(self.__packet_dissector, Dissector)
             logger.info(f'Packet dissector: {self.packet_dissector.name}')
 
         # Create TSCH scheduler module
         self.__tsch_scheduler = tsch_scheduler
         if router is not None:
+            assert isinstance(self.__tsch_scheduler, Scheduler)
             logger.info(f'TSCH scheduler: {self.tsch_scheduler.name}')
 
         # Create an instance of Router
         self.__router = router
         if router is not None:
+            assert isinstance(self.__router, Router)
             logger.info(f'Routing: {self.router.name}')
 
-        # We only create the socket module if this is explicitly pass to the class.
-        # This is is because numerical env does not use it.
-        self.__socket = socket
+        # We only create the socket module if this is explicitly pass to the
+        # class. This is is because numerical env does not use it.
+        self.__sink_comm = socket
         if socket is not None:
-            logger.info(f'Socket added')
+            assert isinstance(self.__sink_comm, SinkABC)
+            logger.info('Socket added')
 
         # Processing window
         self.__processing_window = processing_window
+        assert isinstance(self.__processing_window, int)
         logger.info(f'Processing window: {self.__processing_window}')
 
         self.__is_running = False
         self.__read_socket_thread = None
 
         super().__init__()
-   # ---------------------Database functionalities---------------------------
+    # ---------------------Database functionalities---------------------------
 
     def init_db(self):
         if self.db is not None:
@@ -158,8 +183,16 @@ class BaseController(ABC):
     # --------------------------TSCH functions--------------------------
 
     def send_tsch_schedules(self):
+        # FIXME: Function is too complex. We need to split this function.
+        """
+        It sends the TSCH links to the sink.
+
+        Returns:
+            int: 1 is successful; 0 otherwise.
+        """
         if self.tsch_scheduler is not None:
             logger.info("Sending TSCH packet")
+            sent = 0
             num_pkts = 0
             payload = []
             rows, cols = (self.tsch_scheduler.scheduler_max_number_channels,
@@ -184,7 +217,8 @@ class BaseController(ABC):
                             cell_packed = cell_pkt.pack()
                             payload = cell_packed
                             if len(payload) > 90:
-                                logger.debug(f'Sending schedule packet {num_pkts}')
+                                logger.debug(
+                                    f'Sending schedule packet {num_pkts}')
                                 # We send the current payload
                                 num_pkts += 1
                                 current_sf_size = 0
@@ -194,8 +228,9 @@ class BaseController(ABC):
                                     payload, current_sf_size, self.increase_cycle_sequence())
                                 payload = []
                                 # Send NC packet
-                                self.reliable_send(
-                                    packedData, serial_pkt.reserved0+1)
+                                if self.reliable_send(
+                                        packedData, serial_pkt.reserved0+1):
+                                    sent += 1
             # Send the remain payload if there is one
             if payload:
                 num_pkts += 1
@@ -206,8 +241,13 @@ class BaseController(ABC):
                 packedData, serial_pkt = common.tsch_build_pkt(
                     payload, current_sf_size, self.increase_cycle_sequence())
                 # Send NC packet
-                self.reliable_send(
-                    packedData, serial_pkt.reserved0+1)
+                if self.reliable_send(
+                        packedData, serial_pkt.reserved0+1):
+                    sent += 1
+            if sent == num_pkts:
+                return 1
+            else:
+                return 0
 
     def compute_tsch_schedule(self, path, current_sf_size):
         if self.tsch_scheduler is not None:
@@ -243,8 +283,15 @@ class BaseController(ABC):
     # --------------------------Routing functions-------------------------
 
     def send_routes(self):
+        """
+        It sends the routing paths to the sink.
+
+        Returns:
+            int: 1 is successful; 0 otherwise.
+        """
         if self.router is not None:
             logger.info('Sending routes')
+            sent = 0
             num_pkts = 0
             payload = []
             for _, row in self.router.router_routes.iterrows():
@@ -266,8 +313,9 @@ class BaseController(ABC):
                         payload, self.increase_cycle_sequence())
                     payload = []
                     # Send NC packet
-                    self.reliable_send(
-                        packedData, serial_pkt.reserved0+1)
+                    if self.reliable_send(
+                            packedData, serial_pkt.reserved0+1):
+                        sent += 1
             # Send the remain payload if there is one
             if payload:
                 num_pkts += 1
@@ -275,8 +323,13 @@ class BaseController(ABC):
                 packedData, serial_pkt = common.routing_build_pkt(
                     payload, self.increase_cycle_sequence())
                 # Send NC packet
-                self.reliable_send(
-                    packedData, serial_pkt.reserved0+1)
+                if self.reliable_send(
+                        packedData, serial_pkt.reserved0+1):
+                    sent += 1
+            if sent == num_pkts:
+                return 1
+            else:
+                return 0
 
     def compute_routes(self, G):
         if self.router is not None:
@@ -344,10 +397,10 @@ class BaseController(ABC):
 
     def comm_interface_read(self):
         if self.socket is not None:
-            while(1):
+            while (1):
                 try:
                     msg = self.socket.recv(0.1)
-                    if(len(msg) > 0):
+                    if (len(msg) > 0):
                         self.packet_dissector.handle_serial_packet(msg)
                 except TypeError:
                     pass
@@ -357,7 +410,7 @@ class BaseController(ABC):
 
     @property
     def socket(self):
-        return self.__socket
+        return self.__sink_comm
 
     # --------------------------Controller primitives-----------------------
 
@@ -424,7 +477,7 @@ class BaseController(ABC):
                     progress.update(task1, completed=self.sequence)
                     if self.sequence >= self.processing_window:
                         result = 1
-                        logger.info(f"Cycle completed")
+                        logger.info("Cycle completed")
                         progress.update(task1, completed=100)
                     sleep(0.1)
             logger.info(f"cycle finished, result: {result}")
@@ -468,7 +521,7 @@ class BaseController(ABC):
                     logger.debug("ACK not received")
                     # We stop sending the current NC packet if
                     # we reached the max RTx or we received ACK
-                    if(rtx >= 7):
+                    if (rtx >= 7):
                         logger.warning("ACK never received")
                         break
                     # We resend the packet if retransmission < 7

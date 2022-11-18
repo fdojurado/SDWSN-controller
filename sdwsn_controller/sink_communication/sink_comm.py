@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from contextlib import closing
 import socket
 import sys
 # import logging
-from sdwsn_controller.bus import BusABC
+from sdwsn_controller.sink_communication.sink_abc import SinkABC
 import logging
 
 logger = logging.getLogger('main.'+__name__)
 
-class SerialBus(BusABC):
+
+class SinkComm(SinkABC):
     def __init__(self, host: str = '127.0.0.1', port: int = 60001):
         self.host = host
         self.port = port
@@ -62,18 +64,13 @@ class SerialBus(BusABC):
 
     def _recv_internal(self, timeout):
         """
-        Read a message from the serial device.
-        :param timeout:
-            .. warning::
-                This parameter will be ignored. The timeout value of the channel is used.
-        :returns:
-            Received message and False (because not filtering as taken place).
-            .. warning::
-                Flags like is_extended_id, is_remote_frame and is_error_frame
-                will not be set over this function, the flags in the return
-                message are the default values.
-        :rtype:
-            Tuple[can.Message, Bool]
+        Read a message from the sink.
+
+        Args:
+            timeout (_type_):  Seconds to wait for a message.
+
+        Returns:
+            int, Message: Message received.
         """
         try:
             # ser.read can return an empty string
@@ -82,13 +79,13 @@ class SerialBus(BusABC):
             # logger.info("rx_byte")
             # logger.info(rx_byte)
             if rx_byte and ord(rx_byte) != 0x7E:
-                if(self.escape_character):
+                if (self.escape_character):
                     self.escape_character = 0
                     a = int.from_bytes(rx_byte, 'big')
                     b = int.from_bytes(b'\x20', 'big')
                     rx_byte = a ^ b
                     rx_byte = rx_byte.to_bytes(1, 'big')
-                elif(rx_byte and ord(rx_byte) == 0x7D):
+                elif (rx_byte and ord(rx_byte) == 0x7D):
                     self.escape_character = 1
                     return 0
 
@@ -98,7 +95,8 @@ class SerialBus(BusABC):
                     self.frame_length = self.frame_length + 1
                 else:
                     self.overflow = 1
-                    # logger.info("Packet size overflow: %u bytes\n", self.frame_length)
+                    # logger.info("Packet size overflow: %u bytes\n",
+                    #   self.frame_length)
                     return 0
             else:
                 # logger.info("FRAME_BOUNDARY_OCTET detected")
@@ -129,14 +127,17 @@ class SerialBus(BusABC):
                     return 0
                 return 0
 
-        except socket.error as e:
+        except socket.error:
             return None
 
         return 0
 
     def send(self, data):
         """
-        Send a message over the serial device.
+        Transmit a message to the sink
+
+        Args:
+            data (Message): Message object to transmit.
         """
         logger.info('Sending message over the serial interface')
         byte_msg = bytearray()
@@ -164,7 +165,7 @@ class SerialBus(BusABC):
         try:
             while self.recv(0.1):
                 pass
-        except:
+        except TypeError:
             pass
 
     def shutdown(self) -> None:

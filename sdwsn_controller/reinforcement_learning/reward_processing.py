@@ -104,7 +104,8 @@ class EmulatedRewardProcessing(RewardProcessing):
                 table.add_row(str(elem[0]), str(elem[1]))
             return table
 
-        logger.info(f"Power samples for sequence {sequence}\n{common.log_table(power_samples_table(power_samples))}")
+        logger.info(
+            f"Power samples for sequence {sequence}\n{common.log_table(power_samples_table(power_samples))}")
         # We now need to compute the weighted arithmetic mean
         power_wam, power_mean = self.__power_weighted_arithmetic_mean(
             power_samples)
@@ -176,7 +177,8 @@ class EmulatedRewardProcessing(RewardProcessing):
                 table.add_row(str(elem[0]), str(elem[1]))
             return table
 
-        logger.info(f"Delay samples for sequence {sequence}\n{common.log_table(delay_samples_table(delay_samples))}")
+        logger.info(
+            f"Delay samples for sequence {sequence}\n{common.log_table(delay_samples_table(delay_samples))}")
         # We now need to compute the weighted arithmetic mean
         delay_wam, delay_mean = self.__delay_weighted_arithmetic_mean(
             delay_samples)
@@ -242,7 +244,8 @@ class EmulatedRewardProcessing(RewardProcessing):
                 table.add_row(str(elem[0]), str(elem[1]))
             return table
 
-        logger.info(f"PDR samples for sequence {sequence}\n{common.log_table(pdr_samples_table(pdr_samples))}")
+        logger.info(
+            f"PDR samples for sequence {sequence}\n{common.log_table(pdr_samples_table(pdr_samples))}")
         # We now need to compute the weighted arithmetic mean
         pdr_wam, pdr_mean = self.__pdr_weighted_arithmetic_mean(
             pdr_samples)

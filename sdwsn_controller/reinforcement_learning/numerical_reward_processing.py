@@ -16,8 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
-from sdwsn_controller.database.db_manager import DatabaseManager, SLOT_DURATION
-from sdwsn_controller.database.database import NODES_INFO
+
 from sdwsn_controller.reinforcement_learning.reward_processing import RewardProcessing
 
 
@@ -44,7 +43,7 @@ class NumericalRewardProcessing(RewardProcessing):
 
     def calculate_reward(self, alpha, beta, delta, sf_size):
         """
-        Function to calculate the reward given the SF size 
+        Function to calculate the reward given the SF size
         """
         # Calculate power consumption
         power_normalized = self.power_trendpoly(sf_size)
@@ -57,6 +56,6 @@ class NumericalRewardProcessing(RewardProcessing):
         pdr = [0, pdr_normalized]
         # Calculate the reward
         reward = 2-1*(alpha*power_normalized+beta *
-                     delay_normalized-delta*pdr_normalized)
+                      delay_normalized-delta*pdr_normalized)
         # print(f"reward: {reward}")
         return reward, power, delay, pdr
