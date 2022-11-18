@@ -15,15 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.controller.base_controller import BaseController
-from subprocess import Popen, PIPE, STDOUT
-import subprocess
+import logging
+
+import os
 
 from rich.progress import Progress
+
+from sdwsn_controller.controller.base_controller import BaseController
+from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
+
 from time import sleep
-import logging
-import signal
-import os
 
 
 logger = logging.getLogger('main.'+__name__)
@@ -216,7 +217,7 @@ class Controller(BaseController):
         if self.__proc:
             try:
                 self.__proc.communicate(timeout=15)
-            except subprocess.TimeoutExpired:
+            except TimeoutExpired:
                 self.__proc.kill()
                 self.__proc.communicate()
         # Delete the tmp simulation csc file if exists
