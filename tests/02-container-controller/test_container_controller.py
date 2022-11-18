@@ -15,7 +15,8 @@ from sdwsn_controller.sink_communication.sink_comm import SinkComm
 from sdwsn_controller.tsch.contention_free_scheduler \
     import ContentionFreeScheduler
 
-logger = logging.getLogger('container_controller')
+
+logger = logging.getLogger('main')
 
 # This number has to be unique across all test
 # otherwise, the github actions will fail
@@ -62,7 +63,7 @@ def test_container_controller():
     stream_handler.setLevel(logging.INFO)
     stream_handler.setFormatter(formatter)
 
-    logFilePath = "my.log"
+    logFilePath = "my_container.log"
     formatter = logging.Formatter(
         '%(asctime)s | %(name)s |  %(levelname)s: %(message)s')
     file_handler = logging.handlers.TimedRotatingFileHandler(
