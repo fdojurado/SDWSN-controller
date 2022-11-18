@@ -144,5 +144,6 @@ jobs:
           cd ${{ env.CONTIKI_NG }}
           cd examples/elise
           ls
+          cat cooja-orchestra-temp.csc
           cat COOJA.log
         shell: bash
