@@ -68,6 +68,10 @@ class Controller(BaseController):
             tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
         """
 
+        assert isinstance(contiki_source, str)
+        assert isinstance(simulation_folder, str)
+        assert isinstance(simulation_script, str)
+
         logger.info("Building controller")
 
         # Controller related variables

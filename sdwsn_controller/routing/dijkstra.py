@@ -24,9 +24,12 @@ logger = logging.getLogger('main.'+__name__)
 
 class Dijkstra(Router):
     def __init__(self):
-        super().__init__(
-            name="Dijkstra"
-        )
+        self.__name = "Dijkstra"
+        super().__init__()
+
+    @property
+    def name(self):
+        return self.__name
 
     def run(self, G):
         # Clear all previous routes

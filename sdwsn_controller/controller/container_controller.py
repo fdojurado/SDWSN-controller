@@ -81,6 +81,12 @@ class ContainerController(BaseController):
             router (Router object, optional): Centralized routing algorithm. Defaults to None.
             tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
         """
+
+        assert isinstance(simulation_folder, str)
+        assert isinstance(simulation_script, str)
+        assert isinstance(docker_target, str)
+        assert isinstance(contiki_source, str)
+
         ports = {
             'container': socket.port,
             'host': socket.port

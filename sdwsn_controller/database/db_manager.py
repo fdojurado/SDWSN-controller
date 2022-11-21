@@ -54,6 +54,9 @@ class DatabaseManager(Database):
         host: str = '127.0.0.1',
         port: int = 27017
     ):
+        assert isinstance(name, str)
+        assert isinstance(host, str)
+        assert isinstance(port, int)
         self.name = name
         self.host = host
         self.port = port
