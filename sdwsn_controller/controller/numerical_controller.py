@@ -44,10 +44,14 @@ class NumericalRewardProcessing(RewardProcessing):
         self.delay_trendpoly = np.poly1d(delay_weights)
         # PDR polynomials coefficients
         self.pdr_trendpoly = np.poly1d(pdr_weights)
+        # Reward processor name
+        self.__name = "Numerical Reward Processing"
 
-        super().__init__(
-            name="Numerical Reward processing"
-        )
+        super().__init__()
+
+    @property
+    def name(self):
+        return self.__name
 
     def calculate_reward(self, alpha, beta, delta, sf_size):
         """

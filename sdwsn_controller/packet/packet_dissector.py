@@ -16,10 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # This class allows to read and write from the database
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import logging
 
+from sdwsn_controller.database.database import Database
 from sdwsn_controller.packet.packet import Data_Packet, NA_Packet
 from sdwsn_controller.packet.packet import SerialPacket, SDN_IP_Packet
 from sdwsn_controller.packet.packet import serial_protocol, sdn_protocols
@@ -38,20 +39,25 @@ class Dissector(ABC):
 
     def __init__(
         self,
-        cycle_sequence,
-        sequence,
-        database,
-        name
+        cycle_sequence: int = 0,
+        sequence: int = 0,
+        database: object = None
     ):
+        assert isinstance(cycle_sequence, int)
+        assert isinstance(sequence, int)
+        # Database
+        self.__db = database
+        if self.__db is not None:
+            assert isinstance(self.__db, Database)
+
         self.__cycle_sequence = cycle_sequence
         self.__sequence = sequence
-        self.__db = database
-        self.__name = name
         super().__init__()
 
     @property
+    @abstractmethod
     def name(self):
-        return self.__name
+        pass
 
     @property
     def sequence(self):
@@ -108,13 +114,17 @@ class PacketDissector(Dissector):
             sequence: int = 0,
             database: object = None
     ):
+        self.__name = "Packet Dissector"
         self.ack_pkt = None
         super().__init__(
             cycle_sequence=cycle_sequence,
             sequence=sequence,
-            database=database,
-            name="Packet Dissector"
+            database=database
         )
+
+    @property
+    def name(self):
+        return self.__name
 
     def handle_serial_packet(self, data):
         # Let's parse serial packet

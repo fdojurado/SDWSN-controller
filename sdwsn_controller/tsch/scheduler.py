@@ -147,20 +147,23 @@ class Scheduler(ABC):
 
     def __init__(
             self,
-            sf_size,
-            channel_offsets,
-            name
+            sf_size: int = 500,
+            channel_offsets: int = 3
     ):
+        assert isinstance(sf_size, int)
+        assert sf_size > 1
+        assert isinstance(channel_offsets, int)
+        assert channel_offsets > 0
         self.__max_number_timeslots = sf_size
         self.__max_number_channels = channel_offsets
         self.__list_nodes = []
         self.scheduler_clear_schedule()
         self.__sf_size = None
-        self.__name = name
 
     @property
+    @abstractmethod
     def name(self):
-        return self.__name
+        pass
 
     @abstractmethod
     def run(self):

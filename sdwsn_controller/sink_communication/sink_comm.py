@@ -26,7 +26,13 @@ logger = logging.getLogger('main.'+__name__)
 
 
 class SinkComm(SinkABC):
-    def __init__(self, host: str = '127.0.0.1', port: int = 60001):
+    def __init__(
+        self,
+        host: str = '127.0.0.1',
+        port: int = 60001
+    ):
+        assert isinstance(host, str)
+        assert isinstance(port, int)
         self.host = host
         self.port = port
         self.byte_msg = bytearray()

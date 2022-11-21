@@ -56,6 +56,15 @@ class CoojaDocker():
             detach (bool, optional): Run container in the background. Defaults to True.
             log_file (Optional[str], optional): Path to the 'COOJA.log' file. Defaults to None.
         """
+        assert isinstance(docker_image, str)
+        assert isinstance(script, str)
+        assert isinstance(mount, Dict)
+        assert isinstance(sysctls, Dict)
+        assert isinstance(ports, Dict)
+        assert isinstance(privileged, bool)
+        assert isinstance(detach, bool)
+        assert isinstance(log_file, str)
+
         self.docker_image = docker_image
         self.script = script
         self.mount = Mount(

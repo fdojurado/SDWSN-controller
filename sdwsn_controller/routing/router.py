@@ -35,16 +35,15 @@ class Router(ABC):
     """
 
     def __init__(
-        self,
-        name
+        self
     ):
         self.column_names = ['scr', 'dst', 'via']
         self.__routes = pd.DataFrame(columns=self.column_names)
-        self.__name = name
 
     @property
+    @abstractmethod
     def name(self):
-        return self.__name
+        pass
 
     @abstractmethod
     def run(self):

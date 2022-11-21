@@ -10,9 +10,14 @@ class HardCodedScheduler(Scheduler):
             sf_size: int = 500,
             channel_offsets: int = 3
     ):
+        self.__name = "Hard Coded Scheduler"
         super().__init__(
             sf_size,
             channel_offsets)
+
+    @property
+    def name(self):
+        return self.__name
 
     def run(self, path, current_sf_size):
         logger.debug(

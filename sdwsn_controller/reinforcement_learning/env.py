@@ -25,6 +25,7 @@ import random
 from random import randrange
 
 from sdwsn_controller.common import common
+from sdwsn_controller.controller.base_controller import BaseController
 from sdwsn_controller.result_analysis import run_analysis
 
 # These are the size of other schedules in orchestra
@@ -46,6 +47,9 @@ class Env(gym.Env):
             folder: str = './figures/'
     ):
         super(Env, self).__init__()
+        assert isinstance(simulation_name, str)
+        assert isinstance(folder, str)
+        assert isinstance(controller, BaseController)
         self.controller = controller
         self.folder = folder
         self.simulation_name = simulation_name
