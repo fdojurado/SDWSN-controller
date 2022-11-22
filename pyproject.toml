@@ -55,7 +55,7 @@ dependencies = [
     'pymongo',
     'python-daemon',
     'rich',
-    'tomli',
+    'tomli'
 ]
 
 [project.urls]
