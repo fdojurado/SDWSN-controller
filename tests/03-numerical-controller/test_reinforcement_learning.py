@@ -14,8 +14,6 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import pandas as pd
-
 from gym.envs.registration import register
 import gym
 
@@ -26,106 +24,83 @@ import os
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.controller.numerical_controller import \
     NumericalRewardProcessing, NumericalController
-from sdwsn_controller.result_analysis import run_analysis
 
 import shutil
 
+from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 
 
-MAX_SLOTFRAME_SIZE = 70
+def train(env, log_dir):
+    """
+    Just use the PPO algorithm.
+    """
+    model = PPO("MlpPolicy", env,
+                tensorboard_log=log_dir, verbose=0)
+
+    model.learn(total_timesteps=int(5e4),
+                tb_log_name='training')
+    # Let's save the model
+    path = "".join([log_dir, "ppo_sdwsn"])
+    model.save(path)
+
+    del model  # remove to demonstrate saving and loading
+
+    return path
 
 
-def run(env, controller):
-    # Reset environment
-    obs = env.reset()
-    assert np.all(obs)
-    # Get last observations (not normalized) including the SF size
-    observations = controller.get_state()
-    assert 0 <= observations['alpha'] <= 1
-    assert 0 <= observations['beta'] <= 1
-    assert 0 <= observations['delta'] <= 1
-    assert observations['last_ts_in_schedule'] > 1
-    # Current SF size
-    sf_size = observations['current_sf_len']
-    last_ts_in_schedule = observations['last_ts_in_schedule']
-    controller.user_requirements = (0.4, 0.3, 0.3)
-    increase = 1
-    for _ in range(200):
-        if increase:
-            if sf_size < MAX_SLOTFRAME_SIZE - 2:
-                action = 0
-            else:
-                increase = 0
-        else:
-            if sf_size > last_ts_in_schedule + 2:
-                action = 1
-            else:
-                increase = 1
+def evaluation(env, model_path):
+    model = PPO.load(model_path)
 
-        env.step(action)
+    # Set of requirements
+    balanced = (0.4, 0.3, 0.3)
+    energy = (0.8, 0.1, 0.1)
+    delay = (0.1, 0.8, 0.1)
+    reliability = (0.1, 0.1, 0.8)
+    requirements = [balanced, energy, delay, reliability]
+
+    total_reward = 0
+
+    for user_req in requirements:
+        obs = env.reset()
+        env.controller.user_requirements = user_req
+        done = False
+        acc_reward = 0
         # Get last observations non normalized
-        observations = controller.get_state()
+        observations = env.controller.get_state()
         assert 0 <= observations['alpha'] <= 1
         assert 0 <= observations['beta'] <= 1
         assert 0 <= observations['delta'] <= 1
         assert observations['last_ts_in_schedule'] > 1
-        # Current SF size
-        sf_size = observations['current_sf_len']
-        assert sf_size > 1 and sf_size <= MAX_SLOTFRAME_SIZE
-    env.render()
-    env.close()
+        while not done:
+            action, _ = model.predict(obs, deterministic=True)
+            obs, reward, done, _ = env.step(action)
+            acc_reward += reward
+            # Get last observations non normalized
+            observations = env.controller.get_state()
+            assert 0 <= observations['alpha'] <= 1
+            assert 0 <= observations['beta'] <= 1
+            assert 0 <= observations['delta'] <= 1
+            assert observations['last_ts_in_schedule'] > 1
+            if done:
+                total_reward += acc_reward
+
+    # Total reward, for this scenario, should be above 65.
+    assert total_reward/4 > 64
 
 
-def result_analysis(path, output_folder):
-    df = pd.read_csv(path)
-    # Normalized power
-    run_analysis.plot_fit_curves(
-        df,
-        'power',
-        output_folder,
-        'current_sf_len',
-        'power_normalized',
-        r'$|C|$',
-        r'$\widetilde{P}$',
-        4,
-        [8, 0.89],
-        [0.86, 0.9]
-    )
-    # Normalized delay
-    run_analysis.plot_fit_curves(
-        df,
-        'delay',
-        output_folder,
-        'current_sf_len',
-        'delay_normalized',
-        r'$|C|$',
-        r'$\widetilde{D}$',
-        3,
-        [8, 0.045],
-        [0, 0.95]
-    )
-    run_analysis.plot_fit_curves(
-        df,
-        'reliability',
-        output_folder,
-        'current_sf_len',
-        'pdr_mean',
-        r'$|C|$',
-        r'$\widetilde{R}$',
-        1,
-        [25, 0.7],
-        [0.65, 1]
-    )
-
-
-def test_numerical_approximation_model():
+def test_reinforcement_learning():
+    """
+    This test the training, loading and testing of RL env.
+    We dont use DB to avoid reducing the processing speed
+    """
     # ----------------- RL environment, setup --------------------
     # Register the environment
     register(
         # unique identifier for the env `name-version`
         id="sdwsn-v1",
         entry_point="sdwsn_controller.reinforcement_learning.env:Env",
+        max_episode_steps=50
     )
 
     # Create output folder
@@ -136,9 +111,6 @@ def test_numerical_approximation_model():
     log_dir = './tensorlog/'
     os.makedirs(log_dir, exist_ok=True)
     # -------------------- setup controller ---------------------
-    # Database
-    db = DatabaseManager()
-
     # Reward processor
     reward_processor = NumericalRewardProcessing(
         power_weights=np.array(
@@ -151,32 +123,44 @@ def test_numerical_approximation_model():
              0.85749587960003453947587046868728]
         ),
         pdr_weights=np.array(
-            # [-2.76382789e-04,  9.64746733e-01]
-            [-2.76382789e-04,  -0.8609615946299346738365592202098]
+            [-2.76382789e-04,  9.64746733e-01]
+            # [-2.76382789e-04,  -0.8609615946299346738365592202098]
         )
     )
 
-    controller = NumericalController(
+    # This is to plot results of the trained agent.
+    db = DatabaseManager()
+
+    train_controller = NumericalController(
+        reward_processing=reward_processor
+    )
+    test_controller = NumericalController(
         db=db,
         reward_processing=reward_processor
     )
     # ----------------- RL environment ----------------------------
-    env_kwargs = {
+    train_env_kwargs = {
         'simulation_name': 'test_numerical_approximation_model',
         'folder': output_folder,
-        'controller': controller
+        'controller': train_controller
+    }
+    test_env_kwargs = {
+        'simulation_name': 'test_numerical_approximation_model',
+        'folder': output_folder,
+        'controller': test_controller
     }
     # Create an instance of the environment
-    env = gym.make('sdwsn-v1', **env_kwargs)
-    env = Monitor(env, log_dir)
     # --------------------Start RL --------------------------------
-    run(env, controller)
-
-    result_analysis(
-        output_folder+'test_numerical_approximation_model.csv', output_folder)
-
-    controller.stop()
-
+    train_env = gym.make('sdwsn-v1', **train_env_kwargs)
+    train_env = Monitor(train_env, log_dir)
+    test_env = gym.make('sdwsn-v1', **test_env_kwargs)
+    test_env = Monitor(test_env, log_dir)
+    # Train the agent
+    model_path = train(train_env, log_dir)
+    # Evaluate the agent
+    evaluation(test_env, model_path)
+    train_controller.stop()
+    test_controller.stop()
     # Delete folders
     try:
         shutil.rmtree(output_folder)
