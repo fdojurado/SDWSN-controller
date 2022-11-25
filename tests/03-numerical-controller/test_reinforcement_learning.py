@@ -24,6 +24,7 @@ import os
 from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.controller.numerical_controller import \
     NumericalRewardProcessing, NumericalController
+from sdwsn_controller.reinforcement_learning.env import MAX_SLOTFRAME_SIZE
 
 import shutil
 
@@ -38,7 +39,7 @@ def train(env, log_dir):
     model = PPO("MlpPolicy", env,
                 tensorboard_log=log_dir, verbose=0)
 
-    model.learn(total_timesteps=int(5e4),
+    model.learn(total_timesteps=int(50e4),
                 tb_log_name='training')
     # Let's save the model
     path = "".join([log_dir, "ppo_sdwsn"])
@@ -52,18 +53,11 @@ def train(env, log_dir):
 def evaluation(env, model_path):
     model = PPO.load(model_path)
 
-    # Set of requirements
-    balanced = (0.4, 0.3, 0.3)
-    energy = (0.8, 0.1, 0.1)
-    delay = (0.1, 0.8, 0.1)
-    reliability = (0.1, 0.1, 0.8)
-    requirements = [balanced, energy, delay, reliability]
-
     total_reward = 0
 
-    for user_req in requirements:
+    # Test the trained agent
+    for _ in range(50):
         obs = env.reset()
-        env.controller.user_requirements = user_req
         done = False
         acc_reward = 0
         # Get last observations non normalized
@@ -72,9 +66,24 @@ def evaluation(env, model_path):
         assert 0 <= observations['beta'] <= 1
         assert 0 <= observations['delta'] <= 1
         assert observations['last_ts_in_schedule'] > 1
-        while not done:
+        # get requirements
+        user_req_type = env.controller.user_requirements_type
+        match user_req_type:
+            case 'energy':
+                env.controller.current_slotframe_size = env.controller.last_tsch_link+5
+            case 'delay':
+                env.controller.current_slotframe_size = MAX_SLOTFRAME_SIZE-5
+            case 'pdr':
+                env.controller.current_slotframe_size = MAX_SLOTFRAME_SIZE-5
+            case 'balanced':
+                env.controller.current_slotframe_size = MAX_SLOTFRAME_SIZE-5
+            case _:
+                print("Unknow user requirements.")
+        while (not done):
             action, _ = model.predict(obs, deterministic=True)
             obs, reward, done, _ = env.step(action)
+            # Get last observations non normalized
+            observations = env.controller.get_state()
             acc_reward += reward
             # Get last observations non normalized
             observations = env.controller.get_state()
@@ -86,7 +95,7 @@ def evaluation(env, model_path):
                 total_reward += acc_reward
 
     # Total reward, for this scenario, should be above 65.
-    assert total_reward/4 > 64
+    assert total_reward/50 > 64
 
 
 def test_reinforcement_learning():
@@ -112,7 +121,23 @@ def test_reinforcement_learning():
     os.makedirs(log_dir, exist_ok=True)
     # -------------------- setup controller ---------------------
     # Reward processor
-    reward_processor = NumericalRewardProcessing(
+    train_reward_processor = NumericalRewardProcessing(
+        power_weights=np.array(
+            [1.14247726e-08, -2.22419840e-06,
+             1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
+        ),
+        delay_weights=np.array(
+            # [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,  1.02710258e-04]
+            [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,
+             0.85749587960003453947587046868728]
+        ),
+        pdr_weights=np.array(
+            # [-2.76382789e-04,  9.64746733e-01]
+            [-2.76382789e-04,  -0.8609615946299346738365592202098]
+        )
+    )
+    # Reward processor
+    test_reward_processor = NumericalRewardProcessing(
         power_weights=np.array(
             [1.14247726e-08, -2.22419840e-06,
              1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
@@ -132,11 +157,11 @@ def test_reinforcement_learning():
     db = DatabaseManager()
 
     train_controller = NumericalController(
-        reward_processing=reward_processor
+        reward_processing=train_reward_processor
     )
     test_controller = NumericalController(
         db=db,
-        reward_processing=reward_processor
+        reward_processing=test_reward_processor
     )
     # ----------------- RL environment ----------------------------
     train_env_kwargs = {
