@@ -75,7 +75,10 @@ class Env(gym.Env):
             # print("decreasing slotframe size")
             sf_len = common.previous_coprime(obs['current_sf_len'])
         if action == 2:
+            # print("same slotframe size")
             sf_len = obs['current_sf_len']
+        # Set the SF size
+        self.controller.current_slotframe_size = sf_len
         # Send the entire TSCH schedule
         self.controller.send_tsch_schedules()
         # Delete the current nodes_info collection from the database
@@ -126,7 +129,8 @@ class Env(gym.Env):
         # MAX_SLOTFRAME_SIZE is the maximum slotframe size
         # TODO: Set the maximum slotframe size at the creation
         # of the environment
-        if (sf_len < obs['last_ts_in_schedule'] or sf_len > MAX_SLOTFRAME_SIZE):
+        if (sf_len < obs['last_ts_in_schedule'] or
+                sf_len > MAX_SLOTFRAME_SIZE):
             done = True
             reward = -4
 
@@ -172,10 +176,15 @@ class Env(gym.Env):
         # We now save all the observations
         # This is done for the numerical environment.
         self.controller.last_tsch_link = randrange(9+1, 20)
+        # print(f'tsch link: {self.controller.last_tsch_link}')
         # Get last active ts
         last_ts_in_schedule = self.controller.last_tsch_link
-        # Set the slotframe size
-        slotframe_size = last_ts_in_schedule
+        # Set a random initial slotframe size
+        slotframe_size = random.randint(
+            last_ts_in_schedule+5, MAX_SLOTFRAME_SIZE-5)
+        # slotframe_size = last_ts_in_schedule
+        self.controller.current_slotframe_size = slotframe_size
+        # print(f'controller sf: {self.controller.current_slotframe_size}')
         # slotframe_size = last_ts_in_schedule
         # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
         sample_time = datetime.now().timestamp() * 1000.0
