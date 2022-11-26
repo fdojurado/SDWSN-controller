@@ -548,6 +548,10 @@ class BaseController(ABC):
     def user_requirements(self):
         return self.__user_requirements.requirements
 
+    @property
+    def user_requirements_type(self):
+        return self.__user_requirements.type
+
     @user_requirements.setter
     def user_requirements(self, val):
         self.__user_requirements.requirements = val
@@ -597,8 +601,8 @@ class BaseController(ABC):
         self.__delay_normalized = delay_normalized
         self.__pdr_wam = pdr_wam
         self.__pdr_mean = pdr_mean
-        self.__current_slotframe_size = current_sf_len
-        self.__last_tsch_link = last_ts_in_schedule
+        self.current_slotframe_size = current_sf_len
+        self.last_tsch_link = last_ts_in_schedule
         self.__reward = reward
 
     def delete_info_collection(self):
@@ -612,8 +616,8 @@ class BaseController(ABC):
             "alpha": self.alpha,
             "beta": self.beta,
             "delta": self.delta,
-            "last_ts_in_schedule": self.__last_tsch_link,
-            "current_sf_len": self.__current_slotframe_size
+            "last_ts_in_schedule": self.last_tsch_link,
+            "current_sf_len": self.current_slotframe_size
         }
         return state
 
@@ -622,7 +626,31 @@ class BaseController(ABC):
 
 class UserRequirements():
     def __init__(self):
-        pass
+        self.__alpha = 0
+        self.__beta = 0
+        self.__delta = 0
+        self.__balanced = 0
+        self.__user_requirements = np.array([0.4, 0.4, 0.3])
+
+    @property
+    def type(self):
+        energy = np.array([0.8, 0.1, 0.1])
+        delay = np.array([0.1, 0.8, 0.1])
+        reliability = np.array([0.1, 0.1, 0.8])
+        balanced = np.array([0.4, 0.3, 0.3])
+        user_req = self.requirements
+        comparison = user_req == energy
+        if comparison.all():
+            return "energy"
+        comparison = user_req == delay
+        if comparison.all():
+            return "delay"
+        comparison = user_req == reliability
+        if comparison.all():
+            return "pdr"
+        comparison = user_req == balanced
+        if comparison.all():
+            return "balanced"
 
     @property
     def requirements(self):
@@ -631,7 +659,8 @@ class UserRequirements():
             self.beta,
             self.delta
         ]
-        return np.array(user_req)
+        self.__user_requirements = user_req
+        return self.__user_requirements
 
     @requirements.setter
     def requirements(self, val):
