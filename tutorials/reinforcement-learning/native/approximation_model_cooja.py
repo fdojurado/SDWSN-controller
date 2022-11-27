@@ -66,7 +66,7 @@ def run(env, controller):
     last_ts_in_schedule = observations['last_ts_in_schedule']
     controller.user_requirements = (0.4, 0.3, 0.3)
     increase = 1
-    for _ in range(20):
+    for _ in range(200):
         if increase:
             if sf_size < MAX_SLOTFRAME_SIZE - 2:
                 action = 0
