@@ -23,15 +23,26 @@ import numpy as np
 
 import os
 
+from sdwsn_controller.controller.container_controller \
+    import ContainerController
 from sdwsn_controller.database.db_manager import DatabaseManager
-from sdwsn_controller.controller.numerical_controller import \
-    NumericalRewardProcessing, NumericalController
+from sdwsn_controller.packet.packet_dissector import PacketDissector
+from sdwsn_controller.reinforcement_learning.reward_processing \
+    import EmulatedRewardProcessing
 from sdwsn_controller.result_analysis import run_analysis
+from sdwsn_controller.routing.dijkstra import Dijkstra
+from sdwsn_controller.sink_communication.sink_comm import SinkComm
+from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
+
 
 import shutil
 
 from stable_baselines3.common.monitor import Monitor
 
+# This number has to be unique across all test
+# otherwise, the github actions will fail
+# TEST: This might not be necessary anymore.
+PORT = 60004
 
 MAX_SLOTFRAME_SIZE = 70
 
@@ -51,7 +62,7 @@ def run(env, controller):
     last_ts_in_schedule = observations['last_ts_in_schedule']
     controller.user_requirements = (0.4, 0.3, 0.3)
     increase = 1
-    for _ in range(200):
+    for _ in range(20):
         if increase:
             if sf_size < MAX_SLOTFRAME_SIZE - 2:
                 action = 0
@@ -119,7 +130,16 @@ def result_analysis(path, output_folder):
     )
 
 
-def test_numerical_approximation_model():
+def test_container_approximation_model():
+    assert os.getenv('CONTIKI_NG')
+    contiki_source = os.getenv('CONTIKI_NG')
+    assert os.getenv('DOCKER_BASE_IMG')
+    docker_image = os.getenv('DOCKER_BASE_IMG')
+    docker_target = '/home/user/contiki-ng'
+    # use different port number to avoid interfering with
+    # the native controller
+    simulation_folder = 'examples/elise'
+    simulation_script = 'cooja-elise.csc'
     # ----------------- RL environment, setup --------------------
     # Register the environment
     register(
@@ -136,33 +156,40 @@ def test_numerical_approximation_model():
     log_dir = './tensorlog/'
     os.makedirs(log_dir, exist_ok=True)
     # -------------------- setup controller ---------------------
+    # Socket
+    socket = SinkComm(port=PORT)
+    # TSCH scheduler
+    tsch_scheduler = HardCodedScheduler()
     # Database
     db = DatabaseManager()
 
     # Reward processor
-    reward_processor = NumericalRewardProcessing(
-        power_weights=np.array(
-            [1.14247726e-08, -2.22419840e-06,
-             1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
-        ),
-        delay_weights=np.array(
-            # [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,  1.02710258e-04]
-            [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,
-             0.85749587960003453947587046868728]
-        ),
-        pdr_weights=np.array(
-            # [-2.76382789e-04,  9.64746733e-01]
-            [-2.76382789e-04,  -0.8609615946299346738365592202098]
-        )
-    )
+    reward_processor = EmulatedRewardProcessing(database=db)
 
-    controller = NumericalController(
+    # Routing algorithm
+    routing = Dijkstra()
+
+    controller = ContainerController(
+        docker_image=docker_image,
+        simulation_script=simulation_script,
+        simulation_folder=simulation_folder,
+        docker_target=docker_target,
+        contiki_source=contiki_source,
+        # Database
         db=db,
-        reward_processing=reward_processor
+        # socket
+        socket=socket,
+        # Reward processor
+        reward_processing=reward_processor,
+        # Packet dissector
+        packet_dissector=PacketDissector(database=db),
+        processing_window=200,
+        router=routing,
+        tsch_scheduler=tsch_scheduler
     )
     # ----------------- RL environment ----------------------------
     env_kwargs = {
-        'simulation_name': 'test_numerical_approximation_model',
+        'simulation_name': 'test_container_approximation_model',
         'folder': output_folder,
         'controller': controller
     }
@@ -173,7 +200,7 @@ def test_numerical_approximation_model():
     run(env, controller)
 
     result_analysis(
-        output_folder+'test_numerical_approximation_model.csv', output_folder)
+        output_folder+'test_container_approximation_model.csv', output_folder)
 
     controller.stop()
 
