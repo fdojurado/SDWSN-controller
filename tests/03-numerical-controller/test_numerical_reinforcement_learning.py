@@ -98,7 +98,7 @@ def evaluation(env, model_path):
     assert total_reward/50 > 64
 
 
-def test_reinforcement_learning():
+def test_numerical_reinforcement_learning():
     """
     This test the training, loading and testing of RL env.
     We dont use DB to avoid reducing the processing speed
@@ -165,12 +165,12 @@ def test_reinforcement_learning():
     )
     # ----------------- RL environment ----------------------------
     train_env_kwargs = {
-        'simulation_name': 'test_numerical_approximation_model',
+        'simulation_name': 'test_numerical_reinforcement_learning',
         'folder': output_folder,
         'controller': train_controller
     }
     test_env_kwargs = {
-        'simulation_name': 'test_numerical_approximation_model',
+        'simulation_name': 'test_numerical_reinforcement_learning',
         'folder': output_folder,
         'controller': test_controller
     }
