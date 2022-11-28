@@ -45,7 +45,7 @@ class RewardProcessing(ABC):
 class EmulatedRewardProcessing(RewardProcessing):
     def __init__(
         self,
-        database: object = DatabaseManager(),
+        database: object = None,
         power_min: int = 0,
         power_max: int = 5000,
         delay_min: int = SLOT_DURATION,

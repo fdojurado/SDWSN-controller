@@ -42,6 +42,10 @@ class Database(ABC):
         pass
 
     @abstractmethod
+    def export_collection(self):
+        pass
+
+    @abstractmethod
     def save_serial_packet(self):
         pass
 
@@ -67,6 +71,54 @@ class Database(ABC):
 
     @abstractmethod
     def get_last_observations(self):
+        pass
+
+    @abstractmethod
+    def get_last_power_consumption(self):
+        pass
+
+    @abstractmethod
+    def get_last_delay(self):
+        pass
+
+    @abstractmethod
+    def get_last_pdr(self):
+        pass
+
+    @abstractmethod
+    def get_last_nbr(self):
+        pass
+
+    @abstractmethod
+    def get_rank(self):
+        pass
+
+    @abstractmethod
+    def get_last_slotframe_len(self):
+        pass
+
+    @abstractmethod
+    def get_last_timestamp(self):
+        pass
+
+    @abstractmethod
+    def get_number_of_sensors(self):
+        pass
+
+    @abstractmethod
+    def get_sensor_nodes_in_order(self):
+        pass
+
+    @abstractmethod
+    def get_last_index_wsn(self):
+        pass
+
+    @abstractmethod
+    def get_avg_delay(self):
+        pass
+
+    @abstractmethod
+    def get_avg_pdr(self):
         pass
 
     def insert_one(self, collection, data):

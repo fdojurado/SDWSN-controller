@@ -28,7 +28,7 @@ import os
 
 from rich.logging import RichHandler
 
-from sdwsn_controller.database.db_manager import DatabaseManager
+from sdwsn_controller.database.no_db import NoDatabase
 from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.reinforcement_learning.reward_processing \
     import EmulatedRewardProcessing
@@ -177,7 +177,7 @@ def main():
     # TSCH scheduler
     tsch_scheduler = HardCodedScheduler()
     # Database
-    db = DatabaseManager()
+    db = NoDatabase()
 
     # Reward processor
     reward_processor = EmulatedRewardProcessing(database=db)
