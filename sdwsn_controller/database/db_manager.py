@@ -82,6 +82,9 @@ class DatabaseManager(Database):
         df = pd.DataFrame(data)
         df.to_csv(folder+name+'.csv')
 
+    def delete_info_collection(self):
+        self.delete_collection(NODES_INFO)
+
     def save_serial_packet(self, pkt):
         # The incoming format should be JSON
         data = json.loads(pkt)
@@ -195,6 +198,9 @@ class DatabaseManager(Database):
             return
         else:
             return db["rank"]
+
+    def greatest_rank(self):
+        return self.find_one(NODES_INFO, {}, sort=[("rank", -1)])
 
     def get_last_slotframe_len(self):
         db = self.find_one(SLOTFRAME_LEN, {})
@@ -340,6 +346,9 @@ class DatabaseManager(Database):
         sensors = np.unique(nodes)
         return sensors.size
 
+    def get_sensor_nodes(self):
+        return self.find(NODES_INFO, {})
+
     def get_last_index_wsn(self):
         nbr_array = np.array(self.distinct(NODES_INFO, "neighbors.dst"))
         nodes = np.append(nbr_array, self.distinct(NODES_INFO, "node_id"))
@@ -384,10 +393,10 @@ class DatabaseManager(Database):
             "beta": beta,
             "delta": delta,
             "power_wam": power_wam,
-            "power_avg": power_mean,
+            "mean": power_mean,
             "power_normalized": power_normalized,
             "delay_wam": delay_wam,
-            "delay_avg": delay_mean,
+            "delay_mean": delay_mean,
             "delay_normalized": delay_normalized,
             "pdr_wam": pdr_wam,
             "pdr_mean": pdr_mean,

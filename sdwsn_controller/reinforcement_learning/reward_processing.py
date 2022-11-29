@@ -148,8 +148,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         # Let's first get the rank of the sensor node
         node_rank = self.db.get_rank(node)
         # Get the value of the greatest rank of the network
-        db = self.db.find_one(
-            NODES_INFO, {}, sort=[("rank", -1)])
+        db = self.db.greatest_rank()
         last_rank = db['rank']
         # Let's get the number of neighbors
         num_nbr = 0
@@ -221,8 +220,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         # Let's get the rank of the sensor node
         node_rank = self.db.get_rank(node)
         # Get the value of the greatest rank of the network
-        db = self.db.find_one(
-            NODES_INFO, {}, sort=[("rank", -1)])
+        db = self.db.greatest_rank()
         last_rank = db['rank']
         # Calculate the weight
         weight = 1 - node_rank/(last_rank+1)
@@ -287,8 +285,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         # Let's first get the rank of the sensor node
         node_rank = self.db.get_rank(node)
         # Get the value of the greatest rank of the network
-        db = self.db.find_one(
-            NODES_INFO, {}, sort=[("rank", -1)])
+        db = self.db.greatest_rank()
         last_rank = db['rank']
         # Let's get the number of neighbors
         num_nbr = 0

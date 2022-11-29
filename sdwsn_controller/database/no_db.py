@@ -42,11 +42,27 @@ class PDR():
     def timestamp(self):
         return self.__timestamp
 
+    @property
+    def cycle_seq(self):
+        return self.__cycle_seq
+
+    @property
+    def seq(self):
+        return self.__seq
+
+    def to_dict(self):
+        data = {
+            'timestamp': self.timestamp,
+            'cycle_seq': self.cycle_seq,
+            'seq': self.seq
+        }
+        return data
+
     def __repr__(self) -> str:
         return "PDR(timestamp: {}, cycle seq: {}, seq: {})".format(
-            self.__timestamp,
-            self.__cycle_seq,
-            self.__seq)
+            self.timestamp,
+            self.cycle_seq,
+            self.seq)
 
 
 class Delay():
@@ -70,12 +86,33 @@ class Delay():
     def timestamp(self):
         return self.__timestamp
 
+    @property
+    def cycle_seq(self):
+        return self.__cycle_seq
+
+    @property
+    def seq(self):
+        return self.__seq
+
+    @property
+    def sampled_delay(self):
+        return self.__sampled_delay
+
+    def to_dict(self):
+        data = {
+            'timestamp': self.timestamp,
+            'cycle_seq': self.cycle_seq,
+            'seq': self.seq,
+            'sampled_delay': self.sampled_delay,
+        }
+        return data
+
     def __repr__(self) -> str:
         return "Delay(timestamp: {}, cycle seq: {}, seq: {}, sampled delay: {})".format(
-            self.__timestamp,
-            self.__cycle_seq,
-            self.__seq,
-            self.__sampled_delay)
+            self.timestamp,
+            self.cycle_seq,
+            self.seq,
+            self.sampled_delay)
 
 
 class Energy():
@@ -99,21 +136,33 @@ class Energy():
     def timestamp(self):
         return self.__timestamp
 
-    # def get(self):
-    #     data = {
-    #         'timestamp': self.__timestamp,
-    #         'cycle_seq': self.__cycle_seq,
-    #         'seq': self.__seq,
-    #         'ewma_energy': self.__ewma_energy
-    #     }
-    #     return data
+    @property
+    def cycle_seq(self):
+        return self.__cycle_seq
+
+    @property
+    def seq(self):
+        return self.__seq
+
+    @property
+    def ewma_energy(self):
+        return self.__ewma_energy
+
+    def to_dict(self):
+        data = {
+            'timestamp': self.timestamp,
+            'cycle_seq': self.cycle_seq,
+            'seq': self.seq,
+            'ewma_energy': self.ewma_energy
+        }
+        return data
 
     def __repr__(self) -> str:
         return "Energy(timestamp: {}, cycle seq: {}, seq: {}, ewma energy: {})".format(
-            self.__timestamp,
-            self.__cycle_seq,
-            self.__seq,
-            self.__ewma_energy
+            self.timestamp,
+            self.cycle_seq,
+            self.seq,
+            self.ewma_energy
         )
 
 
@@ -134,6 +183,15 @@ class Neighbor():
         self.__rssi = rssi
         self.__etx = etx
 
+    def to_dict(self):
+        data = {
+            'timestamp': self.timestamp,
+            'dst': self.dst,
+            'rssi': self.rssi,
+            'etx': self.etx,
+        }
+        return data
+
     @property
     def timestamp(self):
         return self.__timestamp
@@ -150,21 +208,12 @@ class Neighbor():
     def etx(self):
         return self.__etx
 
-    # def get(self):
-    #     data = {
-    #         'timestamp': self.__timestamp,
-    #         'dst': self.__dst,
-    #         'rssi': self.__rssi,
-    #         'etx': self.__etx
-    #     }
-    #     return data
-
     def __repr__(self) -> str:
         return "Neighbor(timestamp: {}, dst: {}, rssi: {}, etx: {})".format(
-            self.__timestamp,
-            self.__dst,
-            self.__rssi,
-            self.__etx
+            self.timestamp,
+            self.dst,
+            self.rssi,
+            self.etx
         )
 
 
@@ -172,34 +221,54 @@ class NodesInfoItem():
     def __init__(
         self,
         node_id: str = None,
-        # pdr: list = None,
-        # delay: list = None,
-        # energy: list = None,
-        # neighbors: list = None
         rank: int = 0
     ):
         assert isinstance(node_id, str)
-        # assert isinstance(pdr, list)
-        # assert isinstance(delay, list)
-        # assert isinstance(energy, list)
-        # assert isinstance(neighbors, str)
         assert isinstance(rank, int)
         self.__node_id = node_id
         self.__pdr = []
         self.__delay = []
         self.__energy = []
         self.__neighbors = []
-        self.__neighbors_timestamp = 0
+        self.__neighbors_timestamp = 0.0
         self.__rank = rank
 
-    def get(self):
+    def to_dict(self):
+        pdr_dict = []
+        if not self.pdr:
+            pdr_dict = self.pdr
+        else:
+            for item in self.pdr:
+                pdr_dict.append(item.to_dict())
+
+        delay_dict = []
+        if not self.delay:
+            delay_dict = self.delay
+        else:
+            for item in self.delay:
+                delay_dict.append(item.to_dict())
+
+        energy_dict = []
+        if not self.energy:
+            energy_dict = self.energy
+        else:
+            for item in self.energy:
+                energy_dict.append(item.to_dict())
+
+        nbrs_dict = []
+        if not self.nbr:
+            nbrs_dict = self.nbr
+        else:
+            for item in self.nbr:
+                nbrs_dict.append(item.to_dict())
+
         data = {
             'node_id': self.node_id,
-            'pdr': self.pdr,
-            'delay': self.delay,
-            'energy': self.energy,
+            'pdr': pdr_dict,
+            'delay': delay_dict,
+            'energy': energy_dict,
             'rank': self.rank,
-            'neighbors': self.nbr,
+            'neighbors': nbrs_dict,
         }
         return data
 
@@ -217,7 +286,27 @@ class NodesInfoItem():
     def energy(self, val):
         assert isinstance(val, Energy)
         self.__energy.append(val)
-        self.last_timestamp = val.timestamp
+
+    def get_nodes_energy_cycle_seq(self, cycle_seq) -> Energy:
+        energy_samples = []
+        for item in self.energy:
+            if item.cycle_seq == cycle_seq:
+                energy_samples.append(item)
+        return energy_samples
+
+    def get_nodes_delay_cycle_seq(self, cycle_seq) -> Delay:
+        delay_samples = []
+        for item in self.delay:
+            if item.cycle_seq == cycle_seq:
+                delay_samples.append(item)
+        return delay_samples
+
+    def get_nodes_pdr_cycle_seq(self, cycle_seq) -> PDR:
+        pdr_samples = []
+        for item in self.pdr:
+            if item.cycle_seq == cycle_seq:
+                pdr_samples.append(item)
+        return pdr_samples
 
     @property
     def pdr(self):
@@ -265,6 +354,30 @@ class NodesInfoItem():
         assert isinstance(val, int)
         self.__rank = val
 
+    def delete_obj_pdr(self):
+        if not self.pdr:
+            return
+        for item in self.pdr:
+            del item
+
+    def delete_obj_delay(self):
+        if not self.delay:
+            return
+        for item in self.delay:
+            del item
+
+    def delete_obj_energy(self):
+        if not self.energy:
+            return
+        for item in self.energy:
+            del item
+
+    def delete_obj_nbr(self):
+        if not self.nbr:
+            return
+        for item in self.nbr:
+            del item
+
     def __repr__(self) -> str:
         return "NodesInfoItem(node id={}, rank={}, pdr={}, delay={}, energy={}, neighbors={})".format(
             self.node_id, self.rank, self.pdr, self.delay, self.energy, self.nbr)
@@ -300,9 +413,19 @@ class NodesInfo():
         unique_list = list(list_set)
         return unique_list
 
+    def delete_all(self):
+        for item in self.nodes_info_list:
+            item.delete_obj_pdr()
+            item.delete_obj_delay()
+            item.delete_obj_energy()
+            item.delete_obj_nbr()
+            del item
+
+        self.nodes_info_list.clear()
+
     def get_last_index_wsn(self):
         """
-        Gets the greater node id of all WSN. The last index is
+        Gets the greatest node id of all WSN. The last index is
         calculated looking into NBR links.
 
         Returns:
@@ -316,17 +439,104 @@ class NodesInfo():
                 index_array.append(float(nbr.dst))
         unique_node_ids = self.unique(index_array)
         max_node_id = max(unique_node_ids)
-        return max_node_id
+        return int(max_node_id)
 
     def get_sensor_nodes_in_order(self):
         index_array = []
         for item in self.nodes_info_list:
             for nbr in item.nbr:
                 node_id = item.node_id
-                index_array.append(float(node_id))
-                index_array.append(float(nbr.dst))
+                if str(node_id) != '1.0':
+                    index_array.append(float(node_id))
+                if str(nbr.dst) != '1.0':
+                    index_array.append(float(nbr.dst))
         unique_node_ids = self.unique(index_array)
-        return unique_node_ids.sort()
+        unique_node_ids.sort()
+        unique_node_ids = [str(x) for x in unique_node_ids]
+        return unique_node_ids
+
+    def get_energy_cycle_seq(self, addr, cycle_seq):
+        """
+        Get the last energy sample within the give
+        cycle sequence.
+
+        Args:
+            cycle_seq (int): The cycle sequence.
+
+        Returns:
+            int: The last energy sample in the cycle sequence.
+        """
+        last_cycle_seq_samples = None
+        for item in self.nodes_info_list:
+            if item.node_id == addr:
+                last_cycle_seq_samples = item.get_nodes_energy_cycle_seq(
+                    cycle_seq)
+        if last_cycle_seq_samples is None:
+            return
+        # Get the last of the cycle sequence samples
+        last_timestamp = 0
+        latest_energy_sample = 0
+        for item in last_cycle_seq_samples:
+            if item.timestamp > last_timestamp:
+                last_timestamp = item.timestamp
+                latest_energy_sample = item.ewma_energy
+        return latest_energy_sample
+
+    def get_delay_cycle_seq(self, addr, cycle_seq):
+        """
+        Get the last average delay of the given node in the cycle sequence.
+
+        Args:
+            addr (str): Address of the sensor node.
+            cycle_seq (int): The cycle sequence.
+
+        Returns:
+            float: The average sensor node delay on this cycle.
+        """
+        last_cycle_seq_samples = None
+        for item in self.nodes_info_list:
+            if item.node_id == addr:
+                last_cycle_seq_samples = item.get_nodes_delay_cycle_seq(
+                    cycle_seq)
+        if last_cycle_seq_samples is None:
+            return
+        return last_cycle_seq_samples
+
+    def greatest_rank(self) -> dict:
+        rank = 0
+        for item in self.nodes_info_list:
+            if item.rank > rank:
+                rank = item.rank
+                info = item.to_dict()
+        return info
+
+    def get_pdr_cycle_seq(self, addr, cycle_seq):
+        """
+        Get the last average PDR of the given node in the cycle sequence.
+
+        Args:
+            addr (str): Address of the sensor node.
+            cycle_seq (int): The cycle sequence.
+
+        Returns:
+            float: The average sensor node PDR on this cycle.
+        """
+        last_cycle_seq_samples = None
+        for item in self.nodes_info_list:
+            if item.node_id == addr:
+                last_cycle_seq_samples = item.get_nodes_pdr_cycle_seq(
+                    cycle_seq)
+        if last_cycle_seq_samples is None:
+            return
+        return last_cycle_seq_samples
+
+    def greatest_rank(self) -> dict:
+        rank = 0
+        for item in self.nodes_info_list:
+            if item.rank > rank:
+                rank = item.rank
+                info = item.to_dict()
+        return info
 
 
 class ObservationsItem():
@@ -337,10 +547,10 @@ class ObservationsItem():
         beta: float = 0.0,
         delta: float = 0.0,
         power_wam: float = 0.0,
-        power_avg: float = 0.0,
+        power_mean: float = 0.0,
         power_normalized: float = 0.0,
         delay_wam: float = 0.0,
-        delay_avg: float = 0.0,
+        delay_mean: float = 0.0,
         delay_normalized: float = 0.0,
         pdr_wam: float = 0.0,
         pdr_mean: float = 0.0,
@@ -354,26 +564,26 @@ class ObservationsItem():
         assert isinstance(beta, float)
         assert isinstance(delta, float)
         assert isinstance(power_wam, float)
-        assert isinstance(power_avg, float)
+        assert isinstance(power_mean, float)
         assert isinstance(power_normalized, float)
         assert isinstance(delay_wam, float)
-        assert isinstance(delay_avg, float)
+        assert isinstance(delay_mean, float)
         assert isinstance(delay_normalized, float)
         assert isinstance(pdr_wam, float)
         assert isinstance(pdr_mean, float)
         assert isinstance(last_ts_in_schedule, int)
         assert isinstance(current_sf_len, int)
-        assert isinstance(normalized_ts_in_schedule, float)
-        assert isinstance(reward, float)
+        # assert isinstance(normalized_ts_in_schedule, float)
+        # assert isinstance(reward, float)
         self.__timestamp = timestamp
         self.__alpha = alpha
         self.__beta = beta
         self.__delta = delta
         self.__power_wam = power_wam
-        self.__power_avg = power_avg
+        self.__power_mean = power_mean
         self.__power_normalized = power_normalized
         self.__delay_wam = delay_wam
-        self.__delay_avg = delay_avg
+        self.__delay_mean = delay_mean
         self.__delay_normalized = delay_normalized
         self.__pdr_wam = pdr_wam
         self.__pdr_mean = pdr_mean
@@ -382,17 +592,17 @@ class ObservationsItem():
         self.__normalized_ts_in_schedule = normalized_ts_in_schedule
         self.__reward = reward
 
-    def get(self):
+    def to_dict(self):
         data = {
             'timestamp': self.timestamp,
             'alpha': self.alpha,
             'beta': self.beta,
             'delta': self.delta,
             'power_wam': self.power_wam,
-            'power_avg': self.power_avg,
+            'power_mean': self.power_mean,
             'power_normalized': self.power_normalized,
             'delay_wam': self.delay_wam,
-            'delay_avg': self.delay_avg,
+            'delay_mean': self.delay_mean,
             'delay_normalized': self.delay_normalized,
             'pdr_wam': self.pdr_wam,
             'pdr_mean': self.pdr_mean,
@@ -424,8 +634,8 @@ class ObservationsItem():
         return self.__power_wam
 
     @property
-    def power_avg(self):
-        return self.__power_avg
+    def power_mean(self):
+        return self.__power_mean
 
     @property
     def power_normalized(self):
@@ -436,8 +646,8 @@ class ObservationsItem():
         return self.__delay_wam
 
     @property
-    def delay_avg(self):
-        return self.__delay_avg
+    def delay_mean(self):
+        return self.__delay_mean
 
     @property
     def delay_normalized(self):
@@ -516,12 +726,15 @@ class NoDatabase(Database):
     def export_collection(self):
         pass
 
+    def delete_info_collection(self):
+        self.nodes_info.delete_all()
+
     def save_serial_packet(self):
         pass
 
     def __exist(self, collection, lookup_field, val):
         for item in collection:
-            data = item.get()[lookup_field]
+            data = item.to_dict()[lookup_field]
             if data == val:
                 return item
         return None
@@ -624,15 +837,16 @@ class NoDatabase(Database):
             node_info.delay = delay_data
 
     def get_rank(self, addr):
-        print(f"asking for rank of node {addr}")
         if (addr == "1.0"):
             return 0
         node_info = self.__exist(
             self.nodes_info.nodes_info_list, 'node_id', addr)
         if node_info is None:
             return
-        print(f"rank: {node_info['rank']}")
-        return node_info['rank']
+        return node_info.rank
+
+    def greatest_rank(self):
+        return self.nodes_info.greatest_rank()
 
     def get_last_slotframe_len(self):
         pass
@@ -643,31 +857,29 @@ class NoDatabase(Database):
     def get_last_pdr(self):
         pass
 
-    def get_last_timestamp(self, collection, field, addr):
-        pass
-
     def get_last_nbr(self, addr):
         node_info = self.__exist(
             self.nodes_info.nodes_info_list, 'node_id', addr)
         if node_info is None:
             return None
         # Get last timestamp
-        last_timestamp = node_info.nbr_timestamp()
-
-        print(f"last timestamp: {last_timestamp}")
-        print(f"item: {node_info}")
+        last_timestamp = node_info.nbr_timestamp
 
         last_nbrs = []
         for nbr in node_info.nbr:
             if nbr.timestamp == last_timestamp:
-                last_nbrs.append(nbr)
-
-        print(f"last nbrs:{last_nbrs}")
+                last_nbrs.append(nbr.to_dict())
 
         return last_nbrs
 
     def get_number_of_sensors(self):
         return self.nodes_info.length()
+
+    def get_sensor_nodes(self):
+        sensor_nodes_dict = []
+        for item in self.nodes_info.nodes_info_list:
+            sensor_nodes_dict.append(item.to_dict())
+        return sensor_nodes_dict
 
     def get_last_index_wsn(self):
         return self.nodes_info.get_last_index_wsn()
@@ -726,12 +938,68 @@ class NoDatabase(Database):
         }
         return last_obs
 
-    def get_last_power_consumption(self):
-        obs = self.observations.observations_list[-1]
-        energy = obs.
+    def get_last_power_consumption(self, addr, power_samples, cycle_seq):
+        node_info = self.__exist(
+            self.nodes_info.nodes_info_list, 'node_id', addr)
+        if node_info is None:
+            # FIXME: 3000 should not be set here
+            power_samples.append((addr, 3000))
+            return
+        # Get the last energy sample of the node
+        energy = self.nodes_info.get_energy_cycle_seq(addr, cycle_seq)
+        # Calculate the avg delay
+        if energy > 0:
+            power_samples.append((addr, energy))
+        else:
+            power_samples.append((addr, 3000))
+        return
 
-    def get_avg_delay(self):
-        pass
+    def get_avg_delay(self, addr, delay_samples, cycle_seq):
+        node_info = self.__exist(
+            self.nodes_info.nodes_info_list, 'node_id', addr)
+        if node_info is None:
+            # FIXME: 2500 should not be set here
+            delay_samples.append((addr, 2500))
+            return
+        # Get the avg delay of the current cycle sequence
+        last_cycle_seq_samples = self.nodes_info.get_delay_cycle_seq(
+            addr, cycle_seq)
+        # Calculate the average of the cycle sequence.
+        # Sum of delays
+        sum_delay = 0
+        for item in last_cycle_seq_samples:
+            sum_delay += item.sampled_delay
 
-    def get_avg_pdr(self):
-        pass
+        if len(last_cycle_seq_samples) > 0:
+            avg_delay = sum_delay/len(last_cycle_seq_samples)
+        else:
+            avg_delay = 2500
+        delay_samples.append((addr, avg_delay))
+        return avg_delay
+
+    def get_avg_pdr(self, addr, pdr_samples, cycle_seq):
+        node_info = self.__exist(
+            self.nodes_info.nodes_info_list, 'node_id', addr)
+        if node_info is None:
+            # FIXME: 0 should not be set here
+            pdr_samples.append((addr, 0))
+            return
+        # Get the avg delay of the current cycle sequence
+        last_cycle_seq_samples = self.nodes_info.get_pdr_cycle_seq(
+            addr, cycle_seq)
+        # Calculate the average of the cycle sequence.
+        # Last received sequence
+        seq = 0
+        for item in last_cycle_seq_samples:
+            if item.seq > seq:
+                seq = item.seq
+
+         # Get the average pdr for this period
+        if seq > 0:
+            avg_pdr = len(last_cycle_seq_samples)/seq
+        else:
+            avg_pdr = 0
+        if avg_pdr > 1.0:
+            avg_pdr = 1.0
+        pdr_samples.append((addr, avg_pdr))
+        return

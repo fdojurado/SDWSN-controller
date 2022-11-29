@@ -342,7 +342,7 @@ class BaseController(ABC):
             # Neighbor matrix
             nbr_rssi_matrix = np.zeros(shape=(N, N))
             # We first loop through all sensor nodes
-            nodes = self.db.find(NODES_INFO, {})
+            nodes = self.db.get_sensor_nodes()
             for node in nodes:
                 # Get last neighbors
                 nbr = self.db.get_last_nbr(node["node_id"])
@@ -607,7 +607,7 @@ class BaseController(ABC):
 
     def delete_info_collection(self):
         if self.db is not None:
-            self.db.delete_collection(NODES_INFO)
+            self.db.delete_info_collection()
 
     def get_state(self):
         # Let's return the user requirements, last tsch schedule, current slotframe size

@@ -98,11 +98,11 @@ class Database(ABC):
         pass
 
     @abstractmethod
-    def get_last_timestamp(self):
+    def get_number_of_sensors(self):
         pass
 
     @abstractmethod
-    def get_number_of_sensors(self):
+    def get_sensor_nodes(self):
         pass
 
     @abstractmethod
@@ -119,6 +119,10 @@ class Database(ABC):
 
     @abstractmethod
     def get_avg_pdr(self):
+        pass
+
+    @abstractmethod
+    def delete_info_collection(self):
         pass
 
     def insert_one(self, collection, data):

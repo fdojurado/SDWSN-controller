@@ -47,7 +47,7 @@ def average_network_pdr(df):
 def average_network_delay(df):
     fig, ax = pl.subplots()  # Create a figure containing a single axes.
     # Plot the power consumption
-    ax.plot(range(len(df['timestamp'])), df['delay_avg'], 'b-o')
+    ax.plot(range(len(df['timestamp'])), df['delay_mean'], 'b-o')
     ax.set_xlabel('Cycles')
     ax.set_ylabel('Delay (ms)', color='b')
     # Plot the slotframe size if a different axis
@@ -66,7 +66,7 @@ def average_network_power_consumption(df):
     # Remove first row
     fig, ax = pl.subplots()  # Create a figure containing a single axes.
     # Plot the power consumption
-    ax.plot(range(len(df['timestamp'])), df['power_avg'], 'b-o')
+    ax.plot(range(len(df['timestamp'])), df['power_mean'], 'b-o')
     ax.set_xlabel('Cycles')
     ax.set_ylabel('Power (mW)', color='b')
     # Plot the slotframe size if a different axis
@@ -164,7 +164,7 @@ def plot(df, name, path):
     axs2.tick_params(axis='both', which='major', labelsize=ticks_font_size)
     axs2.set_ylabel('Slotframe size', fontsize=y_axis_font_size,
                     fontstyle=axis_labels_fontstyle)
-    l1, = axs[0, 1].plot(range(len(df['timestamp'])), df['power_avg'],
+    l1, = axs[0, 1].plot(range(len(df['timestamp'])), df['power_mean'],
                          'b-o', markersize=data_marker_size)
     l2, = axs2.plot(range(len(df['timestamp'])), df['current_sf_len'],
                     'g-o', markersize=data_marker_size)
@@ -185,7 +185,7 @@ def plot(df, name, path):
     axs2.tick_params(axis='both', which='major', labelsize=ticks_font_size)
     axs2.set_ylabel('Slotframe size', fontsize=y_axis_font_size,
                     fontstyle=axis_labels_fontstyle)
-    l1, = axs[1, 0].plot(range(len(df['timestamp'])), df['delay_avg'],
+    l1, = axs[1, 0].plot(range(len(df['timestamp'])), df['delay_mean'],
                          'b-o', markersize=data_marker_size)
     l2, = axs2.plot(range(len(df['timestamp'])), df['current_sf_len'],
                     'g-o', markersize=data_marker_size)
