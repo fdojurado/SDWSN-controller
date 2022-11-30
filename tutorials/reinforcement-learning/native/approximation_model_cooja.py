@@ -36,6 +36,7 @@ from sdwsn_controller.result_analysis import run_analysis
 from sdwsn_controller.routing.dijkstra import Dijkstra
 from sdwsn_controller.sink_communication.sink_comm import SinkComm
 from sdwsn_controller.controller.controller import Controller
+from sdwsn_controller.timer.timer import Timer
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 
 
@@ -211,7 +212,8 @@ def main():
     env = gym.make('sdwsn-v1', **env_kwargs)
     env = Monitor(env, log_dir)
     # --------------------Start RL --------------------------------
-    run(env, controller)
+    with Timer("appro_model", logger=logger.info):
+        run(env, controller)
 
     result_analysis(
         output_folder+'approximation_model_cooja.csv', output_folder)
