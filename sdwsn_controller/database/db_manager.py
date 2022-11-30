@@ -85,6 +85,13 @@ class DatabaseManager(Database):
     def delete_info_collection(self):
         self.delete_collection(NODES_INFO)
 
+    def get_observations(self):
+        db = self.find_one(OBSERVATIONS, {})
+        if db is None:
+            print("Observation collection doesn't exist")
+            return None
+        return self.find(OBSERVATIONS, {})
+
     def save_serial_packet(self, pkt):
         # The incoming format should be JSON
         data = json.loads(pkt)

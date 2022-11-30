@@ -39,7 +39,7 @@ from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 
 
-import shutil
+# import shutil
 
 from stable_baselines3.common.monitor import Monitor
 
@@ -219,14 +219,14 @@ def main():
     controller.stop()
 
     # Delete folders
-    try:
-        shutil.rmtree(output_folder)
-    except OSError as e:
-        print("Error: %s - %s." % (e.filename, e.strerror))
-    try:
-        shutil.rmtree(log_dir)
-    except OSError as e:
-        print("Error: %s - %s." % (e.filename, e.strerror))
+    # try:
+    #     shutil.rmtree(output_folder)
+    # except OSError as e:
+    #     print("Error: %s - %s." % (e.filename, e.strerror))
+    # try:
+    #     shutil.rmtree(log_dir)
+    # except OSError as e:
+    #     print("Error: %s - %s." % (e.filename, e.strerror))
 
 
 if __name__ == '__main__':

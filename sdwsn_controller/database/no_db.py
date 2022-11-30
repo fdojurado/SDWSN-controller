@@ -686,11 +686,16 @@ class Observations():
         assert isinstance(val, ObservationsItem)
         self.__observations_list.append(val)
 
-    def export_observations(self, folder, name):
+    def get_observations_dict(self):
         list_obs = []
         for item in self.observations_list:
             list_obs.append(item.to_dict())
-        df = pd.DataFrame(list_obs)
+        if not list_obs:
+            list_obs = None
+        return list_obs
+
+    def export_observations(self, folder, name):
+        df = pd.DataFrame(self.get_observations_dict())
         df.to_csv(folder+name+'.csv')
 
 
@@ -725,6 +730,9 @@ class NoDatabase(Database):
         if collection == OBSERVATIONS:
             self.observations.export_observations(
                 folder=folder, name=simulation_name)
+
+    def get_observations(self):
+        return self.observations.get_observations_dict()
 
     def delete_info_collection(self):
         self.nodes_info.delete_all()

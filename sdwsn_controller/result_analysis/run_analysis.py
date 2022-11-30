@@ -739,12 +739,10 @@ def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name,
 
 
 def run_analysis(Database, name, path, plot_sf_size: bool = False):
-    db = Database.find_one(OBSERVATIONS, {})
-    if db is None:
+    data = Database.get_observations()
+    if data is None:
         print("Exiting analysis collection doesn't exist")
         return None
-    # Load observations
-    data = Database.find(OBSERVATIONS, {})
 
     # Expand the cursor and construct the DataFrame
     df = pd.DataFrame(data)
