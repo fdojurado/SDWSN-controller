@@ -15,11 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from datetime import datetime
-from sdwsn_controller.database.database import Database
+from sdwsn_controller.database.database import Database, OBSERVATIONS
 from sdwsn_controller.packet.packet import SDN_NAPL_LEN, NA_Packet_Payload
 
-import time
-
+import pandas as pd
 # Constants for packet delay calculation
 SLOT_DURATION = 10
 
@@ -530,14 +529,6 @@ class NodesInfo():
             return
         return last_cycle_seq_samples
 
-    def greatest_rank(self) -> dict:
-        rank = 0
-        for item in self.nodes_info_list:
-            if item.rank > rank:
-                rank = item.rank
-                info = item.to_dict()
-        return info
-
 
 class ObservationsItem():
     def __init__(
@@ -695,6 +686,13 @@ class Observations():
         assert isinstance(val, ObservationsItem)
         self.__observations_list.append(val)
 
+    def export_observations(self, folder, name):
+        list_obs = []
+        for item in self.observations_list:
+            list_obs.append(item.to_dict())
+        df = pd.DataFrame(list_obs)
+        df.to_csv(folder+name+'.csv')
+
 
 class NoDatabase(Database):
     def __init__(self):
@@ -723,8 +721,10 @@ class NoDatabase(Database):
     def DATABASE(self):
         pass
 
-    def export_collection(self):
-        pass
+    def export_collection(self, collection, simulation_name, folder):
+        if collection == OBSERVATIONS:
+            self.observations.export_observations(
+                folder=folder, name=simulation_name)
 
     def delete_info_collection(self):
         self.nodes_info.delete_all()
@@ -994,7 +994,7 @@ class NoDatabase(Database):
             if item.seq > seq:
                 seq = item.seq
 
-         # Get the average pdr for this period
+        # Get the average pdr for this period
         if seq > 0:
             avg_pdr = len(last_cycle_seq_samples)/seq
         else:
