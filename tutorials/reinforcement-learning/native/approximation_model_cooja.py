@@ -81,8 +81,8 @@ def run(env, controller):
                 action = 1
             else:
                 increase = 1
-
-        env.step(action)
+        with Timer("step"):
+            env.step(action)
         # Get last observations non normalized
         observations = controller.get_state()
         assert 0 <= observations['alpha'] <= 1

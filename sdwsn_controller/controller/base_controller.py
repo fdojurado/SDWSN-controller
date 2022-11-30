@@ -131,6 +131,7 @@ class BaseController(ABC):
 
         self.__is_running = False
         self.__read_socket_thread = None
+        self.__num_cycles = 0  # Count number of cycles elapsed.
 
         super().__init__()
     # ---------------------Database functionalities---------------------------
@@ -466,8 +467,9 @@ class BaseController(ABC):
         # We return
         if self.processing_window is not None:
             logger.info(
-                "Starting new cycle")
+                f"Starting new cycle {self.__num_cycles}")
             result = -1
+            self.__num_cycles += 1
 
             with Progress(transient=True) as progress:
                 task1 = progress.add_task(
