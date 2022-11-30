@@ -14,8 +14,8 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import sys
-import pandas as pd
+
+import argparse
 
 from gym.envs.registration import register
 import gym
@@ -25,6 +25,8 @@ import logging.config
 import numpy as np
 
 import os
+
+import pandas as pd
 
 from rich.logging import RichHandler
 
@@ -39,10 +41,11 @@ from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.timer.timer import Timer
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 
-
 # import shutil
 
 from stable_baselines3.common.monitor import Monitor
+
+import sys
 
 SIMULATION_FOLDER = 'examples/elise'
 CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
@@ -157,6 +160,24 @@ def main():
 
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
+    # -------------------- Arguments parser ----------------------
+    parser = argparse.ArgumentParser(
+        description='This script runs the approximation model in Cooja.')
+    parser.add_argument('-sf', '--simulation-folder', type=str,
+                        default=SIMULATION_FOLDER,
+                        help=f"Simulation folder path. Default to '{SIMULATION_FOLDER}'")
+    parser.add_argument('-cs', '--contiki-source', type=str,
+                        default=CONTIKI_SOURCE,
+                        help=f"Contiki source path. Default to '{CONTIKI_SOURCE}'")
+    parser.add_argument('-sc', '--simulation-script', type=str,
+                        default=SIMULATION_SCRIPT,
+                        help=f"Simulation script path. Default to '{SIMULATION_SCRIPT}'")
+
+    args = parser.parse_args()
+
+    simulation_folder = args.simulation_folder
+    contiki_source = args.contiki_source
+    simulation_script = args.simulation_script
     # ----------------- RL environment, setup --------------------
     # Register the environment
     register(
@@ -187,9 +208,9 @@ def main():
     routing = Dijkstra()
 
     controller = Controller(
-        simulation_script=SIMULATION_SCRIPT,
-        simulation_folder=SIMULATION_FOLDER,
-        contiki_source=CONTIKI_SOURCE,
+        simulation_script=simulation_script,
+        simulation_folder=simulation_folder,
+        contiki_source=contiki_source,
         # Database
         db=db,
         # socket
