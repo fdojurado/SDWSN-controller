@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.routing.router import Router
+from sdwsn_controller.routing.route import Router
 import networkx as nx
 import logging
 

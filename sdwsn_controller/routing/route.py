@@ -27,6 +27,91 @@ import logging
 logger = logging.getLogger('main.'+__name__)
 
 
+# ---------------------------------------------------------------------------
+class Route():
+    def __init__(
+        self,
+        dst_id: str = None,
+        nexthop_id: str = None
+    ) -> None:
+        assert isinstance(dst_id, str)
+        assert isinstance(nexthop_id, str)
+        self.dst_id = dst_id
+        self.nexthop_id = nexthop_id
+
+    def is_direct(self) -> bool:
+        return self.dst_id == self.nexthop_id
+
+# ---------------------------------------------------------------------------
+
+
+class RoutingTable():
+    def __init__(
+        self,
+        node
+    ) -> None:
+        self.node = node
+        self.clear()
+
+    def clear(self):
+        self.routes = {}
+        self.default_route = None
+
+    def size(self):
+        return len(self.routes)
+
+    def get_route(self, destination_id):
+        self.routes.get(destination_id)
+
+    def add_route(self, destination_id, nexthop_id) -> Route:
+        if self.routes.get(destination_id):
+            return
+        logger.debug(
+            f'Node {self.node.id}: add route to {destination_id} via {nexthop_id}')
+        route = Route(dst_id=destination_id, nexthop_id=nexthop_id)
+        self.routes.update(destination_id, route)
+        return route
+
+    def remove_route(self, destination_id):
+        logger.debug(f"Node {self.node.id}: remove route to {destination_id}")
+        if destination_id in self.routes:
+            del self.routes[destination_id]
+
+    def add_default_route(self):
+        pass
+
+    def remove_default_route(self):
+        pass
+
+    def lookup_route(self, destination_id):
+        if destination_id in self.routes:
+            return self.routes.get(destination_id)
+
+    def get_nexthop(self, destination_id):
+        if destination_id == self.node.id:
+            return destination_id
+        route = self.lookup_route(destination_id)
+        if route is None:
+            logger.debug(f"Node {self.node.id}: no nexthop for {destination_id}")
+        return route.nexthop_id if route is not None else None
+
+    def print_routes(self):
+        table = Table(title="Routing table")
+
+        table.add_column("Source", justify="center",
+                         style="cyan", no_wrap=True)
+        table.add_column("Destination", justify="center", style="magenta")
+        table.add_column("Via", justify="left", style="green")
+        for key in self.routes:
+            route = self.routes.get(key)
+            table.add_row(self.node.id, route.dst_id, route.nexthop_id)
+
+        logger.info(f"Routing table\n{common.log_table(table)}")
+
+
+# ---------------------------------------------------------------------------
+
+
 class Router(ABC):
     """
     This is the base class for the routing.
@@ -71,6 +156,7 @@ class Router(ABC):
             dst (str): The address of the destination node.
             via (str): The address of the relaying node.
         """
+        print(f"Router add route, scr:{scr}, dst:{dst}, via:{via}")
         # Let's first check if the route is already in the dataframe
         if ((self.router_routes['scr'] == scr) & (self.router_routes['dst'] == dst) &
                 (self.router_routes['via'] == via)).any():

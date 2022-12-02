@@ -31,7 +31,7 @@ from sdwsn_controller.packet.packet import Cell_Packet_Payload
 from sdwsn_controller.packet.packet import RA_Packet_Payload
 from sdwsn_controller.reinforcement_learning.reward_processing \
     import RewardProcessing
-from sdwsn_controller.routing.router import Router
+from sdwsn_controller.routing.route import Router
 from sdwsn_controller.sink_communication.sink_abc import SinkABC
 from sdwsn_controller.tsch.scheduler import Scheduler
 
