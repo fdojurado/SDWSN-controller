@@ -12,6 +12,85 @@ cell_type = types.SimpleNamespace()
 cell_type.UC_RX = 2
 cell_type.UC_TX = 1
 
+# ---------------------------------------------------------------------------
+
+
+class TSCHSchedule():
+    def __init__(
+        self,
+        type=None,
+        dst_id=None,
+        ch=None,
+        ts=None
+    ) -> None:
+        assert isinstance(type, cell_type)
+        assert isinstance(dst_id, str)
+        assert isinstance(ch, int)
+        assert isinstance(ts, int)
+# ---------------------------------------------------------------------------
+
+
+class TSCHScheduleTable():
+    def __init__(
+        self,
+        node
+    ) -> None:
+        self.node = node
+        self.clear()
+
+    def clear(self):
+        self.tsch_schedules = {}
+        self.last_ts = 0
+
+    def size(self):
+        return len(self.tsch_schedules)
+
+    def get_schedule(self, ch, ts):
+        self.tsch_schedules.get((ch, ts))
+
+    def add_tsch_schedule(self, type, ch, ts, dst=None) -> TSCHSchedule:
+        if self.tsch_schedules.get((ch, ts)):
+            return
+        logger.debug(
+            f'Node {self.node.id}: add TSCH schedule of type {type} at ch {ch}, ts {ts} and dst {dst}')
+        tsch_schedule = TSCHSchedule(type=type, dst_id=dst, ch=ch, ts=ts)
+        self.tsch_schedules.update((ch, ts), tsch_schedule)
+        if ts > self.last_ts:
+            self.last_ts = ts
+        return tsch_schedule
+
+    def remove_tsch_schedule(self, ch, ts):
+        logger.debug(
+            f"Node {self.node.id}: remove TSCH schedule, ch {ch}, ts {ts}")
+        if (ch, ts) in self.tsch_schedules:
+            del self.tsch_schedules[(ch, ts)]
+
+    def link_exists(self, dst_id) -> bool:
+        for key in self.tsch_schedules:
+            tsch_schedule = self.tsch_schedules.get(key)
+            if tsch_schedule.dst_id == dst_id:
+                return True
+        return False
+
+    def last_active_ts(self):
+        return self.last_ts
+
+    def print(self):
+        table = Table(title=f"TSCH schedules for node: {self.node.id}")
+
+        table.add_column("Type", justify="center",
+                         style="cyan", no_wrap=True)
+        table.add_column("Channel", justify="center", style="magenta")
+        table.add_column("Timeoffset", justify="center", style="magenta")
+        table.add_column("destination", justify="center", style="magenta")
+        for key in self.tsch_schedules:
+            tsch_schedule = self.tsch_schedules.get(key)
+            table.add_row(tsch_schedule.type, tsch_schedule.ch,
+                          tsch_schedule.ts, tsch_schedule.dst_id)
+
+        logger.info(f"TSCH schedules\n{common.log_table(table)}")
+# ---------------------------------------------------------------------------
+
 
 class Cell:
     """

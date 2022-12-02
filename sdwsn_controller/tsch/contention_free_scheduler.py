@@ -1,5 +1,5 @@
 import random
-from sdwsn_controller.tsch.scheduler import Scheduler, cell_type
+from sdwsn_controller.tsch.schedule import Scheduler, cell_type
 import logging
 
 logger = logging.getLogger('main.'+__name__)
