@@ -82,17 +82,15 @@ class Env(gym.Env):
         # Send the entire TSCH schedule
         self.controller.send_tsch_schedules()
         # Delete the current nodes_info collection from the database
-        self.controller.delete_info_collection()
-        # Reset sequence
-        self.controller.reset_pkt_sequence()
+        # self.controller.delete_info_collection()
         # We now wait until we reach the processing_window
         while (not self.controller.wait()):
             print("resending schedules")
             self.controller.send_tsch_schedules()
             # Delete the current nodes_info collection from the database
-            self.controller.delete_info_collection()
+            # self.controller.delete_info_collection()
             # Reset sequence
-            self.controller.reset_pkt_sequence()
+            # self.controller.reset_pkt_sequence()
         # print("process reward")
         # TODO: DO we really need this delay?
         self.controller.processing_wait(1)
@@ -169,8 +167,8 @@ class Env(gym.Env):
         # Send the entire TSCH schedule
         self.controller.send_tsch_schedules()
         # Delete the current nodes_info collection from the database
-        self.controller.delete_info_collection()
-        self.controller.reset_pkt_sequence()
+        # self.controller.delete_info_collection()
+        # self.controller.reset_pkt_sequence()
         # Wait for the network to settle
         self.controller.wait()
         # We now save all the observations

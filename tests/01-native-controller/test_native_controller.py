@@ -57,7 +57,7 @@ def run_data_plane(controller):
     tsch_sent = controller.send_tsch_schedules()
     assert tsch_sent == 1
     # Reset packet sequence
-    controller.reset_pkt_sequence()
+    # controller.reset_pkt_sequence()
     # Wait for the network to settle
     wait = controller.wait()
     assert wait == 1

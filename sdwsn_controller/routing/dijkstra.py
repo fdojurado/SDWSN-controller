@@ -15,42 +15,42 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.routing.route import Router
 import networkx as nx
 import logging
 
 logger = logging.getLogger('main.'+__name__)
 
 
-class Dijkstra(Router):
+class Dijkstra():
     def __init__(self):
         self.__name = "Dijkstra"
-        super().__init__()
 
     @property
     def name(self):
         return self.__name
 
-    def run(self, G):
+    def run(self, G, network):
         # Clear all previous routes
-        self.router_clear_routes()
+        network.routes_clear()
         # We want to compute the SP from all nodes to the controller
         path = {}
         for node in list(G.nodes):
             if node != 1 and node != 0:
-                logger.debug("sp from node "+str(node))
+                node = network.nodes_get(node)
+                logger.debug("sp from node "+str(node.id))
                 try:
-                    node_path = nx.dijkstra_path(G, node, 1, weight='weight')
+                    node_path = nx.dijkstra_path(
+                        G, node.id, 1, weight='weight')
                     logger.debug("dijkstra path")
                     logger.debug(node_path)
-                    path[node] = node_path
+                    path[node.id] = node_path
                     # TODO: find a way to avoid forcing the last addr of
                     # sensor nodes to 0.
-                    self.router_add_route(
-                        str(node)+".0", "1.1", str(node_path[1])+".0")
+                    node.route_add(1.1, node_path[1])
                 except nx.NetworkXNoPath:
                     logger.exception("path not found")
-        self.router_print_table()
-        logger.debug("total path")
-        logger.debug(path)
+
+        logger.info("total path")
+        logger.info(path)
+        network.routes_print()
         return path

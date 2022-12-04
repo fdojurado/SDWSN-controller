@@ -37,18 +37,14 @@ class Controller(BaseController):
         contiki_source: str = '/Users/fernando/contiki-ng',
         simulation_folder: str = 'examples/elise',
         simulation_script: str = 'cooja-elise.csc',
-        # Sink/socket communication
-        socket: object = None,
-        # Database
-        db: object = None,
+        # Network listening port
+        port: int = 60001,
+        # Network
+        network: object = None,
         # RL related
         reward_processing: object = None,
-        # Packet dissector
-        packet_dissector: object = None,
-        # Window
-        processing_window: int = 200,
         # Routing
-        router: object = None,
+        routing: object = None,
         # TSCH scheduler
         tsch_scheduler: object = None
     ):
@@ -64,7 +60,7 @@ class Controller(BaseController):
             reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
             packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.
             processing_window (int, optional): Number of packets for a new cycle. Defaults to 200.
-            router (Router object, optional): Centralized routing algorithm. Defaults to None.
+            routing (Router object, optional): Centralized routing algorithm. Defaults to None.
             tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
         """
 
@@ -90,8 +86,8 @@ class Controller(BaseController):
             self.__contiki_source, simulation_folder, simulation_script)
 
         self.__new_simulation_script = None
-        # Hack to get the port number
-        self.__port = socket.port
+
+        self.__port = port
 
         logger.info(f"Contiki source: {self.__contiki_source}")
         logger.info(f"Cooja log: {self.__cooja_log}")
@@ -101,12 +97,9 @@ class Controller(BaseController):
         logger.info(f"Simulation script: {self.__simulation_script}")
 
         super().__init__(
-            socket=socket,
-            db=db,
             reward_processing=reward_processing,
-            packet_dissector=packet_dissector,
-            processing_window=processing_window,
-            router=router,
+            routing=routing,
+            network=network,
             tsch_scheduler=tsch_scheduler
         )
 
@@ -181,7 +174,7 @@ class Controller(BaseController):
         with open(self.__cooja_log, "r") as f:
             contents = f.read()
             read_line = "Listening on port: " + \
-                str(self.socket.port)
+                str(self.__port)
             fatal_line = "Simulation not loaded"
             is_listening = read_line in contents
             # logger.info(f'listening result: {is_listening}')
