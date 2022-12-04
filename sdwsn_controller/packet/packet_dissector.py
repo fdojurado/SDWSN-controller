@@ -20,111 +20,30 @@ from abc import ABC, abstractmethod
 
 import logging
 
-from sdwsn_controller.database.database import Database
-from sdwsn_controller.packet.packet import Data_Packet, NA_Packet
+from sdwsn_controller.packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload, SDN_NAPL_LEN
 from sdwsn_controller.packet.packet import SerialPacket, SDN_IP_Packet
 from sdwsn_controller.packet.packet import serial_protocol, sdn_protocols
 from sdwsn_controller.packet.packet import SDN_IPH_LEN
 
 import struct
 
+# Constants for packet delay calculation
+SLOT_DURATION = 10
+
 logger = logging.getLogger('main.'+__name__)
 
 
-class Dissector(ABC):
-    """
-    Dissect abstract class. This class makes sure every packet dissector
-    has the right constructor - functions.
-    """
-
-    def __init__(
-        self,
-        cycle_sequence: int = 0,
-        sequence: int = 0,
-        database: object = None
-    ):
-        assert isinstance(cycle_sequence, int)
-        assert isinstance(sequence, int)
-        # Database
-        self.__db = database
-        if self.__db is not None:
-            assert isinstance(self.__db, Database)
-
-        self.__cycle_sequence = cycle_sequence
-        self.__sequence = sequence
-        super().__init__()
-
-    @property
-    @abstractmethod
-    def name(self):
-        pass
-
-    @property
-    def sequence(self):
-        return self.__sequence
-
-    @sequence.setter
-    def sequence(self, num):
-        self.__sequence = num
-
-    @property
-    def cycle_sequence(self):
-        return self.__cycle_sequence
-
-    @cycle_sequence.setter
-    def cycle_sequence(self, num):
-        self.__cycle_sequence = num
-
-    def reset_pkt_sequence(self):
-        self.sequence = 0
-
-    def get_cycle_sequence(self):
-        return self.cycle_sequence
-
-    @property
-    def db(self):
-        if self.__db is not None:
-            return self.__db
-
-    def save_energy(self, pkt, na_pkt):
-        if self.db is not None:
-            self.db.save_energy(pkt, na_pkt)
-
-    def save_neighbors(self, pkt, na_pkt):
-        if self.db is not None:
-            self.db.save_neighbors(pkt, na_pkt)
-
-    def save_pdr(self, pkt, data_pkt):
-        if self.db is not None:
-            self.db.save_pdr(pkt, data_pkt)
-
-    def save_delay(self, pkt, data_pkt):
-        if self.db is not None:
-            self.db.save_delay(pkt, data_pkt)
-
-    def save_serial_packet(self, serial_pkt):
-        if self.db is not None:
-            self.db.save_serial_packet(serial_pkt.toJSON())
-
-
-class PacketDissector(Dissector):
+class PacketDissector():
     def __init__(
             self,
+            network,
             cycle_sequence: int = 0,
-            sequence: int = 0,
-            database: object = None
+            sequence: int = 0
     ):
-        self.__name = "Packet Dissector"
         self.ack_pkt = None
-        super().__init__(
-            cycle_sequence=cycle_sequence,
-            sequence=sequence,
-            database=database
-        )
-
-    @property
-    def name(self):
-        return self.__name
+        self.cycle_sequence = cycle_sequence
+        self.sequence = sequence
+        self.network = network
 
     def handle_serial_packet(self, data):
         # Let's parse serial packet
@@ -159,10 +78,19 @@ class PacketDissector(Dissector):
                 logger.debug(repr(na_pkt))
                 self.sequence += 1
                 logger.debug(f"num seq (NA): {self.sequence}")
-                # We now build the energy DB
-                self.save_energy(pkt, na_pkt)
-                # We now build the neighbors DB
-                self.save_neighbors(pkt, na_pkt)
+                node = self.network.nodes_add(pkt.scr, rank=na_pkt.rank)
+                node.energy_add(na_pkt.cycle_seq, na_pkt.seq, na_pkt.energy)
+                # Process neighbors
+                blocks = len(na_pkt.payload) // SDN_NAPL_LEN
+                idx_start = 0
+                idx_end = 0
+                for _ in range(1, blocks+1):
+                    idx_end += SDN_NAPL_LEN
+                    payload = na_pkt.payload[idx_start:idx_end]
+                    idx_start = idx_end
+                    payload_unpacked = NA_Packet_Payload.unpack(payload)
+                    node.neighbor_add(payload_unpacked.addr, payload_unpacked.rssi,
+                                      payload_unpacked.etx)
                 return
             case sdn_protocols.SDN_PROTO_DATA:
                 logger.debug("Processing data packet")
@@ -177,10 +105,12 @@ class PacketDissector(Dissector):
                 logger.debug(repr(data_pkt))
                 self.sequence += 1
                 logger.debug(f"num seq (data): {self.sequence}")
+                node = self.network.nodes_add(pkt.scr)
                 # We now build the pdr DB
-                self.save_pdr(pkt, data_pkt)
+                node.pdr_add(data_pkt.cycle_seq, data_pkt.seq)
                 # We now build the delay DB
-                self.save_delay(pkt, data_pkt)
+                sampled_delay = data_pkt.asn * SLOT_DURATION
+                node.delay_add(data_pkt.cycle_seq, data_pkt.seq, sampled_delay)
                 return
             case _:
                 logger.warning("sdn IP packet type not found")

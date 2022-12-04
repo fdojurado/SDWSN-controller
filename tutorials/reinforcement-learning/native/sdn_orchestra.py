@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from sdwsn_controller.network.network import Network
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.controller.controller import Controller
 from sdwsn_controller.reinforcement_learning.reward_processing import EmulatedRewardProcessing
@@ -30,6 +31,9 @@ from gym.envs.registration import register
 
 import os
 
+SIMULATION_FOLDER = 'examples/elise'
+CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
+PYTHON_SCRIPT = 'cooja-orchestra.csc'
 PORT = 60003
 
 
@@ -98,32 +102,29 @@ def main():
     log_dir = './tensorlog/'
     os.makedirs(log_dir, exist_ok=True)
 
-    # Socket
-    socket = SinkComm(port=PORT)
+    # Network
+    network = Network(processing_window=200,
+                      socket_host='127.0.0.1', socket_port=PORT)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
 
-    # Database
-    db = DatabaseManager()
-
     # Reward processor
-    reward_processor = EmulatedRewardProcessing(database=db)
+    reward_processor = EmulatedRewardProcessing(network=network)
 
     # Routing algorithm
     routing = Dijkstra()
 
     controller = Controller(
-        # Database
-        db=db,
-        # socket
-        socket=socket,
+        # Controller related
+        contiki_source=CONTIKI_SOURCE,
+        simulation_folder=SIMULATION_FOLDER,
+        simulation_script=PYTHON_SCRIPT,
+        port=PORT,
         # Reward processor
+        network=network,
         reward_processing=reward_processor,
-        # Packet dissector
-        packet_dissector=PacketDissector(database=db),
-        processing_window=200,
-        router=routing,
+        routing=routing,
         tsch_scheduler=tsch_scheduler
     )
     env_kwargs = {

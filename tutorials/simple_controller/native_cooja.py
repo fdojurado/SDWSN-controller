@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from sdwsn_controller.network.network import Network
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.database.db_manager import DatabaseManager
@@ -28,6 +29,7 @@ import sys
 SIMULATION_FOLDER = 'examples/elise'
 CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
 PYTHON_SCRIPT = 'cooja-orchestra.csc'
+PORT = 60001
 
 
 def run_data_plane(controller):
@@ -47,7 +49,7 @@ def run_data_plane(controller):
     # Send the entire TSCH schedule
     controller.send_tsch_schedules()
     # Reset packet sequence
-    controller.reset_pkt_sequence()
+    # controller.reset_pkt_sequence()
     # Wait for the network to settle
     controller.wait()
 
@@ -77,34 +79,24 @@ def main():
     logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
 
-    # Socket
-    socket = SinkComm(port=60002)
+    # Network
+    network = Network(processing_window=200,
+                      socket_host='127.0.0.1', socket_port=PORT)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
 
-    # Database
-    db = DatabaseManager()
-
     # Routing algorithm
     routing = Dijkstra()
-
-    # Packet dissector
-    pkt_dissector = PacketDissector(database=db)
 
     controller = Controller(
         # Controller related
         contiki_source=CONTIKI_SOURCE,
         simulation_folder=SIMULATION_FOLDER,
         simulation_script=PYTHON_SCRIPT,
-        # Database
-        db=db,
-        # socket
-        socket=socket,
-        # Packet dissector
-        packet_dissector=pkt_dissector,
-        processing_window=200,
-        router=routing,
+        port=PORT,
+        network=network,
+        routing=routing,
         tsch_scheduler=tsch_scheduler
     )
     # --------------------Start data plane ------------------------

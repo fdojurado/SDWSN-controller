@@ -29,14 +29,15 @@ class Neighbor():
     def __init__(
         self,
         neighbor_id,
-        timestamp,
         rssi,
         etx
     ) -> None:
+        assert isinstance(neighbor_id, int)
+        assert isinstance(rssi, int)
+        assert isinstance(etx, int)
         self.neighbor_id = neighbor_id
-        self.timestamp = timestamp
         self.rssi = rssi
-        self.ext = etx
+        self.etx = etx
 
 
 class NeighborTable():
@@ -56,31 +57,34 @@ class NeighborTable():
     def get_neighbor(self, neighbor_id) -> Neighbor:
         self.neighbors.get(neighbor_id)
 
-    def add_neighbor(self, neighbor_id, timestamp, rssi, etx) -> Neighbor:
-        if self.neighbors.get(neighbor_id):
-            return
+    def add_neighbor(self, neighbor_id, rssi, etx) -> Neighbor:
+        nbr = self.neighbors.get(neighbor_id)
+        if nbr is not None:
+            logger.debug(
+                f"Neighbor ID {neighbor_id} already exists. Updating RSSI and ETX.")
+            nbr.rssi = rssi
+            nbr.etx = etx
+            return nbr
         logger.debug(
-            f'Node {self.node.id}: add neighbor to {neighbor_id} ({timestamp}, {rssi}, {etx})')
-        nbr = Neighbor(neighbor_id=neighbor_id,
-                       timestamp=timestamp, rssi=rssi, etx=etx)
-        self.neighbors.update(neighbor_id, nbr)
+            f'Node {self.node.id}: add neighbor to {neighbor_id} ({rssi}, {etx})')
+        nbr = Neighbor(neighbor_id=neighbor_id, rssi=rssi, etx=etx)
+        self.neighbors.update({neighbor_id: nbr})
         return nbr
 
     def lookup_neighbor(self, neighbor_id) -> Neighbor:
         if neighbor_id in self.neighbors:
             return self.neighbors.get(neighbor_id)
 
-    def print_neighbors(self):
+    def print(self):
         table = Table(title=f"Neighbor table for node: {self.node.id}")
 
         table.add_column("Neighbor", justify="center",
                          style="cyan", no_wrap=True)
-        table.add_column("Timestamp", justify="center", style="magenta")
         table.add_column("RSSI", justify="center", style="magenta")
         table.add_column("ETX", justify="center", style="magenta")
         for key in self.neighbors:
             neighbor = self.neighbors.get(key)
-            table.add_row(neighbor.neighbor_id, neighbor.timestamp,
-                          neighbor.rssi, neighbor.etx)
+            table.add_row(str(neighbor.neighbor_id),
+                          str(neighbor.rssi), str(neighbor.etx))
 
         logger.info(f"Neighbor table\n{common.log_table(table)}")

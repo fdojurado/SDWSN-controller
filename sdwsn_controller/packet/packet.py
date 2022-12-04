@@ -219,11 +219,14 @@ class RA_Packet_Payload:
 
     def __init__(self, payload, **kwargs):
         self.scr = kwargs.get("scr", 0)
-        self.scr = addrConversion.to_int(self.scr).addr
+        # if not isinstance(self.scr, int):
+        self.scr = addrConversion.to_int(str(self.scr)).addr
         self.dst = kwargs.get("dst", 0)
-        self.dst = addrConversion.to_int(self.dst).addr
+        # if not isinstance(self.dst, int):
+        self.dst = addrConversion.to_int(str(self.dst)).addr
         self.via = kwargs.get("via", 0)
-        self.via = addrConversion.to_int(self.via).addr
+        # if not isinstance(self.via, int):
+        self.via = addrConversion.to_int(str(self.via)).addr
         self.payload = payload
 
     def pack(self):
@@ -266,10 +269,10 @@ class Cell_Packet_Payload:
         self.timeslot = kwargs.get("timeslot", 0)
         self.padding = kwargs.get("padding", 0)
         self.scr = kwargs.get("scr", 0)
-        self.scr = addrConversion.to_int(self.scr).addr
+        self.scr = addrConversion.to_int(str(self.scr)).addr
         self.dst = kwargs.get("dst", 0)
         if self.dst is not None:
-            self.dst = addrConversion.to_int(self.dst).addr
+            self.dst = addrConversion.to_int(str(self.dst)).addr
         else:
             self.dst = addrConversion.to_int('0.0').addr
         self.payload = payload

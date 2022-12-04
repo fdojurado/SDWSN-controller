@@ -50,7 +50,7 @@ def run_data_plane(controller):
     # Send the entire TSCH schedule
     controller.send_tsch_schedules()
     # Reset packet sequence
-    controller.reset_pkt_sequence()
+    # controller.reset_pkt_sequence()
     # Wait for the network to settle
     controller.wait()
 
