@@ -58,8 +58,13 @@ class NeighborTable():
         self.neighbors.get(neighbor_id)
 
     def add_neighbor(self, neighbor_id, rssi, etx) -> Neighbor:
-        if self.neighbors.get(neighbor_id):
-            return
+        nbr = self.neighbors.get(neighbor_id)
+        if nbr is not None:
+            logger.debug(
+                f"Neighbor ID {neighbor_id} already exists. Updating RSSI and ETX.")
+            nbr.rssi = rssi
+            nbr.etx = etx
+            return nbr
         logger.debug(
             f'Node {self.node.id}: add neighbor to {neighbor_id} ({rssi}, {etx})')
         nbr = Neighbor(neighbor_id=neighbor_id, rssi=rssi, etx=etx)

@@ -271,7 +271,7 @@ class Network():
         return routes
 
     def tsch_sendall(self):
-        logger.info("Sending all schedules")
+        logger.info(f"Sending all schedules (SF: {self.tsch_slotframe_size})")
         sent = 0
         num_pkts = 0
         payload = []

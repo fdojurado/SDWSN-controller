@@ -96,7 +96,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         for node in self.__network.nodes.values():
             # Get all samples from the start of the network configuration
             if node.id != 1:
-                node.energy_print()
+                # node.energy_print()
                 power_samples.update(
                     {node: node.energy_get_last(cycle_sequence)})
 
@@ -105,15 +105,19 @@ class EmulatedRewardProcessing(RewardProcessing):
             table.add_column("Sensor node", justify="center", style="magenta")
             table.add_column("Avg. power consumption [mW]",
                              justify="center", style="green")
+            sum_energy = 0
             for key in samples:
                 energy = samples.get(key)
                 table.add_row(str(key.id), str(energy))
+                sum_energy += energy
+            # Table add avg. at the end
+            table.add_row("Average", str(sum_energy/len(samples)))
             return table
 
         print("samples")
         print(power_samples)
         logger.info(
-            f"Power samples \n{common.log_table(power_samples_table(power_samples))}")
+            f"Power samples (SF: {self.__network.tsch_slotframe_size}) \n{common.log_table(power_samples_table(power_samples))}")
         # We now need to compute the weighted arithmetic mean
         power_wam, power_mean = self.__power_weighted_arithmetic_mean(
             power_samples)
@@ -130,7 +134,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             node = key
             power = power_samples.get(key)
             all_power_samples.append(power)
-            logger.info(f'Finding the WAM of {node.id} with power {power}')
+            logger.debug(f'Finding the WAM of {node.id} with power {power}')
             weight = self.__power_compute_wam_weight(node)
             weights.append(weight)
         logger.debug(f'power all weights {weights}')
@@ -160,7 +164,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         N = self.__network.nodes_size()
         # Calculate the weight
         weight = 0.9 * (node_rank/last_rank) + 0.1 * (num_nbr/N)
-        logger.info(
+        logger.debug(
             f'computing WAM of node {node.id} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
         return weight
 
@@ -171,7 +175,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         for node in self.__network.nodes.values():
             # Get all samples from the start of the network configuration
             if node.id != 1:
-                node.delay_print()
+                # node.delay_print()
                 delay_samples.update(
                     {node: node.delay_get_average(cycle_sequence)})
 
@@ -180,22 +184,25 @@ class EmulatedRewardProcessing(RewardProcessing):
             table.add_column("Sensor node", justify="center", style="magenta")
             table.add_column("Avg. delay [ms]",
                              justify="center", style="green")
+            sum_delay = 0
             for key in samples:
                 delay = samples.get(key)
                 table.add_row(str(key.id), str(delay))
+                sum_delay += delay
+            table.add_row("Average", str(sum_delay/len(samples)))
             return table
 
         print("delay samples")
         print(delay_samples)
         logger.info(
-            f"Delay samples for cycle_sequence {cycle_sequence}\n{common.log_table(delay_samples_table(delay_samples))}")
+            f"Delay samples (SF: {self.__network.tsch_slotframe_size}) for cycle_sequence {cycle_sequence}\n{common.log_table(delay_samples_table(delay_samples))}")
         # We now need to compute the weighted arithmetic mean
         delay_wam, delay_mean = self.__delay_weighted_arithmetic_mean(
             delay_samples)
         # We now need to normalize the power WAM
         normalized_delay = self.__delay_norm_offset + ((delay_wam - self.__delay_min) /
                                                        (self.__delay_max-self.__delay_min))
-        logger.info(f'normalized delay {normalized_delay}')
+        logger.debug(f'normalized delay {normalized_delay}')
         return delay_wam, delay_mean, normalized_delay
 
     def __delay_weighted_arithmetic_mean(self, delay_samples):
@@ -205,7 +212,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             node = key
             delay = delay_samples.get(key)
             all_delay_samples.append(delay)
-            logger.info(f'Finding the WAM of {node.id} with delay {delay}')
+            logger.debug(f'Finding the WAM of {node.id} with delay {delay}')
             weight = self.__delay_compute_wam_weight(node)
             weights.append(weight)
         logger.debug(f'delay all weights {weights}')
@@ -221,7 +228,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         wam = np.dot(normalized_weights, all_delay_transpose)
         # Overall network mean
         normal_mean = all_delay.sum()/len(all_delay_samples)
-        logger.info(f'delay network WAM {wam} normal mean {normal_mean}')
+        logger.debug(f'delay network WAM {wam} normal mean {normal_mean}')
         return wam, normal_mean
 
     def __delay_compute_wam_weight(self, node):
@@ -232,7 +239,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         last_rank = self.__network.nodes_last_rank()
         # Calculate the weight
         weight = 1 - node_rank/(last_rank+1)
-        logger.info(
+        logger.debug(
             f'computing WAM of node {node.id} rank {node_rank} weight {weight}')
         return weight
 
@@ -243,7 +250,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         for node in self.__network.nodes.values():
             # Get all samples from the start of the network configuration
             if node.id != 1:
-                node.pdr_print()
+                # node.pdr_print()
                 pdr_samples.update(
                     {node: node.pdr_get_average(cycle_sequence)})
 
@@ -252,19 +259,22 @@ class EmulatedRewardProcessing(RewardProcessing):
             table.add_column("Sensor node", justify="center", style="magenta")
             table.add_column("Avg. PDR",
                              justify="center", style="green")
+            sum_pdr = 0
             for key in samples:
                 pdr = samples.get(key)
                 table.add_row(str(key.id), str(pdr))
+                sum_pdr += pdr
+            table.add_row("Average", str(sum_pdr/len(samples)))
             return table
 
         print("PDR samples")
         print(pdr_samples)
         logger.info(
-            f"PDR samples for cycle_sequence {cycle_sequence}\n{common.log_table(pdr_samples_table(pdr_samples))}")
+            f"PDR samples (SF: {self.__network.tsch_slotframe_size}) for cycle_sequence {cycle_sequence}\n{common.log_table(pdr_samples_table(pdr_samples))}")
         # We now need to compute the weighted arithmetic mean
         pdr_wam, pdr_mean = self.__pdr_weighted_arithmetic_mean(
             pdr_samples)
-        logger.info(f'normalized pdr {pdr_wam}')
+        logger.debug(f'normalized pdr {pdr_wam}')
         pdr_wam = pdr_wam - self.__reliability_norm_offset
         return pdr_wam, pdr_mean
 
@@ -275,7 +285,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             node = key
             pdr = pdr_samples.get(key)
             all_pdr_samples.append(pdr)
-            logger.info(f'Finding the WAM of {node.id} with delay {pdr}')
+            logger.debug(f'Finding the WAM of {node.id} with delay {pdr}')
             weight = self.__pdr_compute_wam_weight(node)
             weights.append(weight)
         logger.debug(f'pdr all weights {weights}')
@@ -291,7 +301,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         wam = np.dot(normalized_weights, all_pdr_transpose)
         # Overall network mean
         normal_mean = all_pdr.sum()/len(all_pdr_samples)
-        logger.info(f'pdr network WAM {wam} normal mean {normal_mean}')
+        logger.debug(f'pdr network WAM {wam} normal mean {normal_mean}')
         return wam, normal_mean
 
     def __pdr_compute_wam_weight(self, node):
@@ -307,6 +317,6 @@ class EmulatedRewardProcessing(RewardProcessing):
         N = self.__network.nodes_size()
         # Calculate the weight
         weight = 0.9 * (node_rank/last_rank) + 0.1 * (num_nbr/N)
-        logger.info(
+        logger.debug(
             f'computing pdr WAM of node {node.id} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
         return weight

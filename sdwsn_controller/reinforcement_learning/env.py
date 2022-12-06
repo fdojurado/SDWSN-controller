@@ -65,7 +65,7 @@ class Env(gym.Env):
     """ Step action """
 
     def step(self, action):
-        sample_time = datetime.now().timestamp() * 1000.0
+        # sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
         obs = self.controller.get_state()
         if action == 0:
@@ -98,30 +98,30 @@ class Env(gym.Env):
         reward, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
             self.controller.alpha, self.controller.beta, self.controller.delta, sf_len)
         # Append to the observations
-        sample_time = datetime.now().timestamp() * 1000.0
+        # sample_time = datetime.now().timestamp() * 1000.0
         observation = np.append(obs['user_requirements'], cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
         observation = np.append(
             observation, obs['last_ts_in_schedule']/MAX_SLOTFRAME_SIZE)
         observation = np.append(observation, sf_len/MAX_SLOTFRAME_SIZE)
-        self.controller.save_observations(
-            timestamp=sample_time,
-            alpha=self.controller.alpha,
-            beta=self.controller.beta,
-            delta=self.controller.delta,
-            power_wam=cycle_power[0],
-            power_mean=cycle_power[1],
-            power_normalized=cycle_power[2],
-            delay_wam=cycle_delay[0],
-            delay_mean=cycle_delay[1],
-            delay_normalized=cycle_delay[2],
-            pdr_wam=cycle_pdr[0],
-            pdr_mean=cycle_pdr[1],
-            current_sf_len=sf_len,
-            last_ts_in_schedule=obs['last_ts_in_schedule'],
-            reward=reward
-        )
+        # self.controller.save_observations(
+        #     timestamp=sample_time,
+        #     alpha=self.controller.alpha,
+        #     beta=self.controller.beta,
+        #     delta=self.controller.delta,
+        #     power_wam=cycle_power[0],
+        #     power_mean=cycle_power[1],
+        #     power_normalized=cycle_power[2],
+        #     delay_wam=cycle_delay[0],
+        #     delay_mean=cycle_delay[1],
+        #     delay_normalized=cycle_delay[2],
+        #     pdr_wam=cycle_pdr[0],
+        #     pdr_mean=cycle_pdr[1],
+        #     current_sf_len=sf_len,
+        #     last_ts_in_schedule=obs['last_ts_in_schedule'],
+        #     reward=reward
+        # )
         done = False
         info = {}
         # MAX_SLOTFRAME_SIZE is the maximum slotframe size
@@ -185,37 +185,37 @@ class Env(gym.Env):
         # print(f'controller sf: {self.controller.current_slotframe_size}')
         # slotframe_size = last_ts_in_schedule
         # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
-        sample_time = datetime.now().timestamp() * 1000.0
+        # sample_time = datetime.now().timestamp() * 1000.0
         # We now save the user requirements
         user_requirements = self.controller.user_requirements
         # We now save the observations with reward None
         _, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
             self.controller.alpha, self.controller.beta, self.controller.delta, slotframe_size)
         # Append to the observations
-        sample_time = datetime.now().timestamp() * 1000.0
+        # sample_time = datetime.now().timestamp() * 1000.0
         observation = np.append(user_requirements, cycle_power[2])
         observation = np.append(observation, cycle_delay[2])
         observation = np.append(observation, cycle_pdr[1])
         observation = np.append(
             observation, last_ts_in_schedule/MAX_SLOTFRAME_SIZE)
         observation = np.append(observation, slotframe_size/MAX_SLOTFRAME_SIZE)
-        self.controller.save_observations(
-            timestamp=sample_time,
-            alpha=self.controller.alpha,
-            beta=self.controller.beta,
-            delta=self.controller.delta,
-            power_wam=cycle_power[0],
-            power_mean=cycle_power[1],
-            power_normalized=cycle_power[2],
-            delay_wam=cycle_delay[0],
-            delay_mean=cycle_delay[1],
-            delay_normalized=cycle_delay[2],
-            pdr_wam=cycle_pdr[0],
-            pdr_mean=cycle_pdr[1],
-            current_sf_len=slotframe_size,
-            last_ts_in_schedule=last_ts_in_schedule,
-            reward=None
-        )
+        # self.controller.save_observations(
+        #     timestamp=sample_time,
+        #     alpha=self.controller.alpha,
+        #     beta=self.controller.beta,
+        #     delta=self.controller.delta,
+        #     power_wam=cycle_power[0],
+        #     power_mean=cycle_power[1],
+        #     power_normalized=cycle_power[2],
+        #     delay_wam=cycle_delay[0],
+        #     delay_mean=cycle_delay[1],
+        #     delay_normalized=cycle_delay[2],
+        #     pdr_wam=cycle_pdr[0],
+        #     pdr_mean=cycle_pdr[1],
+        #     current_sf_len=slotframe_size,
+        #     last_ts_in_schedule=last_ts_in_schedule,
+        #     reward=None
+        # )
         return observation  # reward, done, info can't be included
 
     def render(self, mode='console'):

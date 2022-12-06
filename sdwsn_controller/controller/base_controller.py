@@ -130,12 +130,12 @@ class BaseController(ABC):
     @property
     def current_slotframe_size(self):
         if self.tsch_scheduler is not None:
-            return self.tsch_scheduler.scheduler_slot_frame_size
+            return self.network.tsch_slotframe_size
 
     @current_slotframe_size.setter
     def current_slotframe_size(self, val):
         if self.tsch_scheduler is not None:
-            self.tsch_scheduler.scheduler_slot_frame_size = val
+            self.network.tsch_slotframe_size = val
 
     @property
     def tsch_scheduler(self):
@@ -181,7 +181,7 @@ class BaseController(ABC):
         pass
 
     def wait(self):
-        self.network.wait()
+        return self.network.wait()
 
     @abstractmethod
     def timeout(self):
@@ -243,30 +243,30 @@ class BaseController(ABC):
     def delta(self, val):
         self.__user_requirements.delta = val
 
-    def save_observations(self, **env_kwargs):
-        if self.db is not None:
-            self.db.save_observations(**env_kwargs)
+    # def save_observations(self, **env_kwargs):
+    #     if self.db is not None:
+    #         self.db.save_observations(**env_kwargs)
 
-        self.__update_observations(**env_kwargs)
+    #     self.__update_observations(**env_kwargs)
 
-    def __update_observations(self, timestamp, alpha, beta, delta, power_wam, power_mean,
-                              power_normalized, delay_wam, delay_mean, delay_normalized,
-                              pdr_wam, pdr_mean, current_sf_len, last_ts_in_schedule, reward):
-        self.__timestamp = timestamp
-        self.alpha = alpha
-        self.beta = beta
-        self.delta = delta
-        self.__power_wam = power_wam
-        self.__power_mean = power_mean
-        self.__power_normalized = power_normalized
-        self.__delay_wam = delay_wam
-        self.__delay_mean = delay_mean
-        self.__delay_normalized = delay_normalized
-        self.__pdr_wam = pdr_wam
-        self.__pdr_mean = pdr_mean
-        self.current_slotframe_size = current_sf_len
-        self.last_tsch_link = last_ts_in_schedule
-        self.__reward = reward
+    # def __update_observations(self, timestamp, alpha, beta, delta, power_wam, power_mean,
+    #                           power_normalized, delay_wam, delay_mean, delay_normalized,
+    #                           pdr_wam, pdr_mean, current_sf_len, last_ts_in_schedule, reward):
+    #     self.__timestamp = timestamp
+    #     self.alpha = alpha
+    #     self.beta = beta
+    #     self.delta = delta
+    #     self.__power_wam = power_wam
+    #     self.__power_mean = power_mean
+    #     self.__power_normalized = power_normalized
+    #     self.__delay_wam = delay_wam
+    #     self.__delay_mean = delay_mean
+    #     self.__delay_normalized = delay_normalized
+    #     self.__pdr_wam = pdr_wam
+    #     self.__pdr_mean = pdr_mean
+    #     self.current_slotframe_size = current_sf_len
+    #     self.last_tsch_link = last_ts_in_schedule
+    #     self.__reward = reward
 
     # def delete_info_collection(self):
     #     if self.db is not None:
@@ -279,8 +279,8 @@ class BaseController(ABC):
             "alpha": self.alpha,
             "beta": self.beta,
             "delta": self.delta,
-            "last_ts_in_schedule": self.last_tsch_link,
-            "current_sf_len": self.current_slotframe_size
+            "last_ts_in_schedule": self.network.tsch_last_ts(),
+            "current_sf_len": self.network.tsch_slotframe_size
         }
         return state
 
