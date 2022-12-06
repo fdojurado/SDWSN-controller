@@ -282,7 +282,7 @@ class Network():
                 dst = schedule.dst_id
                 schedule_type = schedule.schedule_type
                 cell_pkt = Cell_Packet_Payload(payload=payload, type=int(schedule_type),
-                                               channel=int(ch), timeslot=int(ts), scr=node,
+                                               channel=ch, timeslot=ts, scr=node,
                                                dst=dst)
                 cell_packed = cell_pkt.pack()
                 payload = cell_packed
