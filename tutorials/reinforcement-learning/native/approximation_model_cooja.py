@@ -50,7 +50,14 @@ PORT = 60003
 MAX_SLOTFRAME_SIZE = 70
 
 
-def run(env, controller):
+def run(env, controller, output_folder, simulation_name):
+    # Pandas df to store results at each iteration
+    features = ['timestamp', 'alpha', 'beta', 'delta',
+                'power_wam', 'power_mean', 'power_normalized',
+                'delay_wam', 'delay_mean', 'delay_normalized',
+                'pdr_wam', 'pdr_mean', 'current_sf_len',
+                'last_ts_in_schedule', 'reward']
+    df = pd.DataFrame(columns=features)
     # Reset environment
     obs = env.reset()
     assert np.all(obs)
@@ -77,7 +84,7 @@ def run(env, controller):
             else:
                 increase = 1
 
-        env.step(action)
+        _, _, _, info = env.step(action)
         # Get last observations non normalized
         observations = controller.get_state()
         assert 0 <= observations['alpha'] <= 1
@@ -87,8 +94,12 @@ def run(env, controller):
         # Current SF size
         sf_size = observations['current_sf_len']
         assert sf_size > 1 and sf_size <= MAX_SLOTFRAME_SIZE
+        # Add row to DataFrame
+        new_cycle = pd.DataFrame([info])
+        df = pd.concat([df, new_cycle], axis=0, ignore_index=True)
+    df.to_csv(output_folder+simulation_name+'.csv')
     env.render()
-    env.close()
+    # env.close()
 
 
 def result_analysis(path, output_folder):
@@ -206,7 +217,7 @@ def main():
     env = gym.make('sdwsn-v1', **env_kwargs)
     env = Monitor(env, log_dir)
     # --------------------Start RL --------------------------------
-    run(env, controller)
+    run(env, controller, output_folder, 'approximation_model_cooja')
 
     result_analysis(
         output_folder+'approximation_model_cooja.csv', output_folder)

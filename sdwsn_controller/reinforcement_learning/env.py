@@ -65,7 +65,7 @@ class Env(gym.Env):
     """ Step action """
 
     def step(self, action):
-        # sample_time = datetime.now().timestamp() * 1000.0
+        sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
         obs = self.controller.get_state()
         if action == 0:
@@ -123,7 +123,23 @@ class Env(gym.Env):
         #     reward=reward
         # )
         done = False
-        info = {}
+        info = {
+            "timestamp": sample_time,
+            "alpha": obs['alpha'],
+            "beta": obs['beta'],
+            "delta": obs['delta'],
+            'power_wam': cycle_power[0],
+            'power_mean': cycle_power[1],
+            'power_normalized': cycle_power[2],
+            'delay_wam': cycle_delay[0],
+            'delay_mean': cycle_delay[1],
+            'delay_normalized': cycle_delay[2],
+            'pdr_wam': cycle_pdr[0],
+            'pdr_mean': cycle_pdr[1],
+            'current_sf_len': sf_len,
+            'last_ts_in_schedule': obs['last_ts_in_schedule'],
+            'reward': reward
+        }
         # MAX_SLOTFRAME_SIZE is the maximum slotframe size
         # TODO: Set the maximum slotframe size at the creation
         # of the environment
@@ -224,9 +240,8 @@ class Env(gym.Env):
         #     raise NotImplementedError()
         # agent is represented as a cross, rest as a dot
         print('rendering')
-        number = random.randint(0, 100)
-        run_analysis.run_analysis(self.controller.db,
-                                  self.simulation_name+str(number),
+        # number = random.randint(0, 100)
+        run_analysis.run_analysis(self.simulation_name,
                                   self.folder, True)
 
     def close(self):
