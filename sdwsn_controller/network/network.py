@@ -79,14 +79,14 @@ class Network():
     def nodes_get(self, id):
         return self.nodes.get(id)
 
-    def nodes_add(self, id, rank=None):
+    def nodes_add(self, id, sid=None, rank=None):
         node = self.nodes_get(id)
         if node is not None:
             logger.debug(f"Node ID {id} already exists.")
             if rank is not None:
                 node.rank = rank
             return node
-        node = Node(id)
+        node = Node(id, sid=sid)
         self.nodes.update({id: node})
         if id > self.max_node_id:
             self.max_node_id = id
@@ -123,16 +123,16 @@ class Network():
         table.add_column("Via", justify="left", style="green")
         for node in self.nodes.values():
             for route in node.routes_get().values():
-                dst_id = route.dst_id
-                nxt_hop = route.nexthop_id
-                table.add_row(str(node.id), str(dst_id), str(nxt_hop))
+                dst_id = self.nodes_get(route.dst_id).sid
+                nxt_hop = self.nodes_get(route.nexthop_id).sid
+                table.add_row(node.sid, dst_id, nxt_hop)
 
         logger.info(f"Network routing table\n{common.log_table(table)}")
 
     def routes_get(self):
         routes = {}
         for node in self.nodes.values():
-            routes.update({node.id: node.routes_get()})
+            routes.update({node: node.routes_get()})
         return routes
 
     def routes_sendall(self):
@@ -142,11 +142,11 @@ class Network():
         payload = []
         for node, routes in self.routes_get().items():
             for route in routes.values():
-                scr = node
-                dst = route.dst_id
-                via = route.nexthop_id
+                scr = node.sid
+                dst = self.nodes_get(route.dst_id).sid
+                via = self.nodes_get(route.nexthop_id).sid
                 route_pkt = RA_Packet_Payload(
-                    dst=float(dst), scr=float(scr), via=float(via), payload=payload)
+                    dst=dst, scr=scr, via=via, payload=payload)
                 routed_packed = route_pkt.pack()
                 payload = routed_packed
                 if len(payload) > 90:
@@ -234,7 +234,7 @@ class Network():
             for sch in node.tsch_get().values():
                 if sch.schedule_type == 1:  # Tx?
                     df.iloc[sch.ch,
-                            sch.ts] = f"({node.id}-{sch.dst_id})"
+                            sch.ts] = f"({node.sid}-{self.nodes_get(sch.dst_id).sid})"
 
         df.fillna('-', inplace=True)
 

@@ -95,7 +95,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         # We first loop through all sensor nodes
         for node in self.__network.nodes.values():
             # Get all samples from the start of the network configuration
-            if node.id != 1:
+            if node.id != 1 and node.id != 0:
                 # node.energy_print()
                 power_samples.update(
                     {node: node.energy_get_last(cycle_sequence)})
@@ -108,7 +108,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             sum_energy = 0
             for key in samples:
                 energy = samples.get(key)
-                table.add_row(str(key.id), str(energy))
+                table.add_row(key.sid, str(energy))
                 sum_energy += energy
             # Table add avg. at the end
             table.add_row("Average", str(sum_energy/len(samples)))
@@ -172,7 +172,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         # We first loop through all sensor nodes
         for node in self.__network.nodes.values():
             # Get all samples from the start of the network configuration
-            if node.id != 1:
+            if node.id != 1 and node.id != 0:
                 # node.delay_print()
                 delay_samples.update(
                     {node: node.delay_get_average(cycle_sequence)})
@@ -185,7 +185,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             sum_delay = 0
             for key in samples:
                 delay = samples.get(key)
-                table.add_row(str(key.id), str(delay))
+                table.add_row(key.sid, str(delay))
                 sum_delay += delay
             table.add_row("Average", str(sum_delay/len(samples)))
             return table
@@ -245,7 +245,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         # We first loop through all sensor nodes
         for node in self.__network.nodes.values():
             # Get all samples from the start of the network configuration
-            if node.id != 1:
+            if node.id != 1 and node.id != 0:
                 # node.pdr_print()
                 pdr_samples.update(
                     {node: node.pdr_get_average(cycle_sequence)})
@@ -258,7 +258,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             sum_pdr = 0
             for key in samples:
                 pdr = samples.get(key)
-                table.add_row(str(key.id), str(pdr))
+                table.add_row(key.sid, str(pdr))
                 sum_pdr += pdr
             table.add_row("Average", str(sum_pdr/len(samples)))
             return table

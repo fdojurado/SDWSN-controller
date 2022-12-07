@@ -158,6 +158,9 @@ class PacketDissector():
             logger.warning("packet shorter than reported in IP header")
             return
         # sdn IP packet succeed
+        if pkt.dest == 257:  # 1.1 which is the controller
+            self.network.nodes_add(id=0, sid="1.1")
+            self.network.nodes_add(id=1)  # Also add sink
         logger.debug("succeed unpacking sdn IP packet")
         return pkt
 

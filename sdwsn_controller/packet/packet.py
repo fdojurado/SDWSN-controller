@@ -220,11 +220,11 @@ class RA_Packet_Payload:
 
     def __init__(self, payload, **kwargs):
         self.scr = kwargs.get("scr", 0)
-        self.scr = addrConversion.to_int(str(self.scr)).addr
+        self.scr = addrConversion.to_int(self.scr).addr
         self.dst = kwargs.get("dst", 0)
-        self.dst = addrConversion.to_int(str(self.dst)).addr
+        self.dst = addrConversion.to_int(self.dst).addr
         self.via = kwargs.get("via", 0)
-        self.via = addrConversion.to_int(str(self.via)).addr
+        self.via = addrConversion.to_int(self.via).addr
         self.payload = payload
 
     def pack(self):

@@ -46,7 +46,7 @@ class Dijkstra():
                     path[node.id] = node_path
                     # TODO: find a way to avoid forcing the last addr of
                     # sensor nodes to 0.
-                    node.route_add(1.1, node_path[1])
+                    node.route_add(0, node_path[1])
                 except nx.NetworkXNoPath:
                     logger.exception("path not found")
 

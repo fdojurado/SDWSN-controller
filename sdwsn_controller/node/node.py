@@ -30,12 +30,16 @@ logger = logging.getLogger('main.'+__name__)
 class Node():
     def __init__(
         self,
-        id
+        id,
+        sid: str | None
     ) -> None:
         assert isinstance(id, int), "node ID must be a integer"
-        assert id > 0, "node ID must be positive"
+        assert id >= 0, "node ID must be positive"
         self.id = id
-        self.sid = str(id)
+        if sid is None:
+            self.sid = str(id) + ".0"
+        else:
+            self.sid = sid
         self.neighbors = NeighborTable(self)
         self.tsch_schedules = TSCHScheduleTable(self)
         self.routes = RoutingTable(self)
