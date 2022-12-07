@@ -28,12 +28,12 @@ logger = logging.getLogger('main.'+__name__)
 class PDR():
     def __init__(
         self,
-        cycle_seq,
+        # cycle_seq,
         seq
     ) -> None:
-        assert isinstance(cycle_seq, int)
+        # assert isinstance(cycle_seq, int)
         assert isinstance(seq, int)
-        self.cycle_seq = cycle_seq
+        # self.cycle_seq = cycle_seq
         self.seq = seq
 
 
@@ -51,52 +51,45 @@ class PDRSamples():
     def size(self):
         return len(self.samples)
 
-    def get_sample(self, cycle_seq, seq):
-        return self.samples.get((cycle_seq, seq))
+    def get_sample(self, seq):
+        return self.samples.get(seq)
 
-    def get_average(self, cycle_seq):
-        last_samples = []
-        last_seq = 0
-        for sample in self.samples.values():
-            if sample.cycle_seq == cycle_seq:
-                last_samples.append(sample.seq)
-                if sample.seq > last_seq:
-                    last_seq = sample.seq
+    def get_average(self):
+        seqList = list(self.samples.values())
         # Get the averaged pdr for this period
-        if last_seq > 0:
-            avg_pdr = len(last_samples)/last_seq
+        if seqList:
+            avg_pdr = len(seqList)/seqList[-1].seq
         else:
             avg_pdr = 0
         if avg_pdr > 1.0:
             avg_pdr = 1.0
         return avg_pdr
 
-    def add_sample(self, cycle_seq, seq) -> PDR:
-        if self.get_sample(cycle_seq, seq):
+    def add_sample(self, seq) -> PDR:
+        if self.get_sample(seq):
             return
         logger.debug(
-            f'Node {self.node.id}: add pdr cycle seq {cycle_seq}, seq {seq}')
-        energy_sample = PDR(cycle_seq=cycle_seq,
-                            seq=seq)
-        self.samples.update({(cycle_seq, seq): energy_sample})
+            f'Node {self.node.id}: add pdr with seq {seq}')
+        energy_sample = PDR(seq=seq)
+        self.samples.update({seq: energy_sample})
         return energy_sample
 
-    def print(self, cycle_seq):
-        table = Table(title="PDR samples")
+    def print(self):
+        table = Table(title=f"PDR samples (Cycle seq: {self.node.cycle_seq})")
 
         table.add_column("Node", justify="center",
                          style="cyan", no_wrap=True)
-        table.add_column("Cycle sequence", justify="center", style="magenta")
+        # table.add_column("Cycle sequence", justify="center", style="magenta")
         table.add_column("Sequence", justify="center", style="magenta")
         for key in self.samples:
-            if cycle_seq is not None:
-                if key[0] == cycle_seq:
-                    pdr = self.samples.get(key)
-                    table.add_row(str(self.node.id), str(pdr.cycle_seq),
-                                  str(pdr.seq))
-            else:
-                pdr = self.samples.get(key)
-                table.add_row(str(self.node.id), str(pdr.cycle_seq),
-                              str(pdr.seq))
+            # if cycle_seq is not None:
+            #     if key[0] == cycle_seq:
+            #         pdr = self.samples.get(key)
+            #         table.add_row(str(self.node.id), str(pdr.cycle_seq),
+            #                       str(pdr.seq))
+            # else:
+            pdr = self.samples.get(key)
+            table.add_row(self.node.sid,
+                          str(pdr.seq))
 
         logger.info(f"PDR samples\n{common.log_table(table)}")

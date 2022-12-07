@@ -78,8 +78,9 @@ class PacketDissector():
                 logger.debug(repr(na_pkt))
                 self.sequence += 1
                 logger.debug(f"num seq (NA): {self.sequence}")
-                node = self.network.nodes_add(pkt.scr, rank=na_pkt.rank)
-                node.energy_add(na_pkt.cycle_seq, na_pkt.seq, na_pkt.energy)
+                node = self.network.nodes_add(
+                    pkt.scr, cycle_seq=na_pkt.cycle_seq, rank=na_pkt.rank)
+                node.energy_add(na_pkt.seq, na_pkt.energy)
                 # Process neighbors
                 blocks = len(na_pkt.payload) // SDN_NAPL_LEN
                 idx_start = 0
@@ -105,12 +106,13 @@ class PacketDissector():
                 logger.debug(repr(data_pkt))
                 self.sequence += 1
                 logger.debug(f"num seq (data): {self.sequence}")
-                node = self.network.nodes_add(pkt.scr)
+                node = self.network.nodes_add(
+                    pkt.scr, cycle_seq=data_pkt.cycle_seq)
                 # We now build the pdr DB
-                node.pdr_add(data_pkt.cycle_seq, data_pkt.seq)
+                node.pdr_add(data_pkt.seq)
                 # We now build the delay DB
                 sampled_delay = data_pkt.asn * SLOT_DURATION
-                node.delay_add(data_pkt.cycle_seq, data_pkt.seq, sampled_delay)
+                node.delay_add(data_pkt.seq, sampled_delay)
                 return
             case _:
                 logger.warning("sdn IP packet type not found")
@@ -159,8 +161,8 @@ class PacketDissector():
             return
         # sdn IP packet succeed
         if pkt.dest == 257:  # 1.1 which is the controller
-            self.network.nodes_add(id=0, sid="1.1")
-            self.network.nodes_add(id=1)  # Also add sink
+            self.network.nodes_add(id=0, sid="1.1", rank=0)
+            self.network.nodes_add(id=1, rank=0)  # Also add sink
         logger.debug("succeed unpacking sdn IP packet")
         return pkt
 

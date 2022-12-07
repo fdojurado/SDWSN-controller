@@ -98,7 +98,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             if node.id != 1 and node.id != 0:
                 # node.energy_print()
                 power_samples.update(
-                    {node: node.energy_get_last(cycle_sequence)})
+                    {node: node.energy_get_last()})
 
         def power_samples_table(samples):
             table = Table(title="Power samples")
@@ -175,7 +175,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             if node.id != 1 and node.id != 0:
                 # node.delay_print()
                 delay_samples.update(
-                    {node: node.delay_get_average(cycle_sequence)})
+                    {node: node.delay_get_average()})
 
         def delay_samples_table(samples):
             table = Table(title="Delay samples")
@@ -248,7 +248,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             if node.id != 1 and node.id != 0:
                 # node.pdr_print()
                 pdr_samples.update(
-                    {node: node.pdr_get_average(cycle_sequence)})
+                    {node: node.pdr_get_average()})
 
         def pdr_samples_table(samples):
             table = Table(title="PDR samples")

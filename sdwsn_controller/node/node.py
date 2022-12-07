@@ -31,7 +31,9 @@ class Node():
     def __init__(
         self,
         id,
-        sid: str | None
+        sid: str | None,
+        cycle_seq: int = 0,
+        rank: int = 255,
     ) -> None:
         assert isinstance(id, int), "node ID must be a integer"
         assert id >= 0, "node ID must be positive"
@@ -46,7 +48,8 @@ class Node():
         self.energy = EnergySamples(self)
         self.delay = DelaySamples(self)
         self.pdr = PDRSamples(self)
-        self.rank = 255
+        self.rank = rank
+        self.cycle_seq = cycle_seq
         self.reset_stats()
 
     # ---------------------------------------------------------------------------
@@ -66,42 +69,50 @@ class Node():
 
     # ---------------------------------------------------------------------------
 
-    def energy_add(self, cycle_seq, seq, energy):
+    def energy_add(self, seq, energy):
         energy = self.energy.add_sample(
-            cycle_seq=cycle_seq, seq=seq, energy=energy)
+            seq=seq, energy=energy)
         return energy
 
-    def energy_print(self, cycle_seq=None):
-        self.energy.print(cycle_seq)
+    def energy_print(self):
+        self.energy.print()
 
-    def energy_get_last(self, cycle_sequence):
-        return self.energy.get_sample_last(cycle_sequence)
+    def energy_get_last(self):
+        return self.energy.get_sample_last()
+
+    def energy_clear(self):
+        self.energy.clear()
 
     # ---------------------------------------------------------------------------
 
-    def delay_add(self, cycle_seq, seq, delay):
+    def delay_add(self, seq, delay):
         delay = self.delay.add_sample(
-            cycle_seq=cycle_seq, seq=seq, delay=delay)
+            seq=seq, delay=delay)
         return delay
 
-    def delay_print(self, cycle_seq=None):
-        self.delay.print(cycle_seq)
+    def delay_print(self):
+        self.delay.print()
 
-    def delay_get_average(self, cycle_sequence):
-        return self.delay.get_average(cycle_sequence)
+    def delay_get_average(self):
+        return self.delay.get_average()
+
+    def delay_clear(self):
+        self.delay.clear()
 
     # ---------------------------------------------------------------------------
 
-    def pdr_add(self, cycle_seq, seq):
-        delay = self.pdr.add_sample(
-            cycle_seq=cycle_seq, seq=seq)
+    def pdr_add(self, seq):
+        delay = self.pdr.add_sample(seq=seq)
         return delay
 
-    def pdr_print(self, cycle_seq=None):
-        self.pdr.print(cycle_seq)
+    def pdr_print(self):
+        self.pdr.print()
 
-    def pdr_get_average(self, cycle_sequence):
-        return self.pdr.get_average(cycle_sequence)
+    def pdr_get_average(self):
+        return self.pdr.get_average()
+
+    def pdr_clear(self):
+        self.pdr.clear()
 
     # ---------------------------------------------------------------------------
 
@@ -153,6 +164,11 @@ class Node():
         self.energy.clear()
         self.delay.clear()
         self.pdr.clear()
+
+    def performance_metrics_clear(self):
+        self.energy_clear()
+        self.delay_clear()
+        self.pdr_clear()
 
     def reset_stats(self):
         self.tsch_pkt_sent = 0

@@ -79,14 +79,16 @@ class Network():
     def nodes_get(self, id):
         return self.nodes.get(id)
 
-    def nodes_add(self, id, sid=None, rank=None):
+    def nodes_add(self, id, sid=None, cycle_seq=None, rank=None):
         node = self.nodes_get(id)
         if node is not None:
             logger.debug(f"Node ID {id} already exists.")
             if rank is not None:
                 node.rank = rank
+            if cycle_seq is not None:
+                node.cycle_seq = cycle_seq
             return node
-        node = Node(id, sid=sid)
+        node = Node(id, sid=sid, rank=rank, cycle_seq=cycle_seq)
         self.nodes.update({id: node})
         if id > self.max_node_id:
             self.max_node_id = id
@@ -107,6 +109,10 @@ class Network():
             if node.rank > last_rank:
                 last_rank = node.rank
         return last_rank
+
+    def nodes_performance_metrics_clear(self):
+        for node in self.nodes.values():
+            node.performance_metrics_clear()
 
     # ---------------------------------------------------------------------------
 
@@ -188,6 +194,7 @@ class Network():
         self.packet_dissector.cycle_sequence = cycle_seq
         # Clear the sequence
         self.packet_dissector.sequence = 0
+        self.nodes_performance_metrics_clear()
         return self.packet_dissector.cycle_sequence
     # ---------------------------------------------------------------------------
 
