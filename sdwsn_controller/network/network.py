@@ -146,7 +146,7 @@ class Network():
                 dst = route.dst_id
                 via = route.nexthop_id
                 route_pkt = RA_Packet_Payload(
-                    dst=dst, scr=scr, via=via, payload=payload)
+                    dst=float(dst), scr=float(scr), via=float(via), payload=payload)
                 routed_packed = route_pkt.pack()
                 payload = routed_packed
                 if len(payload) > 90:
@@ -281,7 +281,7 @@ class Network():
                 ts = schedule.ts
                 dst = schedule.dst_id
                 schedule_type = schedule.schedule_type
-                cell_pkt = Cell_Packet_Payload(payload=payload, type=int(schedule_type),
+                cell_pkt = Cell_Packet_Payload(payload=payload, type=schedule_type,
                                                channel=ch, timeslot=ts, scr=node,
                                                dst=dst)
                 cell_packed = cell_pkt.pack()
