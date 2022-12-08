@@ -101,41 +101,47 @@ def result_analysis(path, output_folder):
     df = pd.read_csv(path)
     # Normalized power
     run_analysis.plot_fit_curves(
-        df,
-        'power',
-        output_folder,
-        'current_sf_len',
-        'power_normalized',
-        r'$|C|$',
-        r'$\widetilde{P}$',
-        4,
-        [8, 0.89],
-        [0.86, 0.9]
+        df=df,
+        title='power',
+        path=output_folder,
+        x_axis='current_sf_len',
+        y_axis='power_normalized',
+        x_axis_name=r'$|C|$',
+        y_axis_name=r'$\widetilde{P}$',
+        degree=4,
+        # txt_loc=[8, 0.89],
+        # y_axis_limit=[0.86, 0.9]
     )
     # Normalized delay
     run_analysis.plot_fit_curves(
-        df,
-        'delay',
-        output_folder,
-        'current_sf_len',
-        'delay_normalized',
-        r'$|C|$',
-        r'$\widetilde{D}$',
-        3,
-        [8, 0.045],
-        [0, 0.95]
+        df=df,
+        title='delay',
+        path=output_folder,
+        x_axis='current_sf_len',
+        y_axis='delay_normalized',
+        x_axis_name=r'$|C|$',
+        y_axis_name=r'$\widetilde{D}$',
+        degree=3,
+        # txt_loc=[8, 0.045],
+        # y_axis_limit=[0, 0.95]
     )
     run_analysis.plot_fit_curves(
-        df,
-        'reliability',
-        output_folder,
-        'current_sf_len',
-        'pdr_mean',
-        r'$|C|$',
-        r'$\widetilde{R}$',
-        1,
-        [25, 0.7],
-        [0.65, 1]
+        df=df,
+        title='reliability',
+        path=output_folder,
+        x_axis='current_sf_len',
+        y_axis='pdr_mean',
+        x_axis_name=r'$|C|$',
+        y_axis_name=r'$\widetilde{R}$',
+        degree=1,
+        # txt_loc=[25, 0.7],
+        # y_axis_limit=[0.65, 1]
+    )
+    # Metrics vs. Slotframe Size
+    run_analysis.plot_against_sf_size(
+        df=df,
+        title="slotframe_size",
+        path=output_folder
     )
 
 

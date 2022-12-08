@@ -245,7 +245,8 @@ def calculate_confidence_interval(df, x_name, y_name):
 #######################################################
 
 
-def plot_against_sf_size(df, name, path):
+def plot_against_sf_size(df, title, path):
+    plot_against_sf_df = df.copy()
     title_font_size = 8
     x_axis_font_size = 8
     y_axis_font_size = 8
@@ -259,10 +260,10 @@ def plot_against_sf_size(df, name, path):
     episode_reward = values.sum()
 
     fig, axs = pl.subplots(2, 2, layout='constrained')
-    alpha_weight = df['alpha'].iloc[0]
-    beta_weight = df['beta'].iloc[0]
-    delta_weight = df['delta'].iloc[0]
-    last_ts = df['last_ts_in_schedule'].iloc[0]
+    alpha_weight = plot_against_sf_df['alpha'].iloc[0]
+    beta_weight = plot_against_sf_df['beta'].iloc[0]
+    delta_weight = plot_against_sf_df['delta'].iloc[0]
+    last_ts = plot_against_sf_df['last_ts_in_schedule'].iloc[0]
     fig.suptitle(r'$\alpha={},\beta={},\delta={},last~ts={}, reward={}$'
                  .format(alpha_weight, beta_weight, delta_weight,
                          last_ts, episode_reward),
@@ -278,7 +279,8 @@ def plot_against_sf_size(df, name, path):
     axs[0, 0].tick_params(axis='both', which='major',
                           labelsize=ticks_font_size)
     # Confidence interval for all sf size
-    stats = calculate_confidence_interval(df, 'current_sf_len', 'reward')
+    stats = calculate_confidence_interval(
+        plot_against_sf_df, 'current_sf_len', 'reward')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -299,7 +301,7 @@ def plot_against_sf_size(df, name, path):
                           labelsize=ticks_font_size)
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(
-        df, 'current_sf_len', 'power_normalized')
+        plot_against_sf_df, 'current_sf_len', 'power_normalized')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -320,7 +322,7 @@ def plot_against_sf_size(df, name, path):
                           labelsize=ticks_font_size)
     # Confidence interval for all sf size
     stats = calculate_confidence_interval(
-        df, 'current_sf_len', 'delay_normalized')
+        plot_against_sf_df, 'current_sf_len', 'delay_normalized')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -339,7 +341,8 @@ def plot_against_sf_size(df, name, path):
     axs[1, 1].tick_params(axis='both', which='major',
                           labelsize=ticks_font_size)
     # Confidence interval for all sf size
-    stats = calculate_confidence_interval(df, 'current_sf_len', 'pdr_mean')
+    stats = calculate_confidence_interval(
+        plot_against_sf_df, 'current_sf_len', 'pdr_mean')
 
     x = stats['current_sf_len']
     y = stats['mean']
@@ -351,7 +354,8 @@ def plot_against_sf_size(df, name, path):
 
     # Save plot
 
-    pl.savefig(path+name+'_sf_size.pdf', bbox_inches='tight')
+    pl.savefig(path+title+'.pdf', bbox_inches='tight')
+    pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
     pl.close()
 #######################################################
 
@@ -661,12 +665,13 @@ def plot_episode_reward(df, title, path):
 #######################################################
 
 
-def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name,
-                    degree, txt_loc, y1_limit=None):
+def plot_fit_curves(df, title, path, x_axis, y_axis, x_axis_name, y_axis_name,
+                    degree, txt_loc=None, y_axis_limit=None):
     """
     We try to fit the curves for power, delay and
     PDR.
     """
+    plot_fit_df = df.copy()
     x_axis_font_size = 14
     y_axis_font_size = 14
     ticks_font_size = 12
@@ -685,15 +690,15 @@ def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name,
 
     # Confidence interval
     stats = calculate_confidence_interval(
-        df, x, y1)
+        plot_fit_df, x_axis, y_axis)
 
-    x_stats = stats[x]
+    x_stats = stats[x_axis]
     y_stats = stats['mean']
     ax.fill_between(x_stats, stats['ci95_hi'],
                     stats['ci95_lo'], color='b', alpha=.1)
 
-    if y1_limit is not None:
-        ax.set_ylim(y1_limit)
+    if y_axis_limit is not None:
+        ax.set_ylim(y_axis_limit)
 
     ax.scatter(x_stats, y_stats, s=15, zorder=3)
 
@@ -716,19 +721,20 @@ def plot_fit_curves(df, title, path, x, y1, x1_name, y1_name,
 
     ax.plot(x, power_trendpoly(x), zorder=3)
 
-    ax.text(txt_loc[0], txt_loc[1], txt, style='italic',
-            bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3},
-            fontsize=equation_font_size)
+    if txt_loc is not None:
+        ax.text(txt_loc[0], txt_loc[1], txt, style='italic',
+                bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3},
+                fontsize=equation_font_size)
 
     ax.grid(True, 'major', 'both', linestyle='--',
             color='0.75', linewidth=0.6, zorder=0)
     ax.grid(True, 'minor', 'both', linestyle=':',
             color='0.85', linewidth=0.5, zorder=0)
 
-    ax.set_xlabel(x1_name, fontsize=x_axis_font_size,
+    ax.set_xlabel(x_axis_name, fontsize=x_axis_font_size,
                   fontstyle=axis_labels_fontstyle)
     ax.set_ylabel(
-        y1_name, fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
+        y_axis_name, fontsize=y_axis_font_size, fontstyle=axis_labels_fontstyle)
 
     pl.savefig(path+title+'.pdf', bbox_inches='tight')
     pl.savefig(path+title+'.png', bbox_inches='tight', dpi=400)
