@@ -459,7 +459,7 @@ class Network():
 
     def stop(self):
         # Clear the running flag
-        self.network_running = True
+        self.network_running = False
         self.nodes_clear()
         # Stop the socket
         self.socket_stop()

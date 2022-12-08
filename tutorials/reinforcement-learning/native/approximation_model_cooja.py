@@ -52,12 +52,7 @@ MAX_SLOTFRAME_SIZE = 70
 
 def run(env, controller, output_folder, simulation_name):
     # Pandas df to store results at each iteration
-    features = ['timestamp', 'alpha', 'beta', 'delta',
-                'power_wam', 'power_mean', 'power_normalized',
-                'delay_wam', 'delay_mean', 'delay_normalized',
-                'pdr_wam', 'pdr_mean', 'current_sf_len',
-                'last_ts_in_schedule', 'reward']
-    df = pd.DataFrame(columns=features)
+    df = pd.DataFrame()
     # Reset environment
     obs = env.reset()
     assert np.all(obs)
@@ -98,7 +93,7 @@ def run(env, controller, output_folder, simulation_name):
         new_cycle = pd.DataFrame([info])
         df = pd.concat([df, new_cycle], axis=0, ignore_index=True)
     df.to_csv(output_folder+simulation_name+'.csv')
-    env.render()
+    # env.render()
     # env.close()
 
 
