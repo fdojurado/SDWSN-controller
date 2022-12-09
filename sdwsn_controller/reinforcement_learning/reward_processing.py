@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from datetime import datetime
+
 from sdwsn_controller.database.db_manager import DatabaseManager, SLOT_DURATION
 from sdwsn_controller.database.database import NODES_INFO
 from sdwsn_controller.common import common
@@ -70,26 +72,37 @@ class EmulatedRewardProcessing(RewardProcessing):
     def name(self):
         return self.__name
 
-    def calculate_reward(self, alpha, beta, delta, cycle_sequence):
-        # Get the sensor nodes to loop in ascending order
-        # nodes = self.db.get_sensor_nodes_in_order()
+    def calculate_reward(self, alpha, beta, delta) -> dict:
+        sample_time = datetime.now().timestamp() * 1000.0
         # Get the normalized average power consumption for this cycle
-        power_wam, power_mean, power_normalized = self.__get_network_power_consumption(
-            cycle_sequence)
-        power = [power_wam, power_mean, power_normalized]
+        power_wam, power_mean, power_normalized = self.__get_network_power_consumption()
         # Get the normalized average delay for this cycle
-        delay_wam, delay_mean, delay_normalized = self.__get_network_delay(
-            cycle_sequence)
-        delay = [delay_wam, delay_mean, delay_normalized]
+        delay_wam, delay_mean, delay_normalized = self.__get_network_delay()
         # Get the normalized average pdr for this cycle
-        pdr_wam, pdf_mean = self.__get_network_pdr(cycle_sequence)
-        pdr = [pdr_wam, pdf_mean]
+        pdr_wam, pdf_mean = self.__get_network_pdr()
         # Calculate the reward
         reward = 2-1*(alpha*power_normalized+beta *
                       delay_normalized-delta*pdr_wam)
-        return reward, power, delay, pdr
+        info = {
+            "timestamp": sample_time,
+            "alpha": alpha,
+            "beta": beta,
+            "delta": delta,
+            'power_wam': power_wam,
+            'power_mean': power_mean,
+            'power_normalized': power_normalized,
+            'delay_wam': delay_wam,
+            'delay_mean': delay_mean,
+            'delay_normalized': delay_normalized,
+            'pdr_wam': pdr_wam,
+            'pdr_mean': pdf_mean,
+            'current_sf_len': self.__network.tsch_slotframe_size,
+            'last_ts_in_schedule': self.__network.tsch_last_ts(),
+            'reward': reward
+        }
+        return info
 
-    def __get_network_power_consumption(self, cycle_sequence):
+    def __get_network_power_consumption(self):
         # Variable to keep track of the number of energy consumption samples
         power_samples = {}
         # We first loop through all sensor nodes
@@ -166,7 +179,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             f'computing WAM of node {node.id} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
         return weight
 
-    def __get_network_delay(self, cycle_sequence):
+    def __get_network_delay(self):
         # Variable to keep track of the number of delay samples
         delay_samples = {}
         # We first loop through all sensor nodes
@@ -191,7 +204,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             return table
 
         logger.info(
-            f"Delay samples (SF: {self.__network.tsch_slotframe_size}) for cycle_sequence {cycle_sequence}\n{common.log_table(delay_samples_table(delay_samples))}")
+            f"Delay samples (SF: {self.__network.tsch_slotframe_size})\n{common.log_table(delay_samples_table(delay_samples))}")
         # We now need to compute the weighted arithmetic mean
         delay_wam, delay_mean = self.__delay_weighted_arithmetic_mean(
             delay_samples)
@@ -239,7 +252,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             f'computing WAM of node {node.id} rank {node_rank} weight {weight}')
         return weight
 
-    def __get_network_pdr(self, cycle_sequence):
+    def __get_network_pdr(self):
         # Variable to keep track of the number of pdr samples
         pdr_samples = {}
         # We first loop through all sensor nodes
@@ -264,7 +277,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             return table
 
         logger.info(
-            f"PDR samples (SF: {self.__network.tsch_slotframe_size}) for cycle_sequence {cycle_sequence}\n{common.log_table(pdr_samples_table(pdr_samples))}")
+            f"PDR samples (SF: {self.__network.tsch_slotframe_size})\n{common.log_table(pdr_samples_table(pdr_samples))}")
         # We now need to compute the weighted arithmetic mean
         pdr_wam, pdr_mean = self.__pdr_weighted_arithmetic_mean(
             pdr_samples)

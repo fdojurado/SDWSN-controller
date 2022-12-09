@@ -205,7 +205,7 @@ class BaseController(ABC):
 
     def calculate_reward(self, alpha, beta, delta, _):
         if self.reward_processing is not None:
-            return self.reward_processing.calculate_reward(alpha, beta, delta, self.network.cycle_sequence())
+            return self.reward_processing.calculate_reward(alpha, beta, delta)
 
     @property
     def user_requirements(self):
