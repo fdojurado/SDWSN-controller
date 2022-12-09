@@ -350,7 +350,7 @@ class Network():
         G.remove_nodes_from(list(nx.isolates(G)))
         return G
 
-    def wait(self):
+    def wait(self) -> bool:
         """
          We wait for the current cycle to finish
          """

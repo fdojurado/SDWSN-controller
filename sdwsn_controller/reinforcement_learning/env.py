@@ -80,22 +80,14 @@ class Env(gym.Env):
         self.controller.current_slotframe_size = sf_len
         # Send the entire TSCH schedule
         self.controller.send_tsch_schedules()
-        # Delete the current nodes_info collection from the database
-        # self.controller.delete_info_collection()
         # We now wait until we reach the processing_window
         while (not self.controller.wait()):
             print("resending schedules")
             self.controller.send_tsch_schedules()
-            # Delete the current nodes_info collection from the database
-            # self.controller.delete_info_collection()
-            # Reset sequence
-            # self.controller.reset_pkt_sequence()
-        # print("process reward")
-        # TODO: DO we really need this delay?
-        self.controller.processing_wait(1)
         # Calculate the reward and metrics
         metrics = self.controller.calculate_reward(
-            self.controller.alpha, self.controller.beta, self.controller.delta, sf_len)
+            self.controller.alpha, self.controller.beta, self.controller.delta,
+            sf_len)
         # Append to the observations
         observation = np.append(
             state['user_requirements'], metrics['power_normalized'])
@@ -128,12 +120,7 @@ class Env(gym.Env):
         G = self.controller.get_network_links()
         # Run the dijkstra algorithm with the current links
         path = self.controller.compute_routes(G)
-        # Lets set the type of scheduler
-        # types_scheduler = ['Contention Free', 'Unique Schedule']
-        # type_scheduler = random.choice(types_scheduler)
-        # self.controller.scheduler = type_scheduler
-        # self.controller.scheduler = 'Unique Schedule'
-        # Set the slotframe size
+        # Set the initial SF size, this has to be greater that the # sensors
         slotframe_size = 15
         # We now set the TSCH schedules for the current routing
         self.controller.compute_tsch_schedule(path, slotframe_size)
@@ -149,15 +136,11 @@ class Env(gym.Env):
         self.controller.send_routes()
         # Send the entire TSCH schedule
         self.controller.send_tsch_schedules()
-        # Delete the current nodes_info collection from the database
-        # self.controller.delete_info_collection()
-        # self.controller.reset_pkt_sequence()
         # Wait for the network to settle
         self.controller.wait()
         # We now save all the observations
         # This is done for the numerical environment.
         self.controller.last_tsch_link = randrange(9+1, 20)
-        # print(f'tsch link: {self.controller.last_tsch_link}')
         # Get last active ts
         last_ts_in_schedule = self.controller.last_tsch_link
         # Set a random initial slotframe size
@@ -165,17 +148,12 @@ class Env(gym.Env):
             last_ts_in_schedule+5, MAX_SLOTFRAME_SIZE-5)
         # slotframe_size = last_ts_in_schedule
         self.controller.current_slotframe_size = slotframe_size
-        # print(f'controller sf: {self.controller.current_slotframe_size}')
-        # slotframe_size = last_ts_in_schedule
-        # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
-        # sample_time = datetime.now().timestamp() * 1000.0
         # We now save the user requirements
         user_requirements = self.controller.user_requirements
         # We now save the observations with reward None
         metrics = self.controller.calculate_reward(
             self.controller.alpha, self.controller.beta, self.controller.delta, slotframe_size)
         # Append to the observations
-        # sample_time = datetime.now().timestamp() * 1000.0
         observation = np.append(user_requirements, metrics['power_normalized'])
         observation = np.append(observation, metrics['delay_normalized'])
         observation = np.append(observation, metrics['pdr_mean'])
@@ -185,19 +163,7 @@ class Env(gym.Env):
         return observation  # reward, done, info can't be included
 
     def render(self, mode='console'):
-        print(f"mode: {mode}")
-        # if mode != 'console':
-        #     raise NotImplementedError()
-        # agent is represented as a cross, rest as a dot
-        print('rendering')
-        # number = random.randint(0, 100)
-        run_analysis.run_analysis(self.simulation_name,
-                                  self.folder, True)
+        pass
 
     def close(self):
-        """
-        Here, we want to export the observation collections to CSV format
-
-        """
-        self.controller.export_observations(self.simulation_name, self.folder)
         pass
