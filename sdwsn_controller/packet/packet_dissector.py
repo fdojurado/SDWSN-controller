@@ -16,105 +16,34 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # This class allows to read and write from the database
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import logging
 
-from sdwsn_controller.packet.packet import Data_Packet, NA_Packet
+from sdwsn_controller.packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload, SDN_NAPL_LEN
 from sdwsn_controller.packet.packet import SerialPacket, SDN_IP_Packet
 from sdwsn_controller.packet.packet import serial_protocol, sdn_protocols
 from sdwsn_controller.packet.packet import SDN_IPH_LEN
 
 import struct
 
+# Constants for packet delay calculation
+SLOT_DURATION = 10
+
 logger = logging.getLogger('main.'+__name__)
 
 
-class Dissector(ABC):
-    """
-    Dissect abstract class. This class makes sure every packet dissector
-    has the right constructor - functions.
-    """
-
-    def __init__(
-        self,
-        cycle_sequence,
-        sequence,
-        database,
-        name
-    ):
-        self.__cycle_sequence = cycle_sequence
-        self.__sequence = sequence
-        self.__db = database
-        self.__name = name
-        super().__init__()
-
-    @property
-    def name(self):
-        return self.__name
-
-    @property
-    def sequence(self):
-        return self.__sequence
-
-    @sequence.setter
-    def sequence(self, num):
-        self.__sequence = num
-
-    @property
-    def cycle_sequence(self):
-        return self.__cycle_sequence
-
-    @cycle_sequence.setter
-    def cycle_sequence(self, num):
-        self.__cycle_sequence = num
-
-    def reset_pkt_sequence(self):
-        self.sequence = 0
-
-    def get_cycle_sequence(self):
-        return self.cycle_sequence
-
-    @property
-    def db(self):
-        if self.__db is not None:
-            return self.__db
-
-    def save_energy(self, pkt, na_pkt):
-        if self.db is not None:
-            self.db.save_energy(pkt, na_pkt)
-
-    def save_neighbors(self, pkt, na_pkt):
-        if self.db is not None:
-            self.db.save_neighbors(pkt, na_pkt)
-
-    def save_pdr(self, pkt, data_pkt):
-        if self.db is not None:
-            self.db.save_pdr(pkt, data_pkt)
-
-    def save_delay(self, pkt, data_pkt):
-        if self.db is not None:
-            self.db.save_delay(pkt, data_pkt)
-
-    def save_serial_packet(self, serial_pkt):
-        if self.db is not None:
-            self.db.save_serial_packet(serial_pkt.toJSON())
-
-
-class PacketDissector(Dissector):
+class PacketDissector():
     def __init__(
             self,
+            network,
             cycle_sequence: int = 0,
-            sequence: int = 0,
-            database: object = None,
+            sequence: int = 0
     ):
         self.ack_pkt = None
-        super().__init__(
-            cycle_sequence=cycle_sequence,
-            sequence=sequence,
-            database=database,
-            name="Packet Dissector"
-        )
+        self.cycle_sequence = cycle_sequence
+        self.sequence = sequence
+        self.network = network
 
     def handle_serial_packet(self, data):
         # Let's parse serial packet
@@ -131,7 +60,7 @@ class PacketDissector(Dissector):
         # Let's now process the sdn IP packet
         pkt = self.process_sdn_ip_packet(serial_pkt.payload)
         # We exit processing if empty result returned
-        if(not pkt):
+        if (not pkt):
             return
         b = int.from_bytes(b'\x0F', 'big')
         protocol = pkt.vap & b
@@ -149,10 +78,20 @@ class PacketDissector(Dissector):
                 logger.debug(repr(na_pkt))
                 self.sequence += 1
                 logger.debug(f"num seq (NA): {self.sequence}")
-                # We now build the energy DB
-                self.save_energy(pkt, na_pkt)
-                # We now build the neighbors DB
-                self.save_neighbors(pkt, na_pkt)
+                node = self.network.nodes_add(
+                    pkt.scr, cycle_seq=na_pkt.cycle_seq, rank=na_pkt.rank)
+                node.energy_add(na_pkt.seq, na_pkt.energy)
+                # Process neighbors
+                blocks = len(na_pkt.payload) // SDN_NAPL_LEN
+                idx_start = 0
+                idx_end = 0
+                for _ in range(1, blocks+1):
+                    idx_end += SDN_NAPL_LEN
+                    payload = na_pkt.payload[idx_start:idx_end]
+                    idx_start = idx_end
+                    payload_unpacked = NA_Packet_Payload.unpack(payload)
+                    node.neighbor_add(payload_unpacked.addr, payload_unpacked.rssi,
+                                      payload_unpacked.etx)
                 return
             case sdn_protocols.SDN_PROTO_DATA:
                 logger.debug("Processing data packet")
@@ -167,10 +106,13 @@ class PacketDissector(Dissector):
                 logger.debug(repr(data_pkt))
                 self.sequence += 1
                 logger.debug(f"num seq (data): {self.sequence}")
+                node = self.network.nodes_add(
+                    pkt.scr, cycle_seq=data_pkt.cycle_seq)
                 # We now build the pdr DB
-                self.save_pdr(pkt, data_pkt)
+                node.pdr_add(data_pkt.seq)
                 # We now build the delay DB
-                self.save_delay(pkt, data_pkt)
+                sampled_delay = data_pkt.asn * SLOT_DURATION
+                node.delay_add(data_pkt.seq, sampled_delay)
                 return
             case _:
                 logger.warning("sdn IP packet type not found")
@@ -183,7 +125,7 @@ class PacketDissector(Dissector):
         logger.debug(repr(pkt))
         # If the reported payload length in the serial header doesn't match the packet size,
         # then we drop the packet.
-        if(len(pkt.payload) < pkt.payload_len):
+        if (len(pkt.payload) < pkt.payload_len):
             logger.debug("packet shorter than reported in serial header")
             return None
         # serial packet succeed
@@ -193,7 +135,7 @@ class PacketDissector(Dissector):
     def process_data_packet(self, pkt):
         # If the reported length in the sdn IP header doesn't match the packet size,
         # then we drop the packet.
-        if(len(pkt.payload) < (pkt.tlen-SDN_IPH_LEN)):
+        if (len(pkt.payload) < (pkt.tlen-SDN_IPH_LEN)):
             logger.warning("Data packet shorter than reported in IP header")
             return
         # Process data packet header
@@ -205,7 +147,7 @@ class PacketDissector(Dissector):
 
     def process_sdn_ip_packet(self, data):
         # We first check the integrity of the HEADER of the sdn IP packet
-        if(self.sdn_ip_checksum(data, SDN_IPH_LEN) != 0xffff):
+        if (self.sdn_ip_checksum(data, SDN_IPH_LEN) != 0xffff):
             logger.warning("bad IP checksum")
             return
         # Parse sdn IP packet
@@ -214,10 +156,13 @@ class PacketDissector(Dissector):
         logger.debug(repr(pkt))
         # If the reported length in the sdn IP header doesn't match the packet size,
         # then we drop the packet.
-        if(len(data) < pkt.tlen):
+        if (len(data) < pkt.tlen):
             logger.warning("packet shorter than reported in IP header")
             return
         # sdn IP packet succeed
+        if pkt.dest == 257:  # 1.1 which is the controller
+            self.network.nodes_add(id=0, sid="1.1", rank=0)
+            self.network.nodes_add(id=1, rank=0)  # Also add sink
         logger.debug("succeed unpacking sdn IP packet")
         return pkt
 
@@ -238,7 +183,7 @@ class PacketDissector(Dissector):
     def sdn_ip_checksum(self, msg, len):
         sum = self.chksum(0, msg, len)
         result = 0
-        if(sum == 0):
+        if (sum == 0):
             result = 0xffff
         else:
             result = struct.pack(">i", sum)
@@ -247,7 +192,7 @@ class PacketDissector(Dissector):
     def process_na_packet(self, pkt):
         length = pkt.tlen-SDN_IPH_LEN
         # We first check the integrity of the entire SDN NA packet
-        if(self.sdn_ip_checksum(pkt.payload, length) != 0xffff):
+        if (self.sdn_ip_checksum(pkt.payload, length) != 0xffff):
             logger.warning("bad NA checksum")
             return
         # Parse sdn NA packet
@@ -255,7 +200,7 @@ class PacketDissector(Dissector):
         logger.debug(repr(pkt))
         # If the reported payload length in the sdn NA header does not match the packet size,
         # then we drop the packet.
-        if(len(pkt.payload) < pkt.payload_len):
+        if (len(pkt.payload) < pkt.payload_len):
             logger.warning("NA packet shorter than reported in the header")
             return
         # sdn IP packet succeed

@@ -47,7 +47,8 @@ class CoojaDocker():
 
         Args:
             docker_image (str, optional): Docker image name. Defaults to 'contiker/contiki-ng'.
-            script (str, optional): Command to run the simulation script. Defaults to '/bin/sh -c "cd examples/elise && ./run-cooja.py"'.
+            script (str, optional): Command to run the simulation script. Defaults to  \
+                '/bin/sh -c "cd examples/elise && ./run-cooja.py"'.
             mount (Optional[Dict], optional): Specification for mounts to be added to the container. Defaults to None.
             sysctls (Optional[Dict], optional): Kernel parameters to set in the container. Defaults to None.
             ports (Optional[Dict], optional): Ports to bind inside the container. Defaults to None.
@@ -55,6 +56,15 @@ class CoojaDocker():
             detach (bool, optional): Run container in the background. Defaults to True.
             log_file (Optional[str], optional): Path to the 'COOJA.log' file. Defaults to None.
         """
+        assert isinstance(docker_image, str)
+        assert isinstance(script, str)
+        assert isinstance(mount, Dict)
+        assert isinstance(sysctls, Dict)
+        assert isinstance(ports, Dict)
+        assert isinstance(privileged, bool)
+        assert isinstance(detach, bool)
+        assert isinstance(log_file, str)
+
         self.docker_image = docker_image
         self.script = script
         self.mount = Mount(
@@ -67,6 +77,17 @@ class CoojaDocker():
         self.client = docker.from_env()
         self.container = None
         self.log_file = log_file
+
+        logger.info(f"docker_image: {self.docker_image}")
+        logger.info(f"script: {self.script}")
+        logger.info(f"Mount target: {mount['target']}")
+        logger.info(f"Mount source: {mount['source']}")
+        logger.info(f"Mount type: {mount['type']}")
+        logger.info(f'sysctls: {self.sysctls}')
+        logger.info(f'Container port: {self.container_port}')
+        logger.info(f'Ports: {self.ports }')
+        logger.info(f'detach: {self.detach }')
+        logger.info(f'log_file: {self.log_file}')
 
     def __run_container(self):
         logger.info("Starting container")
@@ -94,7 +115,7 @@ class CoojaDocker():
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start Cooja.")
+            raise Exception("Failed to start Cooja.")
 
         self.__wait_socket_running()
 
@@ -131,14 +152,14 @@ class CoojaDocker():
                         "Simulation compilation error, starting over ...")
                     # self.client.containers.prune()  # Remove previous containers
                     self.start_container()
-                if cooja_socket_active == True:
+                if cooja_socket_active:
                     status = 1
                     progress.update(task1, completed=300)
 
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start the simulation.")
+            raise Exception("Failed to start the simulation.")
 
         logger.info("Cooja socket interface is up and running")
 

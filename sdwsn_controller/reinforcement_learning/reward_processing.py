@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from datetime import datetime
+
 from sdwsn_controller.database.db_manager import DatabaseManager, SLOT_DURATION
 from sdwsn_controller.database.database import NODES_INFO
 from sdwsn_controller.common import common
@@ -28,15 +30,14 @@ logger = logging.getLogger('main.'+__name__)
 
 class RewardProcessing(ABC):
     def __init__(
-        self,
-        name
+        self
     ) -> None:
-        self.__name = name
         super().__init__()
 
     @property
+    @abstractmethod
     def name(self):
-        return self.__name
+        pass
 
     @abstractmethod
     def calculate_reward(self):
@@ -46,7 +47,7 @@ class RewardProcessing(ABC):
 class EmulatedRewardProcessing(RewardProcessing):
     def __init__(
         self,
-        database: object = DatabaseManager(),
+        network,
         power_min: int = 0,
         power_max: int = 5000,
         delay_min: int = SLOT_DURATION,
@@ -55,7 +56,6 @@ class EmulatedRewardProcessing(RewardProcessing):
         delay_norm_offset: float = 0.0,
         reliability_norm_offset: float = 0.0
     ):
-        self.db = database
         self.__power_min = power_min
         self.__power_max = power_max
         self.__delay_min = delay_min
@@ -63,48 +63,72 @@ class EmulatedRewardProcessing(RewardProcessing):
         self.__power_norm_offset = power_norm_offset
         self.__delay_norm_offset = delay_norm_offset
         self.__reliability_norm_offset = reliability_norm_offset
-        super().__init__(
-            name="Emulated Reward Processing"
-        )
+        self.__name = "Emulated Reward Processing"
+        self.__network = network
 
-    def calculate_reward(self, alpha, beta, delta, sequence):
-        # Get the sensor nodes to loop in ascending order
-        nodes = self.db.get_sensor_nodes_in_order()
+        super().__init__()
+
+    @property
+    def name(self):
+        return self.__name
+
+    def calculate_reward(self, alpha, beta, delta) -> dict:
+        sample_time = datetime.now().timestamp() * 1000.0
         # Get the normalized average power consumption for this cycle
-        power_wam, power_mean, power_normalized = self.__get_network_power_consumption(
-            nodes, sequence)
-        power = [power_wam, power_mean, power_normalized]
+        power_wam, power_mean, power_normalized = self.__get_network_power_consumption()
         # Get the normalized average delay for this cycle
-        delay_wam, delay_mean, delay_normalized = self.__get_network_delay(
-            nodes, sequence)
-        delay = [delay_wam, delay_mean, delay_normalized]
+        delay_wam, delay_mean, delay_normalized = self.__get_network_delay()
         # Get the normalized average pdr for this cycle
-        pdr_wam, pdf_mean = self.__get_network_pdr(nodes, sequence)
-        pdr = [pdr_wam, pdf_mean]
+        pdr_wam, pdf_mean = self.__get_network_pdr()
         # Calculate the reward
         reward = 2-1*(alpha*power_normalized+beta *
                       delay_normalized-delta*pdr_wam)
-        return reward, power, delay, pdr
+        info = {
+            "timestamp": sample_time,
+            "alpha": alpha,
+            "beta": beta,
+            "delta": delta,
+            'power_wam': power_wam,
+            'power_mean': power_mean,
+            'power_normalized': power_normalized,
+            'delay_wam': delay_wam,
+            'delay_mean': delay_mean,
+            'delay_normalized': delay_normalized,
+            'pdr_wam': pdr_wam,
+            'pdr_mean': pdf_mean,
+            'current_sf_len': self.__network.tsch_slotframe_size,
+            'last_ts_in_schedule': self.__network.tsch_last_ts(),
+            'reward': reward
+        }
+        return info
 
-    def __get_network_power_consumption(self, nodes, sequence):
+    def __get_network_power_consumption(self):
         # Variable to keep track of the number of energy consumption samples
-        power_samples = []
+        power_samples = {}
         # We first loop through all sensor nodes
-        for node in nodes:
+        for node in self.__network.nodes.values():
             # Get all samples from the start of the network configuration
-            self.db.get_last_power_consumption(
-                node, power_samples, sequence)
+            if node.id != 1 and node.id != 0:
+                # node.energy_print()
+                power_samples.update(
+                    {node: node.energy_get_last()})
 
         def power_samples_table(samples):
             table = Table(title="Power samples")
             table.add_column("Sensor node", justify="center", style="magenta")
             table.add_column("Avg. power consumption [mW]",
                              justify="center", style="green")
-            for elem in samples:
-                table.add_row(str(elem[0]), str(elem[1]))
+            sum_energy = 0
+            for key in samples:
+                energy = samples.get(key)
+                table.add_row(key.sid, str(energy))
+                sum_energy += energy
+            # Table add avg. at the end
+            table.add_row("Average", str(sum_energy/len(samples)))
             return table
 
-        logger.info(f"Power samples for sequence {sequence}\n{common.log_table(power_samples_table(power_samples))}")
+        logger.info(
+            f"Power samples (SF: {self.__network.tsch_slotframe_size}) \n{common.log_table(power_samples_table(power_samples))}")
         # We now need to compute the weighted arithmetic mean
         power_wam, power_mean = self.__power_weighted_arithmetic_mean(
             power_samples)
@@ -117,11 +141,11 @@ class EmulatedRewardProcessing(RewardProcessing):
     def __power_weighted_arithmetic_mean(self, power_samples):
         weights = []
         all_power_samples = []
-        for elem in power_samples:
-            node = elem[0]
-            power = elem[1]
+        for key in power_samples:
+            node = key
+            power = power_samples.get(key)
             all_power_samples.append(power)
-            # logger.info(f'Finding the WAM of {node} with power {power}')
+            logger.debug(f'Finding the WAM of {node.id} with power {power}')
             weight = self.__power_compute_wam_weight(node)
             weights.append(weight)
         logger.debug(f'power all weights {weights}')
@@ -142,57 +166,62 @@ class EmulatedRewardProcessing(RewardProcessing):
 
     def __power_compute_wam_weight(self, node):
         # Let's first get the rank of the sensor node
-        node_rank = self.db.get_rank(node)
+        node_rank = node.rank
         # Get the value of the greatest rank of the network
-        db = self.db.find_one(
-            NODES_INFO, {}, sort=[("rank", -1)])
-        last_rank = db['rank']
+        last_rank = self.__network.nodes_last_rank()
         # Let's get the number of neighbors
-        num_nbr = 0
-        for _ in self.db.get_last_nbr(node):
-            num_nbr += 1
+        num_nbr = node.neighbors_len()
         # Get the total number of sensor nodes
-        N = self.db.get_number_of_sensors()
+        N = self.__network.nodes_size()
         # Calculate the weight
         weight = 0.9 * (node_rank/last_rank) + 0.1 * (num_nbr/N)
-        # logger.info(f'computing WAM of node {node} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
+        logger.debug(
+            f'computing WAM of node {node.id} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
         return weight
 
-    def __get_network_delay(self, nodes, sequence):
+    def __get_network_delay(self):
         # Variable to keep track of the number of delay samples
-        delay_samples = []
+        delay_samples = {}
         # We first loop through all sensor nodes
-        for node in nodes:
+        for node in self.__network.nodes.values():
             # Get all samples from the start of the network configuration
-            self.db.get_avg_delay(
-                node, delay_samples, sequence)
+            if node.id != 1 and node.id != 0:
+                # node.delay_print()
+                delay_samples.update(
+                    {node: node.delay_get_average()})
 
         def delay_samples_table(samples):
             table = Table(title="Delay samples")
             table.add_column("Sensor node", justify="center", style="magenta")
             table.add_column("Avg. delay [ms]",
                              justify="center", style="green")
-            for elem in samples:
-                table.add_row(str(elem[0]), str(elem[1]))
+            sum_delay = 0
+            for key in samples:
+                delay = samples.get(key)
+                table.add_row(key.sid, str(delay))
+                sum_delay += delay
+            table.add_row("Average", str(sum_delay/len(samples)))
             return table
 
-        logger.info(f"Delay samples for sequence {sequence}\n{common.log_table(delay_samples_table(delay_samples))}")
+        logger.info(
+            f"Delay samples (SF: {self.__network.tsch_slotframe_size})\n{common.log_table(delay_samples_table(delay_samples))}")
         # We now need to compute the weighted arithmetic mean
         delay_wam, delay_mean = self.__delay_weighted_arithmetic_mean(
             delay_samples)
         # We now need to normalize the power WAM
         normalized_delay = self.__delay_norm_offset + ((delay_wam - self.__delay_min) /
                                                        (self.__delay_max-self.__delay_min))
-        logger.info(f'normalized delay {normalized_delay}')
+        logger.debug(f'normalized delay {normalized_delay}')
         return delay_wam, delay_mean, normalized_delay
 
     def __delay_weighted_arithmetic_mean(self, delay_samples):
         weights = []
         all_delay_samples = []
-        for elem in delay_samples:
-            node = elem[0]
-            delay = elem[1]
+        for key in delay_samples:
+            node = key
+            delay = delay_samples.get(key)
             all_delay_samples.append(delay)
+            logger.debug(f'Finding the WAM of {node.id} with delay {delay}')
             weight = self.__delay_compute_wam_weight(node)
             weights.append(weight)
         logger.debug(f'delay all weights {weights}')
@@ -208,55 +237,62 @@ class EmulatedRewardProcessing(RewardProcessing):
         wam = np.dot(normalized_weights, all_delay_transpose)
         # Overall network mean
         normal_mean = all_delay.sum()/len(all_delay_samples)
-        logger.info(f'delay network WAM {wam} normal mean {normal_mean}')
+        logger.debug(f'delay network WAM {wam} normal mean {normal_mean}')
         return wam, normal_mean
 
     def __delay_compute_wam_weight(self, node):
         # We assume that the wight depends on the rank
         # Let's get the rank of the sensor node
-        node_rank = self.db.get_rank(node)
+        node_rank = node.rank
         # Get the value of the greatest rank of the network
-        db = self.db.find_one(
-            NODES_INFO, {}, sort=[("rank", -1)])
-        last_rank = db['rank']
+        last_rank = self.__network.nodes_last_rank()
         # Calculate the weight
         weight = 1 - node_rank/(last_rank+1)
-        # logger.info(f'computing WAM of node {node} rank {node_rank} weight {weight}')
+        logger.debug(
+            f'computing WAM of node {node.id} rank {node_rank} weight {weight}')
         return weight
 
-    def __get_network_pdr(self, nodes, sequence):
+    def __get_network_pdr(self):
         # Variable to keep track of the number of pdr samples
-        pdr_samples = []
+        pdr_samples = {}
         # We first loop through all sensor nodes
-        for node in nodes:
+        for node in self.__network.nodes.values():
             # Get all samples from the start of the network configuration
-            self.db.get_avg_pdr(
-                node, pdr_samples, sequence)
+            if node.id != 1 and node.id != 0:
+                # node.pdr_print()
+                pdr_samples.update(
+                    {node: node.pdr_get_average()})
 
         def pdr_samples_table(samples):
             table = Table(title="PDR samples")
             table.add_column("Sensor node", justify="center", style="magenta")
             table.add_column("Avg. PDR",
                              justify="center", style="green")
-            for elem in samples:
-                table.add_row(str(elem[0]), str(elem[1]))
+            sum_pdr = 0
+            for key in samples:
+                pdr = samples.get(key)
+                table.add_row(key.sid, str(pdr))
+                sum_pdr += pdr
+            table.add_row("Average", str(sum_pdr/len(samples)))
             return table
 
-        logger.info(f"PDR samples for sequence {sequence}\n{common.log_table(pdr_samples_table(pdr_samples))}")
+        logger.info(
+            f"PDR samples (SF: {self.__network.tsch_slotframe_size})\n{common.log_table(pdr_samples_table(pdr_samples))}")
         # We now need to compute the weighted arithmetic mean
         pdr_wam, pdr_mean = self.__pdr_weighted_arithmetic_mean(
             pdr_samples)
-        logger.info(f'normalized pdr {pdr_wam}')
+        logger.debug(f'normalized pdr {pdr_wam}')
         pdr_wam = pdr_wam - self.__reliability_norm_offset
         return pdr_wam, pdr_mean
 
     def __pdr_weighted_arithmetic_mean(self, pdr_samples):
         weights = []
         all_pdr_samples = []
-        for elem in pdr_samples:
-            node = elem[0]
-            pdr = elem[1]
+        for key in pdr_samples:
+            node = key
+            pdr = pdr_samples.get(key)
             all_pdr_samples.append(pdr)
+            logger.debug(f'Finding the WAM of {node.id} with delay {pdr}')
             weight = self.__pdr_compute_wam_weight(node)
             weights.append(weight)
         logger.debug(f'pdr all weights {weights}')
@@ -272,25 +308,22 @@ class EmulatedRewardProcessing(RewardProcessing):
         wam = np.dot(normalized_weights, all_pdr_transpose)
         # Overall network mean
         normal_mean = all_pdr.sum()/len(all_pdr_samples)
-        logger.info(f'pdr network WAM {wam} normal mean {normal_mean}')
+        logger.debug(f'pdr network WAM {wam} normal mean {normal_mean}')
         return wam, normal_mean
 
     def __pdr_compute_wam_weight(self, node):
         # We assume that the wight depends on the rank of
         # the node and the number of NBRs
         # Let's first get the rank of the sensor node
-        node_rank = self.db.get_rank(node)
+        node_rank = node.rank
         # Get the value of the greatest rank of the network
-        db = self.db.find_one(
-            NODES_INFO, {}, sort=[("rank", -1)])
-        last_rank = db['rank']
+        last_rank = self.__network.nodes_last_rank()
         # Let's get the number of neighbors
-        num_nbr = 0
-        for _ in self.db.get_last_nbr(node):
-            num_nbr += 1
+        num_nbr = node.neighbors_len()
         # Get the total number of sensor nodes
-        N = self.db.get_number_of_sensors()
+        N = self.__network.nodes_size()
         # Calculate the weight
         weight = 0.9 * (node_rank/last_rank) + 0.1 * (num_nbr/N)
-        # logger.info(f'computing pdr WAM of node {node} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
+        logger.debug(
+            f'computing pdr WAM of node {node.id} rank {node_rank} num nbr {num_nbr} N {N} weight {weight}')
         return weight

@@ -15,11 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from email.policy import strict
 import struct
 import types
 import json
-import sys
 
 # Packet sizes
 SDN_IPH_LEN = 10  # Size of layer 3 packet header */
@@ -63,7 +61,7 @@ def chksum(sum, data, len):
 def sdn_ip_checksum(msg, len):
     sum = chksum(0, msg, len)
     result = 0
-    if(sum == 0):
+    if (sum == 0):
         result = 0xffff
     else:
         result = sum
@@ -81,6 +79,7 @@ class addrConversion:
         return "addrConversion(addr={}, addrStr={})".format(
             self.addr, self.addrStr)
 
+    # TODO: This methods' names are confusing.
     @classmethod
     def to_int(cls, addrStr):
         # Packs addrStr into two byte addr
@@ -99,7 +98,7 @@ class addrConversion:
     def to_string(cls, addr):
         addr_packed = struct.pack("!H", addr)
         addrStr = str(addr_packed[1])+"."+str(addr_packed[0])
-        return cls(addr=addr, addrStr=addrStr)
+        return cls(addr=addr_packed, addrStr=addrStr)
 
 
 class SerialPacket:
@@ -125,8 +124,10 @@ class SerialPacket:
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "SerialPacket(addr={}, pkt_chksum={}, message_type={}, payload_len={}, reserved0={}, reserved1={}, payload={})".format(
-            hex(self.addr), self.pkt_chksum, self.message_type, self.payload_len, self.reserved0, self.reserved1, self.payload)
+        return "SerialPacket(addr={}, pkt_chksum={}, message_type={}, \
+        payload_len={}, reserved0={}, reserved1={}, payload={})".format(
+            hex(self.addr), self.pkt_chksum, self.message_type,
+            self.payload_len, self.reserved0, self.reserved1, self.payload)
 
     @classmethod
     def unpack(cls, packed_data):
@@ -266,10 +267,10 @@ class Cell_Packet_Payload:
         self.timeslot = kwargs.get("timeslot", 0)
         self.padding = kwargs.get("padding", 0)
         self.scr = kwargs.get("scr", 0)
-        self.scr = addrConversion.to_int(self.scr).addr
+        self.scr = addrConversion.to_string(self.scr).addr
         self.dst = kwargs.get("dst", 0)
         if self.dst is not None:
-            self.dst = addrConversion.to_int(self.dst).addr
+            self.dst = addrConversion.to_string(self.dst).addr
         else:
             self.dst = addrConversion.to_int('0.0').addr
         self.payload = payload
@@ -277,7 +278,8 @@ class Cell_Packet_Payload:
     def pack(self):
         if self.payload:
             packed = struct.pack('>bBBB2s2s'+str(len(self.payload)) +
-                                 's', self.type, self.channel, self.timeslot, self.padding, self.scr, self.dst, bytes(self.payload))
+                                 's', self.type, self.channel, self.timeslot,
+                                 self.padding, self.scr, self.dst, bytes(self.payload))
         else:
             packed = struct.pack('!bBBB2s2s', self.type, self.channel,
                                  self.timeslot, self.padding, self.scr, self.dst)
@@ -305,7 +307,8 @@ class Data_Packet:
     def unpack(cls, packed_data):
         cycle_seq, seq, temp, humidity, light, asn_ls2b, asn_ms2b = struct.unpack(
             '!HBBBBHH', packed_data)
-        return cls(cycle_seq=cycle_seq, seq=seq, temp=temp, humidity=humidity, light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
+        return cls(cycle_seq=cycle_seq, seq=seq, temp=temp, humidity=humidity,
+                   light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
 
 
 class NA_Packet:
@@ -330,7 +333,8 @@ class NA_Packet:
     def unpack(cls, packed_data, length):
         payload_len, rank, energy, cycle_seq, seq, _, pkt_chksum, payload = struct.unpack(
             '!BBHHBBH' + str(length-SDN_NAH_LEN) + 's', packed_data)
-        return cls(payload, payload_len=payload_len, rank=rank, energy=energy, cycle_seq=cycle_seq, seq=seq, pkt_chksum=pkt_chksum)
+        return cls(payload, payload_len=payload_len, rank=rank, energy=energy,
+                   cycle_seq=cycle_seq, seq=seq, pkt_chksum=pkt_chksum)
 
 
 class NA_Packet_Payload:

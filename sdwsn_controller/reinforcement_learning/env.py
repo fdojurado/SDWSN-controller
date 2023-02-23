@@ -20,13 +20,13 @@ environment """
 import gym
 from gym import spaces
 import numpy as np
-from time import sleep
 from datetime import datetime
 import random
 from random import randrange
 
 from sdwsn_controller.common import common
-from sdwsn_controller.result_analysis.run_analysis import run_analysis
+from sdwsn_controller.controller.base_controller import BaseController
+from sdwsn_controller.result_analysis import run_analysis
 
 # These are the size of other schedules in orchestra
 eb_size = 397
@@ -47,6 +47,9 @@ class Env(gym.Env):
             folder: str = './figures/'
     ):
         super(Env, self).__init__()
+        assert isinstance(simulation_name, str)
+        assert isinstance(folder, str)
+        assert isinstance(controller, BaseController)
         self.controller = controller
         self.folder = folder
         self.simulation_name = simulation_name
@@ -62,68 +65,45 @@ class Env(gym.Env):
     """ Step action """
 
     def step(self, action):
-        sample_time = datetime.now().timestamp() * 1000.0
         # We now get the last observations
-        obs = self.controller.get_state()
+        state = self.controller.get_state()
         if action == 0:
             # print("increasing slotframe size")
-            sf_len = common.next_coprime(obs['current_sf_len'])
+            sf_len = common.next_coprime(state['current_sf_len'])
         if action == 1:
             # print("decreasing slotframe size")
-            sf_len = common.previous_coprime(obs['current_sf_len'])
+            sf_len = common.previous_coprime(state['current_sf_len'])
         if action == 2:
-            sf_len = obs['current_sf_len']
+            # print("same slotframe size")
+            sf_len = state['current_sf_len']
+        # Set the SF size
+        self.controller.current_slotframe_size = sf_len
         # Send the entire TSCH schedule
         self.controller.send_tsch_schedules()
-        # Delete the current nodes_info collection from the database
-        self.controller.delete_info_collection()
-        # Reset sequence
-        self.controller.reset_pkt_sequence()
         # We now wait until we reach the processing_window
         while (not self.controller.wait()):
             print("resending schedules")
             self.controller.send_tsch_schedules()
-            # Delete the current nodes_info collection from the database
-            self.controller.delete_info_collection()
-            # Reset sequence
-            self.controller.reset_pkt_sequence()
-        # print("process reward")
-        # TODO: DO we really need this delay?
-        self.controller.processing_wait(1)
-        # Calculate the reward
-        reward, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
-            self.controller.alpha, self.controller.beta, self.controller.delta, sf_len)
+        # Calculate the reward and metrics
+        metrics = self.controller.calculate_reward(
+            self.controller.alpha, self.controller.beta, self.controller.delta,
+            sf_len)
         # Append to the observations
-        sample_time = datetime.now().timestamp() * 1000.0
-        observation = np.append(obs['user_requirements'], cycle_power[2])
-        observation = np.append(observation, cycle_delay[2])
-        observation = np.append(observation, cycle_pdr[1])
         observation = np.append(
-            observation, obs['last_ts_in_schedule']/MAX_SLOTFRAME_SIZE)
+            state['user_requirements'], metrics['power_normalized'])
+        observation = np.append(observation, metrics['delay_normalized'])
+        observation = np.append(observation, metrics['pdr_mean'])
+        observation = np.append(
+            observation, state['last_ts_in_schedule']/MAX_SLOTFRAME_SIZE)
         observation = np.append(observation, sf_len/MAX_SLOTFRAME_SIZE)
-        self.controller.save_observations(
-            timestamp=sample_time,
-            alpha=self.controller.alpha,
-            beta=self.controller.beta,
-            delta=self.controller.delta,
-            power_wam=cycle_power[0],
-            power_mean=cycle_power[1],
-            power_normalized=cycle_power[2],
-            delay_wam=cycle_delay[0],
-            delay_mean=cycle_delay[1],
-            delay_normalized=cycle_delay[2],
-            pdr_wam=cycle_pdr[0],
-            pdr_mean=cycle_pdr[1],
-            current_sf_len=sf_len,
-            last_ts_in_schedule=obs['last_ts_in_schedule'],
-            reward=reward
-        )
         done = False
-        info = {}
+        info = metrics
+        reward = metrics['reward']
         # MAX_SLOTFRAME_SIZE is the maximum slotframe size
         # TODO: Set the maximum slotframe size at the creation
         # of the environment
-        if (sf_len < obs['last_ts_in_schedule'] or sf_len > MAX_SLOTFRAME_SIZE):
+        if (sf_len < state['last_ts_in_schedule'] or
+                sf_len > MAX_SLOTFRAME_SIZE):
             done = True
             reward = -4
 
@@ -140,12 +120,7 @@ class Env(gym.Env):
         G = self.controller.get_network_links()
         # Run the dijkstra algorithm with the current links
         path = self.controller.compute_routes(G)
-        # Lets set the type of scheduler
-        # types_scheduler = ['Contention Free', 'Unique Schedule']
-        # type_scheduler = random.choice(types_scheduler)
-        # self.controller.scheduler = type_scheduler
-        # self.controller.scheduler = 'Unique Schedule'
-        # Set the slotframe size
+        # Set the initial SF size, this has to be greater that the # sensors
         slotframe_size = 15
         # We now set the TSCH schedules for the current routing
         self.controller.compute_tsch_schedule(path, slotframe_size)
@@ -161,9 +136,6 @@ class Env(gym.Env):
         self.controller.send_routes()
         # Send the entire TSCH schedule
         self.controller.send_tsch_schedules()
-        # Delete the current nodes_info collection from the database
-        self.controller.delete_info_collection()
-        self.controller.reset_pkt_sequence()
         # Wait for the network to settle
         self.controller.wait()
         # We now save all the observations
@@ -171,57 +143,27 @@ class Env(gym.Env):
         self.controller.last_tsch_link = randrange(9+1, 20)
         # Get last active ts
         last_ts_in_schedule = self.controller.last_tsch_link
-        # Set the slotframe size
-        slotframe_size = last_ts_in_schedule
+        # Set a random initial slotframe size
+        slotframe_size = random.randint(
+            last_ts_in_schedule+5, MAX_SLOTFRAME_SIZE-5)
         # slotframe_size = last_ts_in_schedule
-        # They are of the form "time, user requirements, routing matrix, schedules matrix, sf len"
-        sample_time = datetime.now().timestamp() * 1000.0
+        self.controller.current_slotframe_size = slotframe_size
         # We now save the user requirements
         user_requirements = self.controller.user_requirements
         # We now save the observations with reward None
-        _, cycle_power, cycle_delay, cycle_pdr = self.controller.calculate_reward(
+        metrics = self.controller.calculate_reward(
             self.controller.alpha, self.controller.beta, self.controller.delta, slotframe_size)
-       # Append to the observations
-        sample_time = datetime.now().timestamp() * 1000.0
-        observation = np.append(user_requirements, cycle_power[2])
-        observation = np.append(observation, cycle_delay[2])
-        observation = np.append(observation, cycle_pdr[1])
+        # Append to the observations
+        observation = np.append(user_requirements, metrics['power_normalized'])
+        observation = np.append(observation, metrics['delay_normalized'])
+        observation = np.append(observation, metrics['pdr_mean'])
         observation = np.append(
             observation, last_ts_in_schedule/MAX_SLOTFRAME_SIZE)
         observation = np.append(observation, slotframe_size/MAX_SLOTFRAME_SIZE)
-        self.controller.save_observations(
-            timestamp=sample_time,
-            alpha=self.controller.alpha,
-            beta=self.controller.beta,
-            delta=self.controller.delta,
-            power_wam=cycle_power[0],
-            power_mean=cycle_power[1],
-            power_normalized=cycle_power[2],
-            delay_wam=cycle_delay[0],
-            delay_mean=cycle_delay[1],
-            delay_normalized=cycle_delay[2],
-            pdr_wam=cycle_pdr[0],
-            pdr_mean=cycle_pdr[1],
-            current_sf_len=slotframe_size,
-            last_ts_in_schedule=last_ts_in_schedule,
-            reward=None
-        )
         return observation  # reward, done, info can't be included
 
     def render(self, mode='console'):
-        print(f"mode: {mode}")
-        # if mode != 'console':
-        #     raise NotImplementedError()
-        # agent is represented as a cross, rest as a dot
-        print('rendering')
-        number = random.randint(0, 100)
-        run_analysis(self.controller.db,
-                     self.simulation_name+str(number), self.folder, True)
+        pass
 
     def close(self):
-        """
-        Here, we want to export the observation collections to CSV format
-
-        """
-        self.controller.export_observations(self.simulation_name, self.folder)
         pass

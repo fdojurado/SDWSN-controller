@@ -1,94 +1,51 @@
-from sdwsn_controller.tsch.scheduler import Scheduler, cell_type
+from sdwsn_controller.tsch.schedule import cell_type
 import logging
 
 logger = logging.getLogger('main.'+__name__)
-class HardCodedScheduler(Scheduler):
+
+
+class HardCodedScheduler():
     def __init__(
             self,
             sf_size: int = 500,
             channel_offsets: int = 3
     ):
-        super().__init__(
-            sf_size,
-            channel_offsets)
+        self.__name = "Hard Coded Scheduler"
 
-    def run(self, path, current_sf_size):
-        logger.debug(f"running hard coded scheduler for sf size {current_sf_size}")
+    @property
+    def name(self):
+        return self.__name
+
+    def add_link(self, network, tx_id, rx_id, ch, ts):
+        tx_node = network.nodes_add(tx_id)
+        rx_node = network.nodes_add(rx_id)
+        tx_node.tsch_add_link(cell_type.UC_TX, ch, ts, rx_node.id)
+        rx_node.tsch_add_link(cell_type.UC_RX, ch, ts)
+
+    def run(self, path, current_sf_size, network):
+        logger.debug(
+            f"running hard coded scheduler for sf size {current_sf_size}")
         # Set the slotframe size
-        self.scheduler_slot_frame_size = current_sf_size
+        network.tsch_clear()
+        network.tsch_slotframe_size = current_sf_size
         # Schedule Tx - Node 2 - 1
-        tx_node = str(2)+".0"
-        rx_node = str(1)+".0"
-        ch = 1
-        ts = 1
-        self.scheduler_add_uc(
-            tx_node, cell_type.UC_TX, ch, ts, rx_node)
-        self.scheduler_add_uc(rx_node, cell_type.UC_RX, ch, ts)
+        self.add_link(network, 2, 1, 1, 1)
         # Schedule Tx - Node 3 - 1
-        tx_node = str(3)+".0"
-        rx_node = str(1)+".0"
-        ch = 1
-        ts = 2
-        self.scheduler_add_uc(
-            tx_node, cell_type.UC_TX, ch, ts, rx_node)
-        self.scheduler_add_uc(rx_node, cell_type.UC_RX, ch, ts)
+        self.add_link(network, 3, 1, 1, 2)
         # Schedule Tx - Node 4 - 1
-        tx_node = str(4)+".0"
-        rx_node = str(1)+".0"
-        ch = 1
-        ts = 3
-        self.scheduler_add_uc(
-            tx_node, cell_type.UC_TX, ch, ts, rx_node)
-        self.scheduler_add_uc(rx_node, cell_type.UC_RX, ch, ts)
+        self.add_link(network, 4, 1, 1, 3)
         # Schedule Tx - Node 5 - 2
-        tx_node = str(5)+".0"
-        rx_node = str(2)+".0"
-        ch = 1
-        ts = 4
-        self.scheduler_add_uc(
-            tx_node, cell_type.UC_TX, ch, ts, rx_node)
-        self.scheduler_add_uc(rx_node, cell_type.UC_RX, ch, ts)
+        self.add_link(network, 5, 2, 1, 4)
         # Schedule Tx - Node 6 - 3
-        tx_node = str(6)+".0"
-        rx_node = str(3)+".0"
-        ch = 1
-        ts = 5
-        self.scheduler_add_uc(
-            tx_node, cell_type.UC_TX, ch, ts, rx_node)
-        self.scheduler_add_uc(rx_node, cell_type.UC_RX, ch, ts)
+        self.add_link(network, 6, 3, 1, 5)
         # Schedule Tx - Node 7 - 4
-        tx_node = str(7)+".0"
-        rx_node = str(4)+".0"
-        ch = 1
-        ts = 6
-        self.scheduler_add_uc(
-            tx_node, cell_type.UC_TX, ch, ts, rx_node)
-        self.scheduler_add_uc(rx_node, cell_type.UC_RX, ch, ts)
+        self.add_link(network, 7, 4, 1, 6)
         # Schedule Tx - Node 8 - 5
-        tx_node = str(8)+".0"
-        rx_node = str(5)+".0"
-        ch = 1
-        ts = 7
-        self.scheduler_add_uc(
-            tx_node, cell_type.UC_TX, ch, ts, rx_node)
-        self.scheduler_add_uc(rx_node, cell_type.UC_RX, ch, ts)
+        self.add_link(network, 8, 5, 1, 7)
         # Schedule Tx - Node 9 - 6
-        tx_node = str(9)+".0"
-        rx_node = str(6)+".0"
-        ch = 1
-        ts = 8
-        self.scheduler_add_uc(
-            tx_node, cell_type.UC_TX, ch, ts, rx_node)
-        self.scheduler_add_uc(rx_node, cell_type.UC_RX, ch, ts)
+        self.add_link(network, 9, 6, 1, 8)
         # Schedule Tx - Node 10 - 7
-        tx_node = str(10)+".0"
-        rx_node = str(7)+".0"
-        ch = 1
-        ts = 9
-        self.scheduler_add_uc(
-            tx_node, cell_type.UC_TX, ch, ts, rx_node)
-        self.scheduler_add_uc(rx_node, cell_type.UC_RX, ch, ts)
+        self.add_link(network, 10, 7, 1, 9)
 
         # Print the schedule
-        self.scheduler_print_table()
-        self.scheduler_print_grid()
+        network.tsch_print()

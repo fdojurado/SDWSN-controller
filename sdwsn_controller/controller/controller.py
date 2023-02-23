@@ -15,14 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.controller.base_controller import BaseController
-from subprocess import Popen, PIPE, STDOUT
+import logging
+
+import os
 
 from rich.progress import Progress
+
+from sdwsn_controller.controller.base_controller import BaseController
+from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
+
 from time import sleep
-import logging
-import signal
-import os
 
 
 logger = logging.getLogger('main.'+__name__)
@@ -35,18 +37,14 @@ class Controller(BaseController):
         contiki_source: str = '/Users/fernando/contiki-ng',
         simulation_folder: str = 'examples/elise',
         simulation_script: str = 'cooja-elise.csc',
-        # Sink/socket communication
-        socket: object = None,
-        # Database
-        db: object = None,
+        # Network listening port
+        port: int = 60001,
+        # Network
+        network: object = None,
         # RL related
         reward_processing: object = None,
-        # Packet dissector
-        packet_dissector: object = None,
-        # Window
-        processing_window: int = 200,
         # Routing
-        router: object = None,
+        routing: object = None,
         # TSCH scheduler
         tsch_scheduler: object = None
     ):
@@ -57,14 +55,18 @@ class Controller(BaseController):
             contiki_source (str, optional): Path to the Contiki-NG source folder. Defaults to '/Users/fernando/contiki-ng'.
             simulation_folder (str, optional): Folder where the .csc file resides. Defaults to 'examples/elise'.
             simulation_script (str, optional): The .csc file to run. Defaults to 'cooja-elise.csc'.
-            socket (SerialBus object, optional): Serial connection to the sink. Defaults to None.
+            socket (SinkComm object, optional): Serial connection to the sink. Defaults to None.
             db (Database object, optional): Database. Defaults to None.
             reward_processing (RewardProcessing object, optional):Reward processing for RL. Defaults to None.
             packet_dissector (Dissector object, optional): Packet dissector. Defaults to None.
             processing_window (int, optional): Number of packets for a new cycle. Defaults to 200.
-            router (Router object, optional): Centralized routing algorithm. Defaults to None.
+            routing (Router object, optional): Centralized routing algorithm. Defaults to None.
             tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
         """
+
+        assert isinstance(contiki_source, str)
+        assert isinstance(simulation_folder, str)
+        assert isinstance(simulation_script, str)
 
         logger.info("Building controller")
 
@@ -83,6 +85,10 @@ class Controller(BaseController):
         self.__simulation_script = os.path.join(
             self.__contiki_source, simulation_folder, simulation_script)
 
+        self.__new_simulation_script = None
+
+        self.__port = port
+
         logger.info(f"Contiki source: {self.__contiki_source}")
         logger.info(f"Cooja log: {self.__cooja_log}")
         logger.info(f"Cooja test log: {self.__testlog}")
@@ -91,12 +97,9 @@ class Controller(BaseController):
         logger.info(f"Simulation script: {self.__simulation_script}")
 
         super().__init__(
-            socket=socket,
-            db=db,
             reward_processing=reward_processing,
-            packet_dissector=packet_dissector,
-            processing_window=processing_window,
-            router=router,
+            routing=routing,
+            network=network,
             tsch_scheduler=tsch_scheduler
         )
 
@@ -109,22 +112,35 @@ class Controller(BaseController):
         # cleanup
         try:
             os.remove(self.__testlog)
-        except FileNotFoundError as ex:
+        except FileNotFoundError:
             pass
         except PermissionError as ex:
-            print("Cannot remove previous Cooja output:", ex)
+            logger.info("Cannot remove previous Cooja output:", ex)
             return False
 
         try:
             os.remove(self.__cooja_log)
-        except FileNotFoundError as ex:
+        except FileNotFoundError:
             pass
         except PermissionError as ex:
-            print("Cannot remove previous Cooja log:", ex)
+            logger.info("Cannot remove previous Cooja log:", ex)
             return False
 
-        args = " ".join(["cd", self.__cooja_path, "&&", "./gradlew run --args='-nogui=" +
-                         self.__simulation_script, "-contiki=" + self.__contiki_source+" -logdir="+self.__simulation_folder+" -logname=COOJA"+"'"])
+        # We need to overwrite the port of the serial socket in the
+        # csc simulation file
+        with open(self.__simulation_script, "r") as input_file:
+            self.__new_simulation_script = self.__simulation_script.split('.')
+            self.__new_simulation_script = "".join(
+                [self.__new_simulation_script[0], "-temp.csc"])
+            filedata = input_file.read()
+            # Replace the target string
+            filedata = filedata.replace(str(60001), str(self.__port))
+            with open(self.__new_simulation_script, "w") as new_tmp_file:
+                new_tmp_file.write(filedata)
+
+        args = " ".join(["cd", self.__cooja_path, "&&", "exec ./gradlew run --args='-nogui=" +
+                         self.__new_simulation_script, "-contiki=" + self.__contiki_source+" -logdir=" +
+                         self.__simulation_folder+" -logname=COOJA"+"'"])
 
         self.__proc = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE,
                             shell=True, universal_newlines=True, preexec_fn=os.setsid)
@@ -142,7 +158,7 @@ class Controller(BaseController):
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start Cooja.")
+            raise Exception("Failed to start Cooja.")
 
         self.__wait_socket_running()
 
@@ -158,7 +174,7 @@ class Controller(BaseController):
         with open(self.__cooja_log, "r") as f:
             contents = f.read()
             read_line = "Listening on port: " + \
-                str(self.socket.port)
+                str(self.__port)
             fatal_line = "Simulation not loaded"
             is_listening = read_line in contents
             # logger.info(f'listening result: {is_listening}')
@@ -178,14 +194,14 @@ class Controller(BaseController):
                     logger.warning(
                         "Simulation compilation error, starting over ...")
                     self.start()
-                if cooja_socket_active == True:
+                if cooja_socket_active:
                     status = 1
                     progress.update(task1, completed=300)
 
                 sleep(1)
 
         if status == 0:
-            raise Exception(f"Failed to start the simulation.")
+            raise Exception("Failed to start the simulation.")
 
         logger.info("Cooja socket interface is up and running")
 
@@ -196,7 +212,20 @@ class Controller(BaseController):
 
     def stop(self):
         if self.__proc:
-            os.killpg(os.getpgid(self.__proc.pid), signal.SIGTERM)
+            try:
+                self.__proc.communicate(timeout=15)
+            except TimeoutExpired:
+                self.__proc.kill()
+                self.__proc.communicate()
+        # Delete the tmp simulation csc file if exists
+        if self.__new_simulation_script is not None:
+            if os.path.exists(self.__new_simulation_script):
+                os.remove(self.__new_simulation_script)
+        # Delete COOJA.log and COOJA.testlog
+        if os.path.exists(self.__cooja_log):
+            os.remove(self.__cooja_log)
+        if os.path.exists(self.__testlog):
+            os.remove(self.__testlog)
         super().stop()
 
     def reset(self):
