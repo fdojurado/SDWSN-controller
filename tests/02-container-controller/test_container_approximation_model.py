@@ -47,7 +47,9 @@ PORT = 60004
 MAX_SLOTFRAME_SIZE = 70
 
 
-def run(env, controller):
+def run(env, controller, output_folder, simulation_name):
+    # Pandas df to store results at each iteration
+    df = pd.DataFrame()
     # Reset environment
     obs = env.reset()
     assert np.all(obs)
@@ -74,7 +76,7 @@ def run(env, controller):
             else:
                 increase = 1
 
-        env.step(action)
+        _, _, _, info = env.step(action)
         # Get last observations non normalized
         observations = controller.get_state()
         assert 0 <= observations['alpha'] <= 1
@@ -84,8 +86,12 @@ def run(env, controller):
         # Current SF size
         sf_size = observations['current_sf_len']
         assert sf_size > 1 and sf_size <= MAX_SLOTFRAME_SIZE
-    env.render()
-    env.close()
+        # Add row to DataFrame
+        new_cycle = pd.DataFrame([info])
+        df = pd.concat([df, new_cycle], axis=0, ignore_index=True)
+    df.to_csv(output_folder+simulation_name+'.csv')
+    # env.render()
+    # env.close()
 
 
 def result_analysis(path, output_folder):
@@ -192,7 +198,7 @@ def test_container_approximation_model():
     env = gym.make('sdwsn-v1', **env_kwargs)
     env = Monitor(env, log_dir)
     # --------------------Start RL --------------------------------
-    run(env, controller)
+    run(env, controller, output_folder, 'test_container_approximation_model')
 
     result_analysis(
         output_folder+'test_container_approximation_model.csv', output_folder)

@@ -110,7 +110,7 @@ class BaseController(ABC):
             int: 1 is successful; 0 otherwise.
         """
         if self.tsch_scheduler is not None:
-            self.network.tsch_sendall()
+            return self.network.tsch_sendall()
 
     def compute_tsch_schedule(self, path, current_sf_size):
         if self.tsch_scheduler is not None:
@@ -151,7 +151,7 @@ class BaseController(ABC):
             int: 1 is successful; 0 otherwise.
         """
         if self.routing is not None:
-            self.network.routes_sendall()
+            return self.network.routes_sendall()
 
     def compute_routes(self, G):
         if self.routing is not None:

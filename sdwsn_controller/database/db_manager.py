@@ -349,14 +349,15 @@ class DatabaseManager(Database):
         return int(last)
 
     def get_sensor_nodes_in_order(self):
-        db = self.find(NODES_INFO, {}).sort("node_id").collation(
-            Collation(locale="en_US", numericOrdering=True))
-        nodes = []
-        if db is None:
-            return None
-        for node in db:
-            nodes.append(node["node_id"])
-        return nodes
+        # db = self.find(NODES_INFO, {}).sort("node_id").collation(
+        #     Collation(locale="en_US", numericOrdering=True))
+        # nodes = []
+        # if db is None:
+        #     return None
+        # for node in db:
+        #     nodes.append(node["node_id"])
+        # return nodes
+        pass
 
     """ Useful Reinforcement Learning Functions """
 

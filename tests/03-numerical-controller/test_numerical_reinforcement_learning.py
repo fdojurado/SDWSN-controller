@@ -21,7 +21,7 @@ import numpy as np
 
 import os
 
-from sdwsn_controller.database.db_manager import DatabaseManager
+from sdwsn_controller.network.network import Network
 from sdwsn_controller.controller.numerical_controller import \
     NumericalRewardProcessing, NumericalController
 from sdwsn_controller.reinforcement_learning.env import MAX_SLOTFRAME_SIZE
@@ -153,14 +153,15 @@ def test_numerical_reinforcement_learning():
         )
     )
 
-    # This is to plot results of the trained agent.
-    db = DatabaseManager()
+    # Network
+    network = Network()
 
     train_controller = NumericalController(
+        network=network,
         reward_processing=train_reward_processor
     )
     test_controller = NumericalController(
-        db=db,
+        network=network,
         reward_processing=test_reward_processor
     )
     # ----------------- RL environment ----------------------------
