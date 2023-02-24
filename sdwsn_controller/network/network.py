@@ -346,7 +346,7 @@ class Network():
                 nbr_rssi_matrix[int(scr)][int(
                     dst)] = int(rssi)
         matrix = nbr_rssi_matrix * -1
-        G = nx.from_numpy_matrix(matrix, create_using=nx.DiGraph)
+        G = nx.from_numpy_array(matrix, create_using=nx.DiGraph)
         G.remove_nodes_from(list(nx.isolates(G)))
         return G
 
