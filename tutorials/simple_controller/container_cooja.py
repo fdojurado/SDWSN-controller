@@ -15,12 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from sdwsn_controller.network.network import Network
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.controller.container_controller import ContainerController
-from sdwsn_controller.packet.packet_dissector import PacketDissector
-from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.sink_communication.sink_comm import SinkComm
 from rich.logging import RichHandler
 import logging.config
 import sys
@@ -80,14 +78,12 @@ def main():
     logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
 
-    # Socket
-    socket = SinkComm(port=PORT)
+    # Network
+    network = Network(processing_window=200,
+                      socket_host='127.0.0.1', socket_port=PORT)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
-
-    # Database
-    db = DatabaseManager()
 
     # Routing algorithm
     routing = Dijkstra()
@@ -98,14 +94,9 @@ def main():
         simulation_folder=SIMULATION_FOLDER,
         docker_target=DOCKER_TARGET,
         contiki_source=CONTIKI_SOURCE,
-        # Database
-        db=db,
-        # socket
-        socket=socket,
-        # Packet dissector
-        packet_dissector=PacketDissector(database=db),
-        processing_window=200,
-        router=routing,
+        port=PORT,
+        network=network,
+        routing=routing,
         tsch_scheduler=tsch_scheduler
     )
     # --------------------Start data plane ------------------------

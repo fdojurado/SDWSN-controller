@@ -43,15 +43,18 @@ logger = logging.getLogger('main.'+__name__)
 class Network():
     def __init__(
         self,
-        processing_window: int = 200,
-        socket_host: str = '127.0.0.1',
-        socket_port: int = 60001,
+        socket_host=None,
+        socket_port=None,
+        processing_window=None,
         tsch_max_ch: int = 3,
         tsch_max_sf: int = 500
     ) -> None:
         self.nodes = {}
         self.max_node_id = 0
-        self.socket = SinkComm(host=socket_host, port=socket_port)
+        if socket_host is not None and socket_port is not None:
+            self.socket = SinkComm(host=socket_host, port=socket_port)
+        else:
+            self.socket = None
         self.packet_dissector = PacketDissector(self)
         self.network_running = False
         self.processing_window = processing_window

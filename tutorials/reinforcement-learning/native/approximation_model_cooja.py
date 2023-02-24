@@ -28,7 +28,6 @@ import os
 
 from rich.logging import RichHandler
 
-from sdwsn_controller.database.db_manager import DatabaseManager
 from sdwsn_controller.network.network import Network
 from sdwsn_controller.reinforcement_learning.reward_processing \
     import EmulatedRewardProcessing
@@ -188,8 +187,6 @@ def main():
                       socket_host='127.0.0.1', socket_port=PORT)
     # TSCH scheduler
     tsch_scheduler = HardCodedScheduler()
-    # Database
-    db = DatabaseManager()
 
     # Reward processor
     reward_processor = EmulatedRewardProcessing(network=network)
