@@ -20,34 +20,19 @@ import pandas as pd
 from gym.envs.registration import register
 import gym
 
-import logging.config
-
 import numpy as np
 
 import os
 
-from rich.logging import RichHandler
-
 from sdwsn_controller.network.network import Network
-from sdwsn_controller.controller.container_controller \
-    import ContainerController
-from sdwsn_controller.reinforcement_learning.reward_processing \
-    import EmulatedRewardProcessing
+from sdwsn_controller.controller.numerical_controller import \
+    NumericalRewardProcessing, NumericalController
 from sdwsn_controller.result_analysis import run_analysis
-from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
-
 
 import shutil
 
 from stable_baselines3.common.monitor import Monitor
 
-DOCKER_IMAGE = 'contiker/contiki-ng'
-SIMULATION_FOLDER = 'examples/elise'
-DOCKER_TARGET = '/home/user/contiki-ng'
-CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
-SIMULATION_SCRIPT = 'cooja-elise.csc'
-PORT = 60003
 
 MAX_SLOTFRAME_SIZE = 70
 
@@ -141,28 +126,7 @@ def result_analysis(path, output_folder):
     )
 
 
-def main():
-    # -------------------- Create logger --------------------
-    logger = logging.getLogger('main')
-
-    formatter = logging.Formatter(
-        '%(asctime)s - %(message)s')
-    logger.setLevel(logging.DEBUG)
-
-    stream_handler = RichHandler(rich_tracebacks=True)
-    stream_handler.setLevel(logging.INFO)
-    stream_handler.setFormatter(formatter)
-
-    logFilePath = "my.log"
-    formatter = logging.Formatter(
-        '%(asctime)s | %(name)s |  %(levelname)s: %(message)s')
-    file_handler = logging.handlers.TimedRotatingFileHandler(
-        filename=logFilePath, when='midnight', backupCount=30)
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.DEBUG)
-
-    logger.addHandler(file_handler)
-    logger.addHandler(stream_handler)
+def test_numerical_approximation_model():
     # ----------------- RL environment, setup --------------------
     # Register the environment
     register(
@@ -180,29 +144,29 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
     # -------------------- setup controller ---------------------
     # Network
-    network = Network(processing_window=200,
-                      socket_host='127.0.0.1', socket_port=PORT)
-    # TSCH scheduler
-    tsch_scheduler = HardCodedScheduler()
+    network = Network()
 
     # Reward processor
-    reward_processor = EmulatedRewardProcessing(network=network)
-
-    # Routing algorithm
-    routing = Dijkstra()
-
-    controller = ContainerController(
-        docker_image=DOCKER_IMAGE,
-        simulation_folder=SIMULATION_FOLDER,
-        simulation_script=SIMULATION_SCRIPT,
-        docker_target=DOCKER_TARGET,
-        contiki_source=CONTIKI_SOURCE,
-        port=PORT,
-        # Reward processor
+    reward_processor = NumericalRewardProcessing(
         network=network,
-        reward_processing=reward_processor,
-        routing=routing,
-        tsch_scheduler=tsch_scheduler
+        power_weights=np.array(
+            [1.14247726e-08, -2.22419840e-06,
+             1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
+        ),
+        delay_weights=np.array(
+            # [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,  1.02710258e-04]
+            [-2.98849631e-08,  4.52324093e-06,  5.80710379e-04,
+             0.85749587960003453947587046868728]
+        ),
+        pdr_weights=np.array(
+            # [-2.76382789e-04,  9.64746733e-01]
+            [-2.76382789e-04,  -0.8609615946299346738365592202098]
+        )
+    )
+
+    controller = NumericalController(
+        network=network,
+        reward_processing=reward_processor
     )
     # ----------------- RL environment ----------------------------
     env_kwargs = {
@@ -222,16 +186,16 @@ def main():
     controller.stop()
 
     # Delete folders
-    try:
-        shutil.rmtree(output_folder)
-    except OSError as e:
-        print("Error: %s - %s." % (e.filename, e.strerror))
-    try:
-        shutil.rmtree(log_dir)
-    except OSError as e:
-        print("Error: %s - %s." % (e.filename, e.strerror))
+    # try:
+    #     shutil.rmtree(output_folder)
+    # except OSError as e:
+    #     print("Error: %s - %s." % (e.filename, e.strerror))
+    # try:
+    #     shutil.rmtree(log_dir)
+    # except OSError as e:
+    #     print("Error: %s - %s." % (e.filename, e.strerror))
 
 
 if __name__ == '__main__':
-    main()
+    test_numerical_approximation_model()
     sys.exit(0)

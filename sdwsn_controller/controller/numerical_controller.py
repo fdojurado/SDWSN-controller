@@ -14,6 +14,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from datetime import datetime
 
 from sdwsn_controller.reinforcement_learning.reward_processing import RewardProcessing
 from sdwsn_controller.controller.base_controller import BaseController
@@ -28,6 +29,7 @@ logger = logging.getLogger('main.'+__name__)
 class NumericalRewardProcessing(RewardProcessing):
     def __init__(
         self,
+        network,
         power_weights: np = np.array(
             [-2.34925404e-06,  2.38160571e-04, -8.87979911e-03, 3.25046326e-01]
         ),
@@ -70,14 +72,20 @@ class NumericalRewardProcessing(RewardProcessing):
         reward = 2-1*(alpha*power_normalized+beta *
                       delay_normalized-delta*pdr_normalized)
         # print(f"reward: {reward}")
-        return reward, power, delay, pdr
+        info = {
+            "reward": reward,
+            "power_normalized": power_normalized,
+            "delay_normalized": delay_normalized,
+            "pdr_normalized": pdr_normalized
+        }
+        return info
 
 
 class NumericalController(BaseController):
     def __init__(
         self,
-        # Database
-        db: object = None,
+        # Network
+        network: object = None,
         # RL related
         reward_processing: object = None,
     ):
@@ -85,7 +93,7 @@ class NumericalController(BaseController):
         logger.info("Building numerical controller")
 
         super().__init__(
-            db=db,
+            network=network,
             reward_processing=reward_processing
         )
 
@@ -119,5 +127,37 @@ class NumericalController(BaseController):
     def processing_wait(self, _):
         pass
 
+    def get_state(self):
+        # Let's return the user requirements, last tsch schedule, current slotframe size
+        state = {
+            "user_requirements": self.user_requirements,
+            "alpha": self.alpha,
+            "beta": self.beta,
+            "delta": self.delta,
+            "last_ts_in_schedule": self.last_tsch_link,
+            "current_sf_len": self.current_slotframe_size
+        }
+        return state
+
     def calculate_reward(self, alpha, beta, delta, slotframe_size):
-        return self.reward_processing.calculate_reward(alpha, beta, delta, slotframe_size)
+        sample_time = datetime.now().timestamp() * 1000.0
+        reward = self.reward_processing.calculate_reward(
+            alpha, beta, delta, slotframe_size)
+        info = {
+            "timestamp": sample_time,
+            "alpha": alpha,
+            "beta": beta,
+            "delta": delta,
+            'power_wam': 0,
+            'power_mean': 0,
+            'power_normalized': reward['power_normalized'],
+            'delay_wam': 0,
+            'delay_mean': 0,
+            'delay_normalized': reward['delay_normalized'],
+            'pdr_wam': 0,
+            'pdr_mean': reward['pdr_normalized'],
+            'current_sf_len': self.current_slotframe_size,
+            'last_ts_in_schedule': self.last_tsch_link,
+            'reward': reward
+        }
+        return info

@@ -43,18 +43,14 @@ class ContainerController(BaseController):
         },
         privileged: bool = True,
         detach: bool = True,
-        # Sink/socket communication
-        socket: object = None,
-        # Database
-        db: object = None,
+        # Network listening port
+        port: int = 60001,
+        # Network
+        network: object = None,
         # RL related
         reward_processing: object = None,
-        # Packet dissector
-        packet_dissector: object = None,
-        # Window
-        processing_window: int = 200,
         # Routing
-        router: object = None,
+        routing: object = None,
         # TSCH scheduler
         tsch_scheduler: object = None
     ):
@@ -88,8 +84,8 @@ class ContainerController(BaseController):
         assert isinstance(contiki_source, str)
 
         ports = {
-            'container': socket.port,
-            'host': socket.port
+            'container': port,
+            'host': port
         }
 
         mount = {
@@ -113,20 +109,23 @@ class ContainerController(BaseController):
             simulation_script + '"'
 
         # Hack to get the port number
-        self.__port = socket.port
+        self.__port = port
 
         # Container
         self.container = CoojaDocker(docker_image=docker_image, script=run_simulation_file, mount=mount,
                                      sysctls=sysctls, ports=ports, privileged=privileged, detach=detach,
                                      log_file=self.__cooja_log)
 
+        logger.info(f"Contiki source: {self.__contiki_source}")
+        logger.info(f"Cooja log: {self.__cooja_log}")
+        logger.info(f"Cooja test log: {self.__testlog}")
+        logger.info(f"Simulation folder: {self.__simulation_folder_container}")
+        logger.info(f"Simulation script: {self.__simulation_script}")
+
         super().__init__(
-            socket=socket,
-            db=db,
             reward_processing=reward_processing,
-            packet_dissector=packet_dissector,
-            processing_window=processing_window,
-            router=router,
+            routing=routing,
+            network=network,
             tsch_scheduler=tsch_scheduler
         )
 
