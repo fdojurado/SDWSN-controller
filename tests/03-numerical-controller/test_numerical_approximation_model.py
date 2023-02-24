@@ -23,7 +23,7 @@ import numpy as np
 
 import os
 
-from sdwsn_controller.database.db_manager import DatabaseManager
+from sdwsn_controller.network.network import Network
 from sdwsn_controller.controller.numerical_controller import \
     NumericalRewardProcessing, NumericalController
 from sdwsn_controller.result_analysis import run_analysis
@@ -36,7 +36,9 @@ from stable_baselines3.common.monitor import Monitor
 MAX_SLOTFRAME_SIZE = 70
 
 
-def run(env, controller):
+def run(env, controller, output_folder, simulation_name):
+    # Pandas df to store results at each iteration
+    df = pd.DataFrame()
     # Reset environment
     obs = env.reset()
     assert np.all(obs)
@@ -51,7 +53,7 @@ def run(env, controller):
     last_ts_in_schedule = observations['last_ts_in_schedule']
     controller.user_requirements = (0.4, 0.3, 0.3)
     increase = 1
-    for _ in range(20):
+    for _ in range(200):
         if increase:
             if sf_size < MAX_SLOTFRAME_SIZE - 2:
                 action = 0
@@ -63,7 +65,7 @@ def run(env, controller):
             else:
                 increase = 1
 
-        env.step(action)
+        _, _, _, info = env.step(action)
         # Get last observations non normalized
         observations = controller.get_state()
         assert 0 <= observations['alpha'] <= 1
@@ -73,8 +75,12 @@ def run(env, controller):
         # Current SF size
         sf_size = observations['current_sf_len']
         assert sf_size > 1 and sf_size <= MAX_SLOTFRAME_SIZE
-    env.render()
-    env.close()
+        # Add row to DataFrame
+        new_cycle = pd.DataFrame([info])
+        df = pd.concat([df, new_cycle], axis=0, ignore_index=True)
+    df.to_csv(output_folder+simulation_name+'.csv')
+    # env.render()
+    # env.close()
 
 
 def result_analysis(path, output_folder):
@@ -136,11 +142,12 @@ def test_numerical_approximation_model():
     log_dir = './tensorlog/'
     os.makedirs(log_dir, exist_ok=True)
     # -------------------- setup controller ---------------------
-    # Database
-    db = DatabaseManager()
+    # Network
+    network = Network()
 
     # Reward processor
     reward_processor = NumericalRewardProcessing(
+        network=network,
         power_weights=np.array(
             [1.14247726e-08, -2.22419840e-06,
              1.60468046e-04, -5.27254015e-03, 9.35384746e-01]
@@ -157,12 +164,12 @@ def test_numerical_approximation_model():
     )
 
     controller = NumericalController(
-        db=db,
+        network=network,
         reward_processing=reward_processor
     )
     # ----------------- RL environment ----------------------------
     env_kwargs = {
-        'simulation_name': 'test_numerical_approximation_model',
+        'simulation_name': 'approximation_model_cooja',
         'folder': output_folder,
         'controller': controller
     }
@@ -170,10 +177,10 @@ def test_numerical_approximation_model():
     env = gym.make('sdwsn-v1', **env_kwargs)
     env = Monitor(env, log_dir)
     # --------------------Start RL --------------------------------
-    run(env, controller)
+    run(env, controller, output_folder, 'approximation_model_cooja')
 
     result_analysis(
-        output_folder+'test_numerical_approximation_model.csv', output_folder)
+        output_folder+'approximation_model_cooja.csv', output_folder)
 
     controller.stop()
 
