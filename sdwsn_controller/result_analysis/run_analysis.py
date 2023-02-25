@@ -19,7 +19,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as pl
 import math
-from sdwsn_controller.database.database import OBSERVATIONS
 from matplotlib.ticker import FuncFormatter
 
 
