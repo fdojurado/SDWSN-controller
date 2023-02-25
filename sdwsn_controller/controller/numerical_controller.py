@@ -154,6 +154,6 @@ class NumericalController(BaseController):
             'pdr_mean': reward['pdr_normalized'],
             'current_sf_len': self.current_slotframe_size,
             'last_ts_in_schedule': self.last_tsch_link,
-            'reward': reward
+            'reward': reward['reward']
         }
         return info
