@@ -48,8 +48,8 @@ def run_data_plane(controller):
     slotframe_size = 12
     # We now set the TSCH schedules for the current routing
     controller.compute_tsch_schedule(path, slotframe_size)
-    links = controller.tsch_scheduler.scheduler_get_list_ts_in_use()
-    assert len(links) != 0
+    links = controller.network.tsch_last_ts()
+    assert links != 0
     # Send the entire routes
     routes_sent = controller.send_routes()
     assert routes_sent == 1
