@@ -1,9 +1,6 @@
 from sdwsn_controller.common import common
-from abc import ABC, abstractmethod
 from rich.table import Table
-import pandas as pd
 import types
-import json
 import logging
 
 # Protocols encapsulated in sdn IP packet

@@ -250,7 +250,8 @@ class Network():
         df.fillna('-', inplace=True)
 
         table = Table(
-            title=f"TSCH network schedules (Row -> Channels, Columns -> Timeoffsets) - Current SF size: {self.tsch_slotframe_size}",
+            title=f"TSCH network schedules (Row -> Channels, Columns -> \
+                Timeoffsets) - Current SF size: {self.tsch_slotframe_size}",
             show_lines=True)
 
         show_index = True

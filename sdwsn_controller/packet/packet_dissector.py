@@ -16,8 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # This class allows to read and write from the database
-from abc import ABC, abstractmethod
-
 import logging
 
 from sdwsn_controller.packet.packet import Data_Packet, NA_Packet, NA_Packet_Payload, SDN_NAPL_LEN
