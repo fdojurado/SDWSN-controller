@@ -19,12 +19,10 @@ import networkx as nx
 
 import os
 
+from sdwsn_controller.network.network import Network
 from sdwsn_controller.controller.container_controller \
     import ContainerController
-from sdwsn_controller.database.db_manager import DatabaseManager
-from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.sink_communication.sink_comm import SinkComm
 from sdwsn_controller.tsch.contention_free_scheduler \
     import ContentionFreeScheduler
 
@@ -76,21 +74,15 @@ def test_container_controller():
     simulation_folder = 'examples/elise'
     simulation_script = 'cooja-orchestra.csc'
     # -------------------- setup controller --------------------
-
-    # Socket
-    socket = SinkComm(port=PORT)
+    # Network
+    network = Network(processing_window=200,
+                      socket_host='127.0.0.1', socket_port=PORT)
 
     # TSCH scheduler
     tsch_scheduler = ContentionFreeScheduler()
 
-    # Database
-    db = DatabaseManager()
-
     # Routing algorithm
     routing = Dijkstra()
-
-    # Packet dissector
-    packet_dissector = PacketDissector(database=db)
 
     controller = ContainerController(
         docker_image=docker_image,
@@ -98,14 +90,10 @@ def test_container_controller():
         simulation_folder=simulation_folder,
         docker_target=docker_target,
         contiki_source=contiki_source,
-        # Database
-        db=db,
-        # socket
-        socket=socket,
-        # Packet dissector
-        packet_dissector=packet_dissector,
-        processing_window=200,
-        router=routing,
+        port=PORT,
+        # Reward processor
+        network=network,
+        routing=routing,
         tsch_scheduler=tsch_scheduler
     )
     # --------------------Start data plane ------------------------

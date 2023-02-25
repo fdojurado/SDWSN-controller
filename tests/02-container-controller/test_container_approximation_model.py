@@ -23,15 +23,15 @@ import numpy as np
 
 import os
 
+from sdwsn_controller.network.network import Network
+
 from sdwsn_controller.controller.container_controller \
     import ContainerController
-from sdwsn_controller.database.db_manager import DatabaseManager
-from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.reinforcement_learning.reward_processing \
     import EmulatedRewardProcessing
+from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.result_analysis import run_analysis
 from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.sink_communication.sink_comm import SinkComm
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 
 
@@ -47,7 +47,9 @@ PORT = 60004
 MAX_SLOTFRAME_SIZE = 70
 
 
-def run(env, controller):
+def run(env, controller, output_folder, simulation_name):
+    # Pandas df to store results at each iteration
+    df = pd.DataFrame()
     # Reset environment
     obs = env.reset()
     assert np.all(obs)
@@ -74,7 +76,7 @@ def run(env, controller):
             else:
                 increase = 1
 
-        env.step(action)
+        _, _, _, info = env.step(action)
         # Get last observations non normalized
         observations = controller.get_state()
         assert 0 <= observations['alpha'] <= 1
@@ -84,8 +86,12 @@ def run(env, controller):
         # Current SF size
         sf_size = observations['current_sf_len']
         assert sf_size > 1 and sf_size <= MAX_SLOTFRAME_SIZE
-    env.render()
-    env.close()
+        # Add row to DataFrame
+        new_cycle = pd.DataFrame([info])
+        df = pd.concat([df, new_cycle], axis=0, ignore_index=True)
+    df.to_csv(output_folder+simulation_name+'.csv')
+    # env.render()
+    # env.close()
 
 
 def result_analysis(path, output_folder):
@@ -156,15 +162,15 @@ def test_container_approximation_model():
     log_dir = './tensorlog/'
     os.makedirs(log_dir, exist_ok=True)
     # -------------------- setup controller ---------------------
-    # Socket
-    socket = SinkComm(port=PORT)
+    # Network
+    network = Network(processing_window=200,
+                      socket_host='127.0.0.1', socket_port=PORT)
+
     # TSCH scheduler
     tsch_scheduler = HardCodedScheduler()
-    # Database
-    db = DatabaseManager()
 
     # Reward processor
-    reward_processor = EmulatedRewardProcessing(database=db)
+    reward_processor = EmulatedRewardProcessing(network=network)
 
     # Routing algorithm
     routing = Dijkstra()
@@ -175,16 +181,11 @@ def test_container_approximation_model():
         simulation_folder=simulation_folder,
         docker_target=docker_target,
         contiki_source=contiki_source,
-        # Database
-        db=db,
-        # socket
-        socket=socket,
+        port=PORT,
         # Reward processor
+        network=network,
         reward_processing=reward_processor,
-        # Packet dissector
-        packet_dissector=PacketDissector(database=db),
-        processing_window=200,
-        router=routing,
+        routing=routing,
         tsch_scheduler=tsch_scheduler
     )
     # ----------------- RL environment ----------------------------
@@ -197,7 +198,7 @@ def test_container_approximation_model():
     env = gym.make('sdwsn-v1', **env_kwargs)
     env = Monitor(env, log_dir)
     # --------------------Start RL --------------------------------
-    run(env, controller)
+    run(env, controller, output_folder, 'test_container_approximation_model')
 
     result_analysis(
         output_folder+'test_container_approximation_model.csv', output_folder)
