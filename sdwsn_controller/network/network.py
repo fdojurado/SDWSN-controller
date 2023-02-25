@@ -298,10 +298,10 @@ class Network():
                 cell_packed = cell_pkt.pack()
                 payload = cell_packed
                 if len(payload) > 90:
-                    logger.info(
-                        f'Sending TSCH packet {num_pkts} of {len(payload)} bytes')
-                    # We send the current payload
                     num_pkts += 1
+                    logger.info(
+                        f'Sending TSCH packet {num_pkts} with {len(payload)} bytes')
+                    # We send the current payload
                     current_sf_size = 0
                     if num_pkts == 1:
                         current_sf_size = self.tsch_slotframe_size
@@ -316,7 +316,7 @@ class Network():
         if payload:
             num_pkts += 1
             logger.info(
-                f'Sending remaining TSCH packet {num_pkts} of {len(payload)} bytes')
+                f'Sending TSCH packet {num_pkts} with {len(payload)} bytes')
             current_sf_size = 0
             if num_pkts == 1:
                 current_sf_size = self.tsch_slotframe_size
