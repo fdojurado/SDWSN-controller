@@ -147,7 +147,6 @@ def test_numerical_approximation_model():
 
     # Reward processor
     reward_processor = NumericalRewardProcessing(
-        network=network,
         power_weights=np.array(
             [1.14247726e-08, -2.22419840e-06,
              1.60468046e-04, -5.27254015e-03, 9.35384746e-01]

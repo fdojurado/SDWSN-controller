@@ -17,13 +17,14 @@
 
 from datetime import datetime
 
-from sdwsn_controller.database.db_manager import DatabaseManager, SLOT_DURATION
-from sdwsn_controller.database.database import NODES_INFO
 from sdwsn_controller.common import common
 from abc import ABC, abstractmethod
 from rich.table import Table
 import numpy as np
 import logging
+
+# Constants for packet delay calculation
+SLOT_DURATION = 10
 
 logger = logging.getLogger('main.'+__name__)
 

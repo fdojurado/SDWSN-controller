@@ -21,13 +21,7 @@ import logging
 
 import numpy as np
 
-from sdwsn_controller.common import common
-
-from sdwsn_controller.database.database import OBSERVATIONS
-from sdwsn_controller.database.database import NODES_INFO
 from sdwsn_controller.network.network import Network
-from sdwsn_controller.packet.packet import Cell_Packet_Payload
-from sdwsn_controller.packet.packet import RA_Packet_Payload
 from sdwsn_controller.reinforcement_learning.reward_processing \
     import RewardProcessing
 
@@ -198,10 +192,6 @@ class BaseController(ABC):
     @property
     def reward_processing(self):
         return self.__reward_processing
-
-    def export_observations(self, simulation_name, folder):
-        if self.db is not None:
-            self.db.export_collection(OBSERVATIONS, simulation_name, folder)
 
     def calculate_reward(self, alpha, beta, delta, _):
         if self.reward_processing is not None:

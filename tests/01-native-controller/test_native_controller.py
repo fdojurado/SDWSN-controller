@@ -17,11 +17,6 @@
 
 import networkx as nx
 
-import logging.config
-from rich.logging import RichHandler
-
-
-
 import os
 
 from sdwsn_controller.network.network import Network
