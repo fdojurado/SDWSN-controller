@@ -20,13 +20,11 @@ environment """
 import gym
 from gym import spaces
 import numpy as np
-from datetime import datetime
 import random
 from random import randrange
 
 from sdwsn_controller.common import common
 from sdwsn_controller.controller.base_controller import BaseController
-from sdwsn_controller.result_analysis import run_analysis
 
 # These are the size of other schedules in orchestra
 eb_size = 397

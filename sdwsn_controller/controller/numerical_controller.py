@@ -60,13 +60,10 @@ class NumericalRewardProcessing(RewardProcessing):
         """
         # Calculate power consumption
         power_normalized = self.power_trendpoly(sf_size)
-        power = [0, 0, power_normalized]
         # Calculate delay consumption
         delay_normalized = self.delay_trendpoly(sf_size)
-        delay = [0, 0, delay_normalized]
         # Calculate pdr consumption
         pdr_normalized = self.pdr_trendpoly(sf_size)
-        pdr = [0, pdr_normalized]
         # Calculate the reward
         reward = 2-1*(alpha*power_normalized+beta *
                       delay_normalized-delta*pdr_normalized)

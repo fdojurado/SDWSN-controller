@@ -19,7 +19,6 @@ from sdwsn_controller.network.network import Network
 from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
 from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.reinforcement_learning.reward_processing import EmulatedRewardProcessing
-from sdwsn_controller.packet.packet_dissector import PacketDissector
 from sdwsn_controller.routing.dijkstra import Dijkstra
 from rich.logging import RichHandler
 import logging.config

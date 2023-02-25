@@ -186,14 +186,14 @@ def test_numerical_approximation_model():
     controller.stop()
 
     # Delete folders
-    # try:
-    #     shutil.rmtree(output_folder)
-    # except OSError as e:
-    #     print("Error: %s - %s." % (e.filename, e.strerror))
-    # try:
-    #     shutil.rmtree(log_dir)
-    # except OSError as e:
-    #     print("Error: %s - %s." % (e.filename, e.strerror))
+    try:
+        shutil.rmtree(output_folder)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
+    try:
+        shutil.rmtree(log_dir)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
 
 
 if __name__ == '__main__':

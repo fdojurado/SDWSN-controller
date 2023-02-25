@@ -129,7 +129,8 @@ class EmulatedRewardProcessing(RewardProcessing):
             return table
 
         logger.info(
-            f"Power samples (SF: {self.__network.tsch_slotframe_size}) \n{common.log_table(power_samples_table(power_samples))}")
+            f"Power samples (SF: {self.__network.tsch_slotframe_size}) \
+                \n{common.log_table(power_samples_table(power_samples))}")
         # We now need to compute the weighted arithmetic mean
         power_wam, power_mean = self.__power_weighted_arithmetic_mean(
             power_samples)
@@ -205,7 +206,8 @@ class EmulatedRewardProcessing(RewardProcessing):
             return table
 
         logger.info(
-            f"Delay samples (SF: {self.__network.tsch_slotframe_size})\n{common.log_table(delay_samples_table(delay_samples))}")
+            f"Delay samples (SF: {self.__network.tsch_slotframe_size})\
+                \n{common.log_table(delay_samples_table(delay_samples))}")
         # We now need to compute the weighted arithmetic mean
         delay_wam, delay_mean = self.__delay_weighted_arithmetic_mean(
             delay_samples)

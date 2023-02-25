@@ -19,9 +19,7 @@
 # deployed at the WSN.
 
 from sdwsn_controller.common import common
-from abc import ABC, abstractmethod
 from rich.table import Table
-import pandas as pd
 import logging
 
 logger = logging.getLogger('main.'+__name__)
