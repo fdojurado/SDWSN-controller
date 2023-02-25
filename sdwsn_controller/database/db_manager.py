@@ -21,8 +21,8 @@ import json
 from datetime import datetime
 import numpy as np
 import pandas as pd
-from pymongo.collation import Collation
-import pymongo
+# from pymongo.collation import Collation
+# import pymongo
 
 # Network parameters
 H_MAX = 10  # max number of hops
@@ -65,7 +65,7 @@ class DatabaseManager(Database):
         super().__init__()
 
     def initialize(self):
-        self.client = pymongo.MongoClient(self.URI)
+        # self.client = pymongo.MongoClient(self.URI)
         self.client.drop_database(self.name)
         self.DATABASE = self.client[self.name]
 

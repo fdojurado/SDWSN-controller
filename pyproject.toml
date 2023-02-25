@@ -50,9 +50,9 @@ dependencies = [
     'gym',
     'networkx',
     'pandas',
-    'plac',
+    # 'plac',
     'pyfiglet',
-    'pymongo',
+    # 'pymongo',
     'python-daemon',
     'rich',
     'tomli'
