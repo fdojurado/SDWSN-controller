@@ -159,10 +159,11 @@ class Network():
                 routed_packed = route_pkt.pack()
                 payload = routed_packed
                 if len(payload) > 90:
-                    logger.info(
-                        f'Sending routing packet {num_pkts} of {len(payload)} bytes')
-                    # We send the current payload
                     num_pkts += 1
+                    logger.info(
+                        f'Sending routing packet {num_pkts} with \
+                            {len(payload)} bytes')
+                    # We send the current payload
                     packedData, serial_pkt = common.routing_build_pkt(
                         payload, self.cycle_sequence_increase())
                     payload = []
@@ -174,7 +175,7 @@ class Network():
         if payload:
             num_pkts += 1
             logger.info(
-                f'Sending remaining routing packet {num_pkts} of {len(payload)} bytes')
+                f'Sending routing packet {num_pkts} with {len(payload)} bytes')
             packedData, serial_pkt = common.routing_build_pkt(
                 payload, self.cycle_sequence_increase())
             # Send NC packet

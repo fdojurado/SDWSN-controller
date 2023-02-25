@@ -17,6 +17,11 @@
 
 import networkx as nx
 
+import logging.config
+from rich.logging import RichHandler
+
+
+
 import os
 
 from sdwsn_controller.network.network import Network
@@ -62,6 +67,36 @@ def run_data_plane(controller):
 
 
 def test_native_controller():
+    # -------------------- Create logger --------------------
+    logger = logging.getLogger('main')
+
+    formatter = logging.Formatter(
+        '%(asctime)s - %(message)s')
+    logger.setLevel(logging.DEBUG)
+
+    stream_handler = RichHandler(rich_tracebacks=True)
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(formatter)
+
+    logFilePath = "my.log"
+    formatter = logging.Formatter(
+        '%(asctime)s | %(name)s |  %(levelname)s: %(message)s')
+    file_handler = logging.handlers.TimedRotatingFileHandler(
+        filename=logFilePath, when='midnight', backupCount=30)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+    # Create output folder
+    output_folder = './output/'
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Monitor the environment
+    log_dir = './tensorlog/'
+    os.makedirs(log_dir, exist_ok=True)
+    # ------------------ Env variables -------------------------
     assert os.getenv('CONTIKI_NG')
     contiki_source = os.getenv('CONTIKI_NG')
     simulation_folder = 'examples/elise'

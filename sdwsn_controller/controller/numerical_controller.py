@@ -29,7 +29,6 @@ logger = logging.getLogger('main.'+__name__)
 class NumericalRewardProcessing(RewardProcessing):
     def __init__(
         self,
-        network,
         power_weights: np = np.array(
             [-2.34925404e-06,  2.38160571e-04, -8.87979911e-03, 3.25046326e-01]
         ),
