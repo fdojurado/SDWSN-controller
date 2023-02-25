@@ -59,14 +59,7 @@ class EnergySamples():
         return self.samples.get(seq)
 
     def get_sample_last(self):
-        # last_seq = 0
-        last_energy = self.samples[self.last_seq].energy
-        # for sample in self.samples.values():
-        #     if sample.seq > last_seq:
-        #         last_seq = sample.seq
-        #         last_sample = sample
-        # return last_sample.energy
-        return last_energy
+        return self.get_sample(self.last_seq).energy
 
     def add_sample(self, seq, energy) -> Energy:
         if self.get_sample(seq):
