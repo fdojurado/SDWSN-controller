@@ -1,0 +1,4 @@
+[submodule "contiki-ng"]
+	path = contiki-ng
+	url = git@github.com:fdojurado/contiki-ng.git
+	branch = develop
