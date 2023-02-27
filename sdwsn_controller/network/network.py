@@ -63,6 +63,7 @@ class Network():
         self.tsch_max_ch = tsch_max_ch
         self.tsch_max_sf = tsch_max_sf
         self.name = "Cooja network"
+        self.__timeout = 1.2
         self.reset_stats()
 
     def reset_stats(self):
@@ -385,8 +386,13 @@ class Network():
 
     # ---------------------Socket send related functions-------------------
 
+    @property
     def timeout(self):
-        sleep(1.2)
+        return self.__timeout
+
+    @timeout.setter
+    def timeout(self, val):
+        self.__timeout = val
 
     def send(self, data):
         if self.socket is not None:
@@ -420,7 +426,7 @@ class Network():
                     # We resend the packet if retransmission < 7
                     rtx = rtx + 1
                     self.send(data)
-                self.timeout()
+                sleep(self.timeout)
             return result
 
     # --------------------------socket primitives-----------------------
