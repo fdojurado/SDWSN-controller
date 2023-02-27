@@ -1,0 +1,803 @@
+<!doctype html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	<title>Research proposal</title>
+
+	<link rel="stylesheet" href="dist/reset.css">
+	<link rel="stylesheet" href="dist/reveal.css">
+	<link rel="stylesheet" href="dist/theme/white.css">
+
+	<!-- Theme used for syntax highlighted code -->
+	<link rel="stylesheet" href="css/custom.css">
+	<link rel="stylesheet" href="plugin/highlight/monokai.css">
+</head>
+
+<body>
+	<div class="reveal">
+		<div class="slides">
+			<header>
+				https://people.compute.dtu.dk/ffjla/ &middot; Fernando Jurado-Lasso &middot; 5 Aug 2022
+			</header>
+			<section>
+				<!-- <h1 class="r-fit-text">RL Tips and Tricks</h1>
+					<h3>DLR Template</h3> -->
+				<div class="row bottom-xs">
+					<div class="row middle-xs">
+						<div class="col-xs-7">
+							<div class="col-xs-12">
+								<h3 id='main-title'>Research Work</h3>
+								<p id="subtitle">A reinforcement learning framework to optimize the sloftframe size of
+									TSCH in IoT networks
+								</p>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-6 xsmall-text">
+						Fernando Jurado-Lasso (<a href="https://people.compute.dtu.dk/ffjla/" target="_blank">Personal
+							website</a>) <em>et al.</em> <br>
+						<a href="https://www.compute.dtu.dk/english/research/research-sections/ese"
+							target="_blank">Embedded Systems Engineering (ESE) section</a> <br>
+						<a href="https://www.dtu.dk/english"
+						target="_blank">Technical University of Denmark - DTU</a><br>
+						<a href="https://github.com/fdojurado" target="_blank">github.com/fdojurado</a> <br>
+					</div>
+				</div>
+			</section>
+			<section>
+				<h3>Presentation outline</h3>
+				<ul>
+					<li>
+						<a href="#/research-objectives">Research objectives (ROs)</a>
+					</li>
+					<li>
+						<a href="#/system-architecture">System architecture</a>
+					</li>
+					<li>
+						<a href="#/sdwsn">Software-Defined Wireless Sensor Network (SDWSN)</a>
+					</li>
+					<li>
+						<a href="#/reinforcement-learning">Reinforcement learning</a>
+					</li>
+					<li>
+						<a href="#/sdwsn-approximation-model">SDWSN approximation model</a>
+					</li>
+					<li>
+						<a href="#/results">Results</a>
+					</li>
+					<li>
+						<a href="#/publication-venues">Publication venues</a>
+					</li>
+				</ul>
+			</section>
+			<section id="research-objectives">
+				<h4>Research objectives (ROs)</h4>
+				<ol>
+					<li class="list-space">To develop a framework (?) that enables centralized network resource
+						management and run-time reconfiguration of WSNs.</li>
+					<li class="list-space">To develop a reinforcement learning (RL) solution that leverage the framework
+						to dynamically adapt the network reliability, power efficiency, and delay of the WSN giving a
+						set of user requirements.</li>
+					<li class="list-space">To design a reward model based on a multi-objective function that enables the
+						selection of the best network configuration that matches user requirements.</li>
+				</ol>
+			</section>
+			<section id="system-architecture">
+				<section>
+					<h3>System architecture</h3>
+				</section>
+				<section>
+					<h4>Unified Concepts: </h4>
+					<ul>
+						<li class="fragment">Wireless Sensor Networks (WSNs)</li>
+						<li class="fragment">Software-Defined Networking (SDN)</li>
+						<li class="fragment">Machine Learning (ML)</li>
+					</ul>
+				</section>
+				<section>
+					<h4>Architecture diagram </h4>
+					<img src="images/architecture.png" alt="rl101" style="max-width: 50%">
+				</section>
+			</section>
+			<section id="sdwsn">
+				<section>
+					<h4>
+						SDWSN
+					</h4>
+					<p>
+						To enable runtime network resource management, we have defined <em>five</em> main network
+						functions.
+					</p>
+					<ol>
+						<li class="list-space">
+							<b>Data packets:</b> This type of packet sends the sensed data to the controller.
+						</li>
+						<li class="list-space">
+							<b>Neighbor Discovery (ND):</b> This packet discover other sensor devices in the sender
+							transmission range. It also allows to discover neighbors with path to the controller.
+						</li>
+						<li class="list-space">
+							<b>Neighbor Advertisement (NA):</b> This packet sends messages to report their own and their
+							neighbors' status
+							to the controller including the current power consumption, rank, and links to neighbors.
+						</li>
+						<li class="list-space">
+							<b>Network configuration - TSCH schedules:</b> This is a control packet to stablish the
+							schedules (Tx, Rx timeslots and channels) for all \(n\in N\).
+						</li>
+						<li class="list-space">
+							<b>Network configuration - Routes:</b> This is a control packet to stablish the forwarding
+							paths for all \(n\in N\). Where \(N\) is the number of sensor nodes in the network.
+						</li>
+					</ol>
+				</section>
+				<section>
+					<h4>
+						Packet formats - Data packet
+					</h4>
+					<img src="images/Data-packet.png" alt="rl101" style="max-width: 50%">
+					<p>
+						Cycle seq, and seq are used by the RL module to keep track of the number of timesteps (action
+						taken) taken and the number of data packets received during that timestep.
+					</p>
+					<p>
+						For this particular application, sensor nodes sample the temperature, humidity, and light from
+						the environment.
+					</p>
+					<p>
+						The ASN is used to calculate the latency of the packet under the current network configuration
+						(routes, TSCH schedules).
+					</p>
+				</section>
+				<section>
+					<h4>
+						Packet formats - Neighbor Discovery (ND)
+					</h4>
+					<img src="images/ND-packet.png" alt="rl101" style="max-width: 50%">
+					<p>
+						The rank field states the rank of the sender. RSSI states the accumulate RSSI to the controller,
+						and the packet CRC field is the checksum of the packet.
+					</p>
+				</section>
+				<section>
+					<h4>
+						Packet formats - Neighbor Advertisement (NA)
+					</h4>
+					<img src="images/NA-packet.png" alt="rl101" style="max-width: 50%">
+					<p>
+						The payload of the NA consist of the neighbors' address, RSSI and LQI values.
+					</p>
+				</section>
+				<section>
+					<h4>
+						Packet formats - TSCH schedules
+					</h4>
+					<img src="images/tsch-packet.png" alt="rl101" style="max-width: 50%">
+					<p>
+						All NC packets are sent as broadcast messages.
+						The slotframe len field mandates the size of the slotframe of the TSCH schedules packed in the
+						payload. The payload packet format is shown below.
+					</p>
+					<img src="images/tsch-payload-packet.png" alt="rl101" style="max-width: 50%">
+					<p>
+						The type field states the type of TSCH link; transmission or reception. Channel and timeslot
+						offset specifies the coordinates of the given link.
+						Source address indicates the sensor node who should process this payload. Lastly, the
+						destination address is used for Tx links to set the neighbor address.
+					</p>
+				</section>
+				<section>
+					<h4>
+						Packet formats - Routes
+					</h4>
+					<img src="images/routes-packet.png" alt="rl101" style="max-width: 50%">
+					<p>
+						The packet header contains the payload length, sequence and checksum. The payload consists of
+						source, destination, and neighbor addresses.
+					</p>
+				</section>
+			</section>
+			<section id="reinforcement-learning">
+				<h3>Reinforcement Learning</h3>
+				<img src="images/rl.png" alt="rl101" style="max-width: 50%">
+			</section>
+			<section>
+				<h3>Observations</h3>
+				<ul>
+					<li class="fragment"><b>User Requirements (UR):</b> This is the actual user requirements weights;
+						power (\(\alpha\)), delay
+						(\(\beta\)), and reliability (\(\delta\)). Users can dynamically change the UR weights to
+						satisfy their needs. </li>
+					<li class="fragment"><b>Power:</b> This is the average network power consumption at the current
+						timestep.
+					</li>
+					<li class="fragment"><b>Delay:</b> This is the average network packet delay at the current timestep.
+					</li>
+					<li class="fragment"><b>Reliability:</b> This is the average network packet delivery ratio at the
+						current
+						timestep.</li>
+				</ul>
+			</section>
+			<section>
+				<h4>User requirements</h4>
+				<p>The user inputs are the desired weights for specific user requirements. Where:</p>
+				$$ \alpha+\beta+\delta=1 $$ and $$ 0\le \alpha,\beta,\delta \le 1 $$
+			</section>
+			<section>
+				<section>
+					<h4>Power consumption</h4>
+					<p>
+						We defined the network power consumption (\(\overline{P_N}\)) as the average power consumption
+						of all sensor nodes.
+						This is first calculated at each \(n\) \(\epsilon\) \(N\). The energy consumption \(E\) of
+						sensor node \(n\) is calculated as follows.</p>
+					<equation>
+						\(E_n=V\sum_{k\in F}ts_k*i_k\)
+					</equation>
+					<!-- <p></p> -->
+					<table>
+						<!-- <caption class="italic">Table of symbols</caption> -->
+						<tr>
+							<th>Symbol</th>
+							<th>Description</th>
+						</tr>
+						<tr>
+							<td>\(V\)</td>
+							<td>Operating voltage of the sensor node.</td>
+						</tr>
+						<tr>
+							<td>\(F\)</td>
+							<td>Set of sensor states (processing, low power mode, transmitting,
+								listening, idle, etc.).</td>
+						</tr>
+						<tr>
+							<td>\(ts\)</td>
+							<td>Time spent in a particular sensor state.</td>
+						</tr>
+						<tr>
+							<td>\(i\)</td>
+							<td>Current draw in that particular sensor state.</td>
+						</tr>
+					</table>
+
+					<p class="medium-text">Then, the power consumption (\(P\)) of sensor node \(n\) is </p>
+					<equation>
+						\[\begin{aligned}
+						P_n &amp; =\frac{E_n}{t_{sample}} \\
+						subject~to~&amp; t_{sample}>0
+						\end{aligned} \]
+					</equation>
+					<p>
+						We have set \(t_{sample}\) to 60 seconds.
+					</p>
+				</section>
+				<section>
+					<h4>Average power consumption</h4>
+					<p>The average power consumption (\(\overline{P_{n}}\)) of sensor node \(n\), at sample time \(t\),
+						is calculated
+						using the
+						Exponential Weighted Moving Average (EWMA) to smooth short-term fluctuations.</p>
+					<equation>
+						\(\overline{P_{n}^t} =
+						\begin{cases}
+						P_0, && t=0 \\
+						P_{avg_n}^{t-1}*(1-\gamma)+\gamma*P_n^t, && t>0
+						\end{cases}\)
+					</equation>
+					<p>
+						Where \(P_0\) is the initial power consumption and \(\gamma\) is the weighting smoothing factor
+						(\(0\le \gamma \le 1\)).
+					</p>
+					<p>
+						From experimentation, we have set \(P_0\) to 1000 \(\mu W\) and \(\gamma\) to \(0.4\). Sensor
+						nodes send the latest \(\overline{P_{n}}\) to the SDWSN controller.
+					</p>
+					<p>
+						<b>Note:</b> From the RL point of view, this approach mathematically does not forget previous
+						values at each
+						action; but the
+						calculation is simple, whereas, if we do a window average,
+						it does forget previous values but it requires a buffer implementation.
+					</p>
+				</section>
+				<section>
+					<h4>
+						Average network power consumption
+					</h4>
+					<p>
+						This is performed at the control plane. The controller retrieves,
+						from the database, the latest power consumption (\(\overline{P_{n}}\)) samples from each \(n\)
+						\(\epsilon\) \(N\).
+					</p>
+					<p>
+						It then calculates the overall network power consumption (\(\overline{P_N}\)) using the
+						<b>Weighted
+							Arithmetic Mean (WAM)</b>. We use the WAM to account for small variations present at sensor
+						nodes far from the controller.
+					</p>
+					<equation>
+						\[\begin{aligned}
+						\overline{P_N} &amp; =\frac{\sum_{i=1}^{n}w_i*\overline{p_{i}}}{\sum_{i=1}^{n}w_i} \\
+						subject~to~&amp; \sum_{i=1}^{n}w_i > 0
+						\end{aligned} \]
+					</equation>
+					<p>
+						Where \(\overline{p}\in \overline{P_n}\) and \(w \in W\) which is the set of weights.
+					</p>
+				</section>
+				<section>
+					<h4>
+						Average network power consumption
+					</h4>
+					<p>
+						The
+						weight (\(w\))
+						is calculated using the rank and density of nodes in the neighborhood of sensor node as follows.
+					</p>
+					<equation>
+						\[\begin{aligned}
+						w_n &amp; = 0.9*\frac{rank_n}{rank_N}+0.1*\frac{nbr_n}{|N|}\\
+						subject~to~&amp; rank_N > 0, and~|N|>0
+						\end{aligned} \]
+					</equation>
+					<p>
+						Where \(rank_n\) is the rank of sensor node \(n\), \(rank_N\) is the maximum rank in the network
+						and \(nbr_n\) denotes the number of neighbors in sensor node \(n\).
+					</p>
+				</section>
+				<section>
+					<h4>
+						Normalized average network power consumption
+					</h4>
+					<p>
+						Finally, we rescale the power consumption to range from 0 to 1 using min-max normalization as
+						follows.
+					</p>
+					<equation>
+						\(\widetilde{P_N}=\frac{\overline{P_N}-min(P)}{max(P)-min(P)}\)
+					</equation>
+					<p>
+						Where, we set \(min(p)\) and \(max(P)\) to 0 and 3000 \(\mu W\) respectively.
+					</p>
+				</section>
+			</section>
+			<section>
+				<section>
+					<h4>
+						Delay
+					</h4>
+					<p>
+						We have defined the network delay (\(\overline{D_N}\)) as the average time of data packets
+						originated at sensor node \(n\) to reach the controller for all \(n\in N\).
+					</p>
+					<p>
+						In a TSCH network, a data packet delay of sensor \(n\) can be calculated as follows.
+					</p>
+					<equation>
+						\(D_n=(ASN_{c_i}-ASN_{s_i})*slot_{dur}\)
+					</equation>
+					<p>
+						Where \(slot_{dur}>0\) refers to the length of a slot in a TSCH network.
+						\(ASN_s\) and \(ASN_c\) are the Absolute Slot Number (ASN) at the time of the generation of the
+						packet at the source and at the time of reception of the packet at the controller, respectively.
+						Delay packets are processed when DATA packets are received.
+					</p>
+				</section>
+				<section>
+					<h4>
+						Average delay per node
+					</h4>
+					<p>
+						We calculate the average delay of sensor node (\(n\)) at timestep (\(t\)) as follows.
+					</p>
+					<equation>
+						\(\overline{D_{n}^t}=\frac{1}{|m|}\sum_{i\in m}D_i\)
+					</equation>
+					<p>
+						Where \(m>0\) and denotes the delay samples obtained during timestep \(t\).
+					</p>
+				</section>
+				<section>
+					<h4>
+						Average network delay
+					</h4>
+					<p>
+						We also use the WAM to calculate the overall network delay. This permits the controller to be
+						sensitive to delay changes in sensor nodes close to the controller.
+						We denote \(\overline{D_N}\) as the overall network delay.
+					</p>
+					<p>
+						The weight (\(w\)) is calculated per sensor node rank basis. The weight for sensor node \(n\) is
+						calculated as follows.
+					</p>
+					<equation>
+						\(w_n=1-\frac{rank_n}{rank_N+1}\)
+					</equation>
+					<p>
+						The above equation puts more weight on sensor nodes close to the controller. The term
+						\(rank_N+1\) assures that the weight is not zero for sensor nodes with the highest rank.
+					</p>
+				</section>
+				<section>
+					<h4>
+						Normalized average network delay
+					</h4>
+					<p>
+						Finally, we also use min-max normalization to rescale delay values from 0 to 1 as follows.
+					</p>
+					<equation>
+						\(\widetilde{D_N}=\frac{\overline{D_N}-min(D)}{max(D)-min(D)}\)
+					</equation>
+					<p>
+						Where, we set \(min(D)\) to the minimum slot duration (10 ms for sky motes) and \(max(D)\) to
+						2500 ms (taken experimentally). \(max(D)\) can also be estimated in TSCH networks using the
+						queue size, total number of hops, and the maximum of retransmission attempts.
+					</p>
+				</section>
+			</section>
+			<section>
+				<section>
+					<h4>
+						Reliability
+					</h4>
+					<p>
+						We defined the network reliability (\(\overline{R}\)) as the average Packet Delivery Ratio (PDR)
+						of all sensor
+						nodes. This PDR is taken from data
+						packets using the sequence number.
+						The reliability of sensor node \(n\) is calculated as follows.
+					</p>
+					<equation>
+						\(R_n=\frac{Pkt_{n_{rx}}}{Pkt_{n_{tx}}}\)
+					</equation>
+					<p>
+						Subject to \(Pkt_{n_{tx}}>0\). \(Pkt_{n_{rx}}\) and \(Pkt_{n_{tx}}\)
+						are the number of received and transmitted packets, respectively.
+					</p>
+				</section>
+				<section>
+					<h4>
+						Average reliability per node
+					</h4>
+					<p>
+						The average PDR of sensor node \(n\), at sample time \(t\), is calculated as follows.
+					</p>
+					<equation>
+						\(\overline{R_{n}^t}=\frac{1}{|k|}\sum_{i\in k}R_i\)
+					</equation>
+					<p>
+						Where \(k>0\) and denotes the PDR samples obtained during timestep \(t\).
+					</p>
+				</section>
+				<section>
+					<h4>
+						Average network reliability
+					</h4>
+					<p>
+						We also use the WAM to calculate the overall network PDR. This permits the controller to be
+						sensitive to PDR changes in sensor nodes fart from the controller.
+						We denote \(\overline{R_N}\) as the overall network reliability.
+					</p>
+					<p>
+						The weight (\(w\)) is calculated per sensor node rank basis. The weight for sensor node \(n\) is
+						calculated as follows.
+					</p>
+					<equation>
+						\(w_n=0.9*\frac{rank_n}{rank_N+1}+0.1*\frac{nbr_n}{|N|}\)
+					</equation>
+					<p>
+						No normalization is required as per definition PDR takes values from 0 to 1. Therefore,
+					</p>
+					<equation>
+						\(\widetilde{R_N}=\overline{R_N}\)
+					</equation>
+				</section>
+			</section>
+			<section>
+				<h4>
+					Action space
+				</h4>
+				<p>
+					Since the aim of the RL algorithm is to find the optimal slotframe size given a set of user
+					requirements, we have defined two actions. To increase and decrease the slotframe size.
+				</p>
+				<p>
+					The selection of the next and previous slotframe size is done by finding the size that is mutually
+					prime to other slotframes running in the network.
+				</p>
+				<p>
+					For example, <b>Orchestra</b> mainly <b>uses three</b> slotframes in its default configuration:
+					<em>time source</em>, <em>unicast</em>, and <em>default</em>.
+					The time source is used to sync the node with its parent. The default slotframe is used for any
+					other traffic than time source and unicast messages.
+				</p>
+				<p>
+					We have defined <b>four different slotframes</b> to enable SDN concepts in the sensor network: time
+					source, control plane, data plane, and default.
+					The time source and default slotframes performs same tasks as Orchestra, whereas the control plane
+					slotframe is used for all control traffic; TSCH schedules and routes configuration.
+					Additionally, the data plane slotframe is used for data packets.
+				</p>
+			</section>
+			<section>
+				<section>
+					<h4>
+						Reward function design
+					</h4>
+					<p>
+						<b>Aim:</b> to design a reward function that maximizes the accumulative reward for a given set
+						of
+						user requirements.
+					</p>
+					<p>
+						We consider three user requirements; <em>power consumption</em>, <em>delay</em> and
+						<em>reliability</em>.
+						The reward function aims to minimize the network power consumption and the delay, while
+						maximizing
+						the network reliability.
+						Mathematically,
+					</p>
+					<equation>
+						\[\begin{aligned}
+						\min~ &amp; \widetilde{P_N} \\
+						subject~to &amp;~|N|>0, t_{sample}>0, t\geqslant0, 0\le \gamma \le 1, \sum_{i=1}^{n}w_i >
+						0,~and~rank_N > 0 \\
+						\end{aligned} \]
+					</equation>
+					<equation>
+						\[\begin{aligned}
+						\min~ &amp; \widetilde{D_N}\\
+						subject~to &amp;~slot_{dur}>0, m>0, rank_N > 0 \\
+						\end{aligned} \]
+					</equation>
+					<equation>
+						\[\begin{aligned}
+						\max~ &amp; \widetilde{R_N} \\
+						subject~to &amp;~Pkt_{n_{tx}}>0, k>0, |N|>0~and~rank_N > 0 \\
+						\end{aligned} \]
+					</equation>
+				</section>
+				<section>
+					<h4>
+						Reward function
+					</h4>
+					<p>
+						Considering user inputs as the desired weights for specific user requirements, the reward
+						obtained after the execution of an action is
+					</p>
+					<equation>
+						\[
+						Reward = \max~~ \alpha*\widetilde{P_N}+\beta*\widetilde{D_N}-\delta*\widetilde{R_N}
+						\]
+					</equation>
+				</section>
+			</section>
+			<section>
+				<h4>
+					Termination conditions
+				</h4>
+				<p>
+					These conditions state when a episode should end. We have defined three terminal conditions.
+				</p>
+				<ul class="medium-text">
+					<li>
+						<b>Maximum number of iterations:</b> episodes end when the maximum number of actions taken has
+						been reached.
+						The maximum number of iterations has to be greater than the iterations needed to reach the
+						optimal state.
+					</li>
+					<li>
+						<b>Minimum slotframe size:</b> episodes terminate early if the chosen slotframe size is below
+						the minimum slotframe size of the TSCH schedule.
+						This is a penalty for taking an action that misconfigures the network.
+					</li>
+					<li>
+						<b>Maximum slotframe size:</b> episodes terminate early if the chosen slotframe size exceeds the
+						maximum sloftframe size of the TSCH schedule.
+						This is a penalty for taking an action with a large slotframe size that leads to a worse
+						accumulative rewards, therefore minimizing the learning time of the DQN.
+					</li>
+				</ul>
+			</section>
+			<section id="sdwsn-approximation-model">
+				<section>
+					<h4>
+						SDWSN approximation model
+					</h4>
+					<p>
+						<b>Why?</b> This is necessary because the training of the model requires to run multiple
+						episodes.
+						The number of episodes to learn to solve this particular problem is in the order of 100
+						thousand.
+					</p>
+					<p>
+						The main bottle neck when deploying the entire system (controller + network simulator) is the
+						processing speed of Cooja. To complete one episode of 50 iterations requires approximately 10
+						mins.
+						Therefore, this is not a suitable approach to train the model.
+					</p>
+					<p>
+						In contrast, if the TSCH network can be mathematically modeled in function of the slotframe
+						size, the processing speed per episode can be significantly reduced.
+						In fact, the model is able to solve the problem, while maximizing the accumulative reward in 20
+						mins (300k episodes).
+					</p>
+					<p>
+						This approximation model is also useful for hyperparameters tuning using Optuna, which takes
+						around 10 hours.
+					</p>
+				</section>
+				<section>
+					<h4>
+						The SDWSN approximation model
+					</h4>
+					<p>
+						The main objective of the SDWSN approximation model is to estimate the values of the overall
+						network power consumption (\(\widetilde{P_N}\)), delay (\(\widetilde{D_N}\)), and reliability
+						(\(\widetilde{R_N}\)) when changing the slotframe size.
+						Therefore, allowing to easily calculate the immediate reward of an action taken.
+					</p>
+					<p>
+						The values of \(\widetilde{P_N}\), \(\widetilde{D_N}\), and \(\widetilde{R_N}\) are estimated
+						using the minimum mean square error (MMSE) estimator (\(E=\sum_{j=0}^{k}|p(x_j)-y_i|^2\)).
+					</p>
+				</section>
+				<section>
+					<h4>
+						SDWSN approximation model - FIT IoT-LAB platform
+					</h4>
+					<p>
+						We have selected 10 sensor nodes of the grenoble site of the FIT IoT-LAB. The location of the
+						sensor nodes is shown below.
+					</p>
+					<p>
+						The obtain the values of \(\widetilde{P_N}\), \(\widetilde{D_N}\), and \(\widetilde{R_N}\) in
+						function of the slotframe size, we program a simple task in the SDWSN controller.
+						The controller, via the NC module, sends NC-TSCH packets with different slotframe sizes.
+					</p>
+					<p> At each timestep, the controller selects a slotframe size \(s\in S\). Where \(S\) is the set of
+						slotframe size numbers that are mutually prime to other slotframes. It repeats this process
+						multiple times.
+					</p>
+					<p>
+
+						We then plot the values for \(\widetilde{P_N}\),
+						\(\widetilde{D_N}\), and \(\widetilde{R_N}\) using the 95% confidence interval. We then find the
+						vector coefficients \(v\) that minimizes the squared error in the degree order of three, three,
+						and one for \(\widetilde{P_N}\), \(\widetilde{D_N}\), and \(\widetilde{R_N}\), respectively.
+					</p>
+				</section>
+				<section>
+					<h4>
+						SDWSN approximation model - FIT IoT-LAB Network topology
+					</h4>
+					<p>
+						We used M3 sensor nodes from the Grenoble site of the FIT IoT LAB. We have built a network of 10
+						sensor nodes with a maximum depth of 3 hops.
+						The below figure shows the topology.
+					</p>
+					<img src="images/topology-full.png" alt="rl101" style="max-width: 90%">
+				</section>
+				<section>
+					<h4>
+						SDWSN approximation model - FIT IoT-LAB platform
+					</h4>
+					<p>
+						Figures below show the values obtain during the experimentation, and the vector coefficients for
+						all three performance metrics. Data was collected by injecting a range mutually prime slotframe
+						sizes, from the smallest to the largest,
+						and plotting the normalized values for the power, delay and reliability metrics.
+					</p>
+				</section>
+				<section>
+					<h4>
+						SDWSN approximation model - FIT IoT-LAB platform - results
+					</h4>
+					<img src="images/approximation_model_fitted_curves.png" alt="rl101" style="max-width: 80%">
+				</section>
+			</section>
+			<section id="results">
+				<h4>
+					Results
+				</h4>
+			</section>
+			<section id="publication-venues">
+				<h4>
+					Publication venues
+				</h4>
+				<ul>
+					<li class="list-space">
+						IEEE Internet of Things Journal (Submission to publication \(\approx\) 19 weeks)
+						<ul>
+							<li>
+								<a class="list-space" href="https://ieee-iotj.org/" data-preview-link>Special issue :
+									<em>Smart Cities and
+										Systems: Theories, Tools, Trends, Applications, Challenges, and
+										Opportunities</em></a>
+								<ul>
+									<li class="list-space">
+										Submission Deadline: October 1, 2022
+									</li>
+									<li class="list-space">
+										First Review Due: November 15, 2022
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+					<li class="list-space">
+						IEEE Network - ComSoc Magazine
+						<ul>
+							<li>
+								<a class="list-space"
+									href="https://www.comsoc.org/publications/magazines/ieee-network/cfp/networked-sensing-systems-sustainable-society"
+									data-preview-link="false">Special issue :
+									<em>Networked Sensing Systems for A Sustainable Society</em></a>
+								<ul>
+									<li class="list-space">
+										Submission Deadline: September 30, 2022
+									</li>
+									<li class="list-space">
+										First Review Due: November 15, 2022
+									</li>
+									<li class="list-space">
+										Challenge: No more than three math equations allowed
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+					<li class="list-space">
+						<a href="http://www.ieee-ies.org/pubs/transactions-on-industrial-informatics"
+							data-preview-link="false">IEEE Transactions on Industrial Informatics</a>
+						(Submission to publication \(\approx\) 16.6 weeks)
+					</li>
+					<li class="list-space">
+						<a href="https://ieee-sensors.org/sensors-journal/" data-preview-link>
+							IEEE Sensors Journal
+						</a>
+						(Submission to publication \(\approx\) 6.2 weeks)
+					</li>
+					<li class="list-space">
+						<a href="https://newslab.ece.ohio-state.edu/ton/" data-preview-link>IEEE/ACM Transactions on
+							Networking</a>
+						(Submission to publication \(\approx\) 57.1 weeks)
+					</li>
+				</ul>
+			</section>
+			<section>
+				<h4>References</h4>
+				<ul>
+					<li class="list-space">
+						<a href="https://doi.org/10.1109/TCCN.2021.3102971" data-preview-link>Federated Deep
+							Reinforcement Learning for traffic monitoring in SDN-based IoT networks</a>, in IEEE
+						Transactions on Cognitive Communications and Networking, vol. 7, no. 4, pp. 1048-1065, Dec. 2021
+					</li>
+				</ul>
+			</section>
+		</div>
+	</div>
+
+	<script src="dist/reveal.js"></script>
+	<script src="plugin/notes/notes.js"></script>
+	<script src="plugin/markdown/markdown.js"></script>
+	<script src="plugin/highlight/highlight.js"></script>
+	<script src="plugin/math/math.js"></script>
+	<script>
+		// More info about initialization & config:
+		// - https://revealjs.com/initialization/
+		// - https://revealjs.com/config/
+		Reveal.initialize({
+			hash: true,
+			slideNumber: true,
+
+			// Learn about plugins: https://revealjs.com/plugins/
+			plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.KaTeX]
+		});
+	</script>
+</body>
+
+</html>
