@@ -12,8 +12,8 @@ on:
     branches: [main, develop, release-*]
 
 env:
-  CONTIKI_NG: ${{ github.workspace }}/contiki-ng
   SDWSN-controller: ${{ github.workspace }}/sdwsn-controller
+  CONTIKI_NG: ${{ github.workspace }}/sdwsn-controller/contiki-ng
   DOCKER_BASE_IMG: contiker/contiki-ng
 
 # We use a single job with a matrix with elements corresponding to our tests
@@ -76,15 +76,25 @@ jobs:
         with:
           java-version: 17
           distribution: "adopt"
-      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          repository: "fdojurado/contiki-ng"
-          path: ${{ env.CONTIKI_NG }}
-          token: ${{ secrets.DATA_PLANE }}
-          fetch-depth: 2
-          submodules: "recursive"
-          persist-credentials: false
-          lfs: true
+          python-version: "3.10"
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      # - uses: actions/checkout@v3
+      #   with:
+      #     repository: "fdojurado/contiki-ng"
+      #     path: ${{ env.CONTIKI_NG }}
+      #     token: ${{ secrets.DATA_PLANE }}
+      #     fetch-depth: 2
+      #     submodules: "recursive"
+      #     persist-credentials: false
+      #     lfs: true
       # - name: check contents in elise
       #   run: |
       #     cd ${{ env.CONTIKI_NG }}
@@ -93,14 +103,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: ${{ env.SDWSN-controller }}
+          token: ${{ secrets.DATA_PLANE }}
           fetch-depth: 2
           submodules: "recursive"
           persist-credentials: false
           lfs: true
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -110,13 +117,13 @@ jobs:
           python -m pip install .
       - name: Lint with flake8
         run: |
-          pwd
-          ls
-          cd ${{ env.SDWSN-controller }}
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+           pwd
+           ls
+           cd ${{ env.SDWSN-controller }}
+           # stop the build if there are Python syntax errors or undefined names
+           flake8 . --exclude contiki-ng/ --count --select=E9,F63,F7,F82 --show-source --statistics
+           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+           flake8 . --exclude contiki-ng/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       # - name: Start MongoDB
       #   uses: supercharge/mongodb-github-action@1.8.0
       #   with:
