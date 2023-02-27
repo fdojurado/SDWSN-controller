@@ -1,6 +1,6 @@
 <!-- <img src="https://github.com/SDWSN-controller/SDWSN-controller.github.io/blob/develop/images/logo/Contiki_logo_2RGB.png" alt="Logo" width="256"> -->
 
-# SDWSN-controller: The controller for the Next Generation SDN-based IoT networks.
+# ELISE: The SDN-based solution for the next generation of IoT networks
 
 <!-- [![Github Actions](https://github.com/SDWSN-controller/SDWSN-controller/workflows/CI/badge.svg?branch=develop)](https://github.com/SDWSN-controller/SDWSN-controller/actions)
 [![Documentation Status](https://readthedocs.org/projects/SDWSN-controller/badge/?version=develop)](https://SDWSN-controller.readthedocs.io/en/develop/?badge=develop) -->
@@ -13,7 +13,11 @@
 <!-- [![Gitter](https://img.shields.io/badge/Gitter-Contiki--NG-blue?logo=gitter)](https://gitter.im/SDWSN-controller) -->
 [![Twitter](https://img.shields.io/badge/Twitter-%40contiki__NG__SDWSN-blue?logo=twitter)](https://twitter.com/fdojurado)
 
-This is the main SDWSN controller of the [ELISE](https://github.com/fdojurado/ELISE) framework and the [Contiki-NG-SDWSN](https://github.com/fdojurado/contiki-ng) project.
+ELISE is built upon multidisciplinary research efforts of Software-Defined Networking (SDN), Wireless Sensor Networks (WSNs), and Machine Learning (ML).
+
+The ELISE project comprises two main componenets: [SDWSN Network OS](https://github.com/fdojurado/contiki-ng) and the SDWSN controller.
+
+## SDWSN Controller
 
 The SDWSN controller features the main functionalities described below:
 
@@ -26,8 +30,16 @@ The SDWSN controller features the main functionalities described below:
 * Packet processing module that contains a packet dissector to pack and unpack packets from the SDWSN.
 * A network reconfiguration module that handles the configuration functions of the network.
 
-Find out more:
+## SDWSN Network OS
 
+The SDWSN protocol, also called "**Contiki-NG-SDWSN**", is the protocol that runs on the network infrastructure or constrained devices and on the edge controller. More info can be found at https://github.com/fdojurado/contiki-ng
+
+
+This repository has all components added as submodules, and it also has scripts to automate experiments in the FIT IoT LAB platform. 
+
+## Documentation
+
+* GitHub repository: https://github.com/fdojurado/SDWSN-controller
 * GitHub repository: https://github.com/fdojurado/contiki-ng
 * Documentation: https://github.com/fdojurado/SDWSN-controller/wiki
 <!-- * Web site: http://contiki-ng.org -->
@@ -37,3 +49,7 @@ Engage with the community:
 
 * Discussions on GitHub: https://github.com/fdojurado/SDWSN-controller/discussions
 * Twitter: https://twitter.com/fdojurado
+
+## License
+[BSD 3-Clause License](https://github.com/fdojurado/SDWSN-controller/blob/main/LICENSE)
+## Repository structure
