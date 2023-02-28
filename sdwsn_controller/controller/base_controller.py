@@ -19,30 +19,31 @@ from abc import ABC, abstractmethod
 
 import logging
 
+import gym
+
 import numpy as np
 
+from sdwsn_controller.config import REWARD_PROCESSORS, TSCH_SCHEDULERS, ROUTING_ALGO
+from sdwsn_controller.reinforcement_learning.reinforcement_learning import ReinforcementLearning
+from sdwsn_controller.reinforcement_learning.env import Env
 from sdwsn_controller.network.network import Network
-from sdwsn_controller.reinforcement_learning.reward_processing \
-    import RewardProcessing
+
 
 from time import sleep
 
 
 logger = logging.getLogger('main.'+__name__)
 
+# RL_ENV = {
+#     "sdwsn": Env
+# }
+
 
 class BaseController(ABC):
 
     def __init__(
         self,
-        # Network instance
-        network: object = None,
-        # RL related
-        reward_processing: object = None,
-        # Routing
-        routing: object = None,
-        # TSCH scheduler
-        tsch_scheduler: object = None
+        config
     ):
         """
         The BaseController class is an abstract class. Some functionalities are
@@ -64,34 +65,99 @@ class BaseController(ABC):
         """
 
         # Create network
-        self.network = network
-        if self.network is not None:
+        if config.network.name:
+            self.network = Network(
+                config=config
+            )
             assert isinstance(self.network, Network)
-            logger.info(f"reward processing: {self.network.name}")
-            # Requirements
-            self.__user_requirements = UserRequirements()
+            logger.info(f"Network: {self.network.name}")
+        else:
+            logger.info("No network running")
+            self.network = None
 
         # Create reward module; only for RL
-        self.__reward_processing = reward_processing
-        if reward_processing is not None:
-            assert isinstance(self.__reward_processing, RewardProcessing)
-            logger.info(f"reward processing: {self.reward_processing.name}")
-            # Requirements
-            self.__user_requirements = UserRequirements()
+        reward_processing_class = REWARD_PROCESSORS[
+            config.reinforcement_learning.reward_processor
+        ]
+        reward_processor = reward_processing_class(
+            config,
+            network=self.network,
+        )
+
+        # Reinforcement learning module
+        env = Env(
+            # config.reinforcement_learning.id,
+            controller=self,
+            max_slotframe_size=config.tsch.max_slotframe
+        )
+        env = gym.wrappers.TimeLimit(
+            env,
+            max_episode_steps=config.reinforcement_learning.max_episode_steps
+        )
+        self.reinforcement_learning = ReinforcementLearning(
+            env=env,
+            reward_processor=reward_processor
+        )
+
+        # Requirements
+        self.__user_requirements = UserRequirements()
 
         # Create TSCH scheduler module
-        self.__tsch_scheduler = tsch_scheduler
-        if tsch_scheduler is not None:
+        if config.tsch.scheduler:
+            tsch_scheduler_class = TSCH_SCHEDULERS[config.tsch.scheduler]
+            self.tsch_scheduler = tsch_scheduler_class(
+                network=self.network
+            )
             logger.info(f'TSCH scheduler: {self.tsch_scheduler.name}')
-
+        else:
+            logger.info("No TSCH scheduler running")
+            self.tsch_scheduler = None
         # Create an instance of Router
-        self.__routing = routing
-        if routing is not None:
-            logger.info(f'Routing: {self.routing.name}')
+        if config.routing.algo:
+            router_class = ROUTING_ALGO[config.routing.algo]
+            self.router = router_class(
+                network=self.network
+            )
+            logger.info(f'Routing: {self.router.name}')
+        else:
+            logger.info("No routing algorithm running")
+            self.router = None
+
+        # Simulation name
+        self.simulation_name = config.name
 
         self.controller_running = False
 
         super().__init__()
+
+    # --------------------------Modules access--------------------------
+    @ property
+    def network(self):
+        return self.__network
+
+    @ network.setter
+    def network(self, val):
+        # TODO: Checks to ensure it is valid network class
+        # if val is not None:
+        self.__network = val
+
+    @ property
+    def tsch_scheduler(self):
+        return self.__tsch_scheduler
+
+    @ tsch_scheduler.setter
+    def tsch_scheduler(self, val):
+        # assert isinstance(val, TSCHScheduler)
+        self.__tsch_scheduler = val
+
+    @ property
+    def router(self):
+        return self.__router
+
+    @ router.setter
+    def router(self, val):
+        # assert isinstance(val, Router)
+        self.__router = val
 
     # --------------------------TSCH functions--------------------------
 
@@ -103,37 +169,33 @@ class BaseController(ABC):
         Returns:
             int: 1 is successful; 0 otherwise.
         """
-        if self.tsch_scheduler is not None:
+        if self.tsch_scheduler:
             return self.network.tsch_sendall()
 
     def compute_tsch_schedule(self, path, current_sf_size):
-        if self.tsch_scheduler is not None:
-            self.tsch_scheduler.run(path, current_sf_size, self.network)
+        if self.tsch_scheduler:
+            self.tsch_scheduler.run(path, current_sf_size)
 
-    @property
+    @ property
     def last_tsch_link(self):
-        if self.tsch_scheduler is not None:
+        if self.tsch_scheduler:
             return self.network.tsch_last_ts()
 
-    @last_tsch_link.setter
+    @ last_tsch_link.setter
     def last_tsch_link(self, val):
         # We pass because this is not valid in TSCH network
         # Automatically done by the scheduler
         pass
 
-    @property
+    @ property
     def current_slotframe_size(self):
-        if self.tsch_scheduler is not None:
+        if self.tsch_scheduler:
             return self.network.tsch_slotframe_size
 
-    @current_slotframe_size.setter
+    @ current_slotframe_size.setter
     def current_slotframe_size(self, val):
-        if self.tsch_scheduler is not None:
+        if self.tsch_scheduler:
             self.network.tsch_slotframe_size = val
-
-    @property
-    def tsch_scheduler(self):
-        return self.__tsch_scheduler
 
     # --------------------------Routing functions-------------------------
 
@@ -144,40 +206,38 @@ class BaseController(ABC):
         Returns:
             int: 1 is successful; 0 otherwise.
         """
-        if self.routing is not None:
+        if self.router:
             return self.network.routes_sendall()
 
     def compute_routes(self, G):
-        if self.routing is not None:
-            return self.routing.run(G, self.network)
+        if self.router:
+            return self.router.run(G)
 
     def get_network_links(self):
-        if self.routing is not None:
+        if self.router:
             return self.network.links()
-
-    @property
-    def routing(self):
-        return self.__routing
 
     # --------------------------Controller primitives-----------------------
 
     def start(self):
-        self.network.start()
+        if self.network:
+            self.network.start()
         self.controller_running = True
 
     def stop(self):
-        self.network.stop()
+        if self.network:
+            self.network.stop()
         # Clear the running flag
         self.controller_running = False
 
-    @abstractmethod
+    @ abstractmethod
     def reset(self):
         pass
 
     def wait(self):
         return self.network.wait()
 
-    @abstractmethod
+    @ abstractmethod
     def timeout(self):
         pass
 
@@ -189,13 +249,8 @@ class BaseController(ABC):
 
     # --------------------------Reinforcement Learning----------------------
 
-    @property
-    def reward_processing(self):
-        return self.__reward_processing
-
-    def calculate_reward(self, alpha, beta, delta, _):
-        if self.reward_processing is not None:
-            return self.reward_processing.calculate_reward(alpha, beta, delta)
+    def calculate_reward(self, alpha, beta, delta, sf):
+        return self.reinforcement_learning.calculate_reward(alpha, beta, delta, sf)
 
     @property
     def user_requirements(self):
@@ -232,35 +287,6 @@ class BaseController(ABC):
     @delta.setter
     def delta(self, val):
         self.__user_requirements.delta = val
-
-    # def save_observations(self, **env_kwargs):
-    #     if self.db is not None:
-    #         self.db.save_observations(**env_kwargs)
-
-    #     self.__update_observations(**env_kwargs)
-
-    # def __update_observations(self, timestamp, alpha, beta, delta, power_wam, power_mean,
-    #                           power_normalized, delay_wam, delay_mean, delay_normalized,
-    #                           pdr_wam, pdr_mean, current_sf_len, last_ts_in_schedule, reward):
-    #     self.__timestamp = timestamp
-    #     self.alpha = alpha
-    #     self.beta = beta
-    #     self.delta = delta
-    #     self.__power_wam = power_wam
-    #     self.__power_mean = power_mean
-    #     self.__power_normalized = power_normalized
-    #     self.__delay_wam = delay_wam
-    #     self.__delay_mean = delay_mean
-    #     self.__delay_normalized = delay_normalized
-    #     self.__pdr_wam = pdr_wam
-    #     self.__pdr_mean = pdr_mean
-    #     self.current_slotframe_size = current_sf_len
-    #     self.last_tsch_link = last_ts_in_schedule
-    #     self.__reward = reward
-
-    # def delete_info_collection(self):
-    #     if self.db is not None:
-    #         self.db.delete_collection(NODES_INFO)
 
     def get_state(self):
         # Let's return the user requirements, last tsch schedule, current slotframe size

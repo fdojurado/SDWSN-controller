@@ -14,29 +14,35 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+from sdwsn_controller.routing.router import Router
 import networkx as nx
 import logging
 
 logger = logging.getLogger('main.'+__name__)
 
 
-class Dijkstra():
-    def __init__(self):
+class Dijkstra(Router):
+    def __init__(
+            self,
+            network
+    ):
         self.__name = "Dijkstra"
+        super().__init__(
+            network=network
+        )
 
     @property
     def name(self):
         return self.__name
 
-    def run(self, G, network):
+    def run(self, G):
         # Clear all previous routes
-        network.routes_clear()
+        self.network.routes_clear()
         # We want to compute the SP from all nodes to the controller
         path = {}
         for node in list(G.nodes):
             if node != 1 and node != 0:
-                node = network.nodes_get(node)
+                node = self.network.nodes_get(node)
                 logger.debug("sp from node "+str(node.id))
                 try:
                     node_path = nx.dijkstra_path(
@@ -52,5 +58,5 @@ class Dijkstra():
 
         logger.info("total path")
         logger.info(path)
-        network.routes_print()
+        self.network.routes_print()
         return path

@@ -1,0 +1,35 @@
+{
+    "name": "container controller approx model",
+    "controller_type": "container controller",
+    "network": {
+        "name": "Cooja",
+        "processing_window": 200,
+        "socket": {
+            "host": "127.0.0.1",
+            "port": 60001
+        }
+    },
+    "tsch": {
+        "scheduler": "Contention Free Scheduler",
+        "max_channel": 3,
+        "max_slotframe": 70,
+        "slot_duration": 10
+    },
+    "routing": {
+        "algo": "Dijkstra"
+    },
+    "docker": {
+        "image": "contiker/contiki-ng",
+        "script_folder": "examples/elise",
+        "target": "/home/user/contiki-ng",
+        "contiki": "/Users/ffjla/contiki-ng",
+        "simulation_script": "cooja-elise.csc",
+        "privileged": "true",
+        "detach": "true",
+        "port": 60001
+    },
+    "reinforcement_learning": {
+        "reward_processor": "EmulatedRewardProcessing",
+        "max_episode_steps": 200
+    }
+}

@@ -24,14 +24,11 @@ import random
 from random import randrange
 
 from sdwsn_controller.common import common
-from sdwsn_controller.controller.base_controller import BaseController
 
 # These are the size of other schedules in orchestra
 eb_size = 397
 common_size = 31
 control_plane_size = 27
-
-MAX_SLOTFRAME_SIZE = 70
 
 
 class Env(gym.Env):
@@ -40,17 +37,20 @@ class Env(gym.Env):
 
     def __init__(
             self,
-            simulation_name: str,
+            # simulation_name: str,
             controller: object,
-            folder: str = './figures/'
+            max_slotframe_size: None,
+            # folder: str = './figures/'
     ):
         super(Env, self).__init__()
-        assert isinstance(simulation_name, str)
-        assert isinstance(folder, str)
-        assert isinstance(controller, BaseController)
+        # assert isinstance(simulation_name, str)
+        # assert isinstance(folder, str)
         self.controller = controller
-        self.folder = folder
-        self.simulation_name = simulation_name
+
+        assert isinstance(max_slotframe_size, int)
+        self.max_slotframe_size = max_slotframe_size
+        # self.folder = folder
+        # self.simulation_name = simulation_name
         # We define the number of actions
         n_actions = 3  # increase and decrease slotframe size
         self.action_space = spaces.Discrete(n_actions)
@@ -92,16 +92,16 @@ class Env(gym.Env):
         observation = np.append(observation, metrics['delay_normalized'])
         observation = np.append(observation, metrics['pdr_mean'])
         observation = np.append(
-            observation, state['last_ts_in_schedule']/MAX_SLOTFRAME_SIZE)
-        observation = np.append(observation, sf_len/MAX_SLOTFRAME_SIZE)
+            observation, state['last_ts_in_schedule']/self.max_slotframe_size)
+        observation = np.append(observation, sf_len/self.max_slotframe_size)
         done = False
         info = metrics
         reward = metrics['reward']
-        # MAX_SLOTFRAME_SIZE is the maximum slotframe size
+        # self.max_slotframe_size is the maximum slotframe size
         # TODO: Set the maximum slotframe size at the creation
         # of the environment
         if (sf_len < state['last_ts_in_schedule'] or
-                sf_len > MAX_SLOTFRAME_SIZE):
+                sf_len > self.max_slotframe_size):
             done = True
             reward = -4
 
@@ -143,7 +143,7 @@ class Env(gym.Env):
         last_ts_in_schedule = self.controller.last_tsch_link
         # Set a random initial slotframe size
         slotframe_size = random.randint(
-            last_ts_in_schedule+5, MAX_SLOTFRAME_SIZE-5)
+            last_ts_in_schedule+5, self.max_slotframe_size-5)
         # slotframe_size = last_ts_in_schedule
         self.controller.current_slotframe_size = slotframe_size
         # We now save the user requirements
@@ -156,8 +156,9 @@ class Env(gym.Env):
         observation = np.append(observation, metrics['delay_normalized'])
         observation = np.append(observation, metrics['pdr_mean'])
         observation = np.append(
-            observation, last_ts_in_schedule/MAX_SLOTFRAME_SIZE)
-        observation = np.append(observation, slotframe_size/MAX_SLOTFRAME_SIZE)
+            observation, last_ts_in_schedule/self.max_slotframe_size)
+        observation = np.append(
+            observation, slotframe_size/self.max_slotframe_size)
         return observation  # reward, done, info can't be included
 
     def render(self, mode='console'):

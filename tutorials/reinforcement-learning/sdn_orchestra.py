@@ -15,25 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from sdwsn_controller.network.network import Network
-from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
-from sdwsn_controller.controller.container_controller import ContainerController
-from sdwsn_controller.reinforcement_learning.reward_processing import EmulatedRewardProcessing
-from sdwsn_controller.routing.dijkstra import Dijkstra
+from sdwsn_controller.config import SDWSNControllerConfig, CONTROLLERS
 from rich.logging import RichHandler
 import logging.config
 import sys
-import gym
-from gym.envs.registration import register
 
-import os
-
-DOCKER_IMAGE = 'contiker/contiki-ng'
-SIMULATION_FOLDER = 'examples/elise'
-DOCKER_TARGET = '/home/user/contiki-ng'
-CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
-SIMULATION_SCRIPT = 'cooja-orchestra.csc'
-PORT = 60003
+CONFIG_FILE = "native_controller_orchestra.json"
 
 
 def run_data_plane(env):
@@ -86,57 +73,12 @@ def main():
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
-    # Register the environment
-    register(
-        # unique identifier for the env `name-version`
-        id="sdwsn-v1",
-        entry_point="sdwsn_controller.reinforcement_learning.env:Env",
-        max_episode_steps=50
-    )
-    # Create output folder
-    output_folder = './output/'
-    os.makedirs(output_folder, exist_ok=True)
-
-    # Monitor the environment
-    log_dir = './tensorlog/'
-    os.makedirs(log_dir, exist_ok=True)
-
-    # Network
-    network = Network(processing_window=200,
-                      socket_host='127.0.0.1', socket_port=PORT)
-
-    # TSCH scheduler
-    tsch_scheduler = ContentionFreeScheduler()
-
-    # Reward processor
-    reward_processor = EmulatedRewardProcessing(network=network)
-
-    # Routing algorithm
-    routing = Dijkstra()
-
-    controller = ContainerController(
-        docker_image=DOCKER_IMAGE,
-        simulation_folder=SIMULATION_FOLDER,
-        simulation_script=SIMULATION_SCRIPT,
-        docker_target=DOCKER_TARGET,
-        contiki_source=CONTIKI_SOURCE,
-        port=PORT,
-        # Reward processor
-        network=network,
-        reward_processing=reward_processor,
-        routing=routing,
-        tsch_scheduler=tsch_scheduler
-    )
-    env_kwargs = {
-        'simulation_name': 'test_numerical_approximation_model',
-        'folder': output_folder,
-        'controller': controller
-    }
-    # Create an instance of the environment
-    env = gym.make('sdwsn-v1', **env_kwargs)
+    config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
+    controller_class = CONTROLLERS[config.controller_type]
+    controller = controller_class(config)
     # --------------------Start data plane ------------------------
     # Let's start the data plane first
-    run_data_plane(env)
+    run_data_plane(controller.reinforcement_learning.env)
 
     logger.info('done, exiting.')
 

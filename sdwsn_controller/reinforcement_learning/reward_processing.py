@@ -48,24 +48,18 @@ class RewardProcessing(ABC):
 class EmulatedRewardProcessing(RewardProcessing):
     def __init__(
         self,
-        network,
-        power_min: int = 0,
-        power_max: int = 5000,
-        delay_min: int = SLOT_DURATION,
-        delay_max: int = 15000,
-        power_norm_offset: float = 0.0,
-        delay_norm_offset: float = 0.0,
-        reliability_norm_offset: float = 0.0
+        config,
+        **kwargs,
     ):
-        self.__power_min = power_min
-        self.__power_max = power_max
-        self.__delay_min = delay_min
-        self.__delay_max = delay_max
-        self.__power_norm_offset = power_norm_offset
-        self.__delay_norm_offset = delay_norm_offset
-        self.__reliability_norm_offset = reliability_norm_offset
-        self.__name = "Emulated Reward Processing"
-        self.__network = network
+        self.__power_min = config.performance_metrics.energy.min
+        self.__power_max = config.performance_metrics.energy.max
+        self.__delay_min = config.performance_metrics.delay.min
+        self.__delay_max = config.performance_metrics.delay.max
+        self.__power_norm_offset = config.performance_metrics.energy.norm_offset
+        self.__delay_norm_offset = config.performance_metrics.delay.norm_offset
+        self.__reliability_norm_offset = config.performance_metrics.pdr.norm_offset
+        self.__name = "Emulated Reward Processor"
+        self.__network = kwargs.get("network")
 
         super().__init__()
 
@@ -73,7 +67,7 @@ class EmulatedRewardProcessing(RewardProcessing):
     def name(self):
         return self.__name
 
-    def calculate_reward(self, alpha, beta, delta) -> dict:
+    def calculate_reward(self, alpha, beta, delta, _) -> dict:
         sample_time = datetime.now().timestamp() * 1000.0
         # Get the normalized average power consumption for this cycle
         power_wam, power_mean, power_normalized = self.__get_network_power_consumption()

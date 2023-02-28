@@ -31,28 +31,10 @@ logger = logging.getLogger('main.'+__name__)
 class ContainerController(BaseController):
     def __init__(
         self,
-        # Container related
-        docker_image: str = 'contiker/contiki-ng',
-        # script: str = '/bin/sh -c "cd examples/elise && ./run-cooja.py"',
-        simulation_folder: str = None,
-        simulation_script: str = None,
-        docker_target: str = '/home/user/contiki-ng',
-        contiki_source: str = '/Users/fernando/contiki-ng',
+        config,
         sysctls: Dict = {
             'net.ipv6.conf.all.disable_ipv6': 0
-        },
-        privileged: bool = True,
-        detach: bool = True,
-        # Network listening port
-        port: int = 60001,
-        # Network
-        network: object = None,
-        # RL related
-        reward_processing: object = None,
-        # Routing
-        routing: object = None,
-        # TSCH scheduler
-        tsch_scheduler: object = None
+        }
     ):
         """
         This controller is intended to run with Cooja hosted in Docker (without GUI).
@@ -78,42 +60,37 @@ class ContainerController(BaseController):
             tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
         """
 
-        assert isinstance(simulation_folder, str)
-        assert isinstance(simulation_script, str)
-        assert isinstance(docker_target, str)
-        assert isinstance(contiki_source, str)
-
         ports = {
-            'container': port,
-            'host': port
+            'container': config.docker.port,
+            'host': config.docker.port
         }
 
         mount = {
-            'target': docker_target,
-            'source': contiki_source,
+            'target': config.docker.target,
+            'source': config.docker.contiki,
             'type': 'bind'
         }
 
         logger.info("Building a containerized controller")
-        self.__contiki_source = contiki_source
+        self.__contiki_source = config.docker.contiki
         self.__cooja_log = os.path.join(
-            self.__contiki_source, simulation_folder, 'COOJA.log')
+            self.__contiki_source, config.docker.script_folder, 'COOJA.log')
         self.__testlog = os.path.join(
-            self.__contiki_source, simulation_folder, 'COOJA.testlog')
-        self.__simulation_folder_container = simulation_folder
+            self.__contiki_source, config.docker.script_folder, 'COOJA.testlog')
+        self.__simulation_folder_container = config.docker.script_folder
         self.__simulation_script = os.path.join(
-            self.__contiki_source, simulation_folder, simulation_script)
+            self.__contiki_source, config.docker.script_folder, config.docker.simulation_script)
         self.__new_simulation_script = None
         run_simulation_file = '/bin/sh -c '+'"cd ' + \
             self.__simulation_folder_container+' && ./run-cooja.py ' +\
-            simulation_script + '"'
+            config.docker.simulation_script + '"'
 
         # Hack to get the port number
-        self.__port = port
+        self.__port = config.docker.port
 
         # Container
-        self.container = CoojaDocker(docker_image=docker_image, script=run_simulation_file, mount=mount,
-                                     sysctls=sysctls, ports=ports, privileged=privileged, detach=detach,
+        self.container = CoojaDocker(docker_image=config.docker.image, script=run_simulation_file, mount=mount,
+                                     sysctls=sysctls, ports=ports, privileged=config.docker.privileged, detach=config.docker.detach,
                                      log_file=self.__cooja_log)
 
         logger.info(f"Contiki source: {self.__contiki_source}")
@@ -123,10 +100,7 @@ class ContainerController(BaseController):
         logger.info(f"Simulation script: {self.__simulation_script}")
 
         super().__init__(
-            reward_processing=reward_processing,
-            routing=routing,
-            network=network,
-            tsch_scheduler=tsch_scheduler
+            config=config
         )
 
     # Controller related functions

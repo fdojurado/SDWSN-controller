@@ -1,0 +1,27 @@
+{
+    "name": "example",
+    "controller_type": "native controller",
+    "network": {
+        "name": "Cooja",
+        "processing_window": 200,
+        "socket": {
+            "host": "127.0.0.1",
+            "port": 60001
+        }
+    },
+    "tsch": {
+        "scheduler": "Contention Free Scheduler",
+        "max_channel": 3,
+        "max_slotframe": 70,
+        "slot_duration": 10
+    },
+    "routing": {
+        "algo": "Dijkstra"
+    },
+    "contiki": {
+        "script_folder": "examples/elise",
+        "source": "/Users/ffjla/contiki-ng",
+        "simulation_script": "cooja-orchestra.csc",
+        "port": 60001
+    }
+}

@@ -43,12 +43,13 @@ logger = logging.getLogger('main.'+__name__)
 class Network():
     def __init__(
         self,
-        socket_host=None,
-        socket_port=None,
-        processing_window=None,
-        tsch_max_ch: int = 3,
-        tsch_max_sf: int = 500
+        config
     ) -> None:
+        socket_host = config.network.socket.host
+        socket_port = config.network.socket.port
+        processing_window = config.network.processing_window
+        tsch_max_ch = config.tsch.max_channel
+        tsch_max_sf = config.tsch.max_slotframe
         self.nodes = {}
         self.max_node_id = 0
         if socket_host is not None and socket_port is not None:
