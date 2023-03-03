@@ -75,8 +75,6 @@ class REINFORCEMENTLEARNINGConfig:
         if json_object is None:
             json_object = {}
 
-        print(f"RL json: {json_object}")
-
         return cls(
             reward_processor=json_object.get(
                 REWARD_PROCESSOR, DEFAULT_REWARD_PROCESSOR),

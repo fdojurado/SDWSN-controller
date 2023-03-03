@@ -19,18 +19,15 @@ import networkx as nx
 
 import os
 
-from sdwsn_controller.network.network import Network
-from sdwsn_controller.controller.container_controller \
-    import ContainerController
-from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.tsch.contention_free_scheduler \
-    import ContentionFreeScheduler
+from sdwsn_controller.config import SDWSNControllerConfig, CONTROLLERS
 
 
 # This number has to be unique across all test
 # otherwise, the github actions will fail
 # TEST: This might not be necessary anymore.
 PORT = 60003
+
+CONFIG_FILE = "container_controller.json"
 
 
 def run_data_plane(controller):
@@ -65,37 +62,15 @@ def run_data_plane(controller):
 
 def test_container_controller():
     assert os.getenv('CONTIKI_NG')
-    contiki_source = os.getenv('CONTIKI_NG')
     assert os.getenv('DOCKER_BASE_IMG')
-    docker_image = os.getenv('DOCKER_BASE_IMG')
-    docker_target = '/home/user/contiki-ng'
-    # use different port number to avoid interfering with
-    # the native controller
-    simulation_folder = 'examples/elise'
-    simulation_script = 'cooja-orchestra.csc'
     # -------------------- setup controller --------------------
-    # Network
-    network = Network(processing_window=200,
-                      socket_host='127.0.0.1', socket_port=PORT)
-
-    # TSCH scheduler
-    tsch_scheduler = ContentionFreeScheduler()
-
-    # Routing algorithm
-    routing = Dijkstra()
-
-    controller = ContainerController(
-        docker_image=docker_image,
-        simulation_script=simulation_script,
-        simulation_folder=simulation_folder,
-        docker_target=docker_target,
-        contiki_source=contiki_source,
-        port=PORT,
-        # Reward processor
-        network=network,
-        routing=routing,
-        tsch_scheduler=tsch_scheduler
-    )
+    config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
+    config.contiki.source = os.getenv('CONTIKI_NG')
+    config.docker.image = os.getenv('DOCKER_BASE_IMG')
+    config.contiki.port = PORT
+    config.network.socket.port = PORT
+    controller_class = CONTROLLERS[config.controller_type]
+    controller = controller_class(config)
     # --------------------Start data plane ------------------------
     # Let's start the data plane first
     run_data_plane(controller)

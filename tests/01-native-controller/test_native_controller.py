@@ -19,16 +19,14 @@ import networkx as nx
 
 import os
 
-from sdwsn_controller.network.network import Network
-from sdwsn_controller.controller.controller import Controller
-from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.tsch.contention_free_scheduler \
-    import ContentionFreeScheduler
+from sdwsn_controller.config import SDWSNControllerConfig, CONTROLLERS
 
 
 # This number has to be unique across all test
 # otherwise, the github actions will fail
 PORT = 60002
+
+CONFIG_FILE = "native_controller.json"
 
 
 def run_data_plane(controller):
@@ -64,31 +62,13 @@ def run_data_plane(controller):
 def test_native_controller():
     # ------------------ Env variables -------------------------
     assert os.getenv('CONTIKI_NG')
-    contiki_source = os.getenv('CONTIKI_NG')
-    simulation_folder = 'examples/elise'
-    python_script = 'cooja-orchestra.csc'
     # -------------------- setup controller --------------------
-    # Network
-    network = Network(processing_window=200,
-                      socket_host='127.0.0.1', socket_port=PORT)
-
-    # TSCH scheduler
-    tsch_scheduler = ContentionFreeScheduler()
-
-    # Routing algorithm
-    routing = Dijkstra()
-
-    controller = Controller(
-        # Controller related
-        contiki_source=contiki_source,
-        simulation_folder=simulation_folder,
-        simulation_script=python_script,
-        port=PORT,
-        # Reward processor
-        network=network,
-        routing=routing,
-        tsch_scheduler=tsch_scheduler
-    )
+    config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
+    config.contiki.source = os.getenv('CONTIKI_NG')
+    config.contiki.port = PORT
+    config.network.socket.port = PORT
+    controller_class = CONTROLLERS[config.controller_type]
+    controller = controller_class(config)
     # --------------------Start data plane ------------------------
     # Let's start the data plane first
     run_data_plane(controller)

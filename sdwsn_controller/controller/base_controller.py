@@ -72,7 +72,7 @@ class BaseController(ABC):
             assert isinstance(self.network, Network)
             logger.info(f"Network: {self.network.name}")
         else:
-            logger.info("No network running")
+            logger.warn("No network running")
             self.network = None
 
         # Create reward module; only for RL
@@ -110,7 +110,7 @@ class BaseController(ABC):
             )
             logger.info(f'TSCH scheduler: {self.tsch_scheduler.name}')
         else:
-            logger.info("No TSCH scheduler running")
+            logger.warn("No TSCH scheduler running")
             self.tsch_scheduler = None
         # Create an instance of Router
         if config.routing.algo:
@@ -120,7 +120,7 @@ class BaseController(ABC):
             )
             logger.info(f'Routing: {self.router.name}')
         else:
-            logger.info("No routing algorithm running")
+            logger.warn("No routing algorithm running")
             self.router = None
 
         # Simulation name
