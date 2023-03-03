@@ -63,8 +63,10 @@ class MQTTClient(ABC):
                      self.config.mqtt.port)
         self.mqtt.connect(self.config.mqtt.host, self.config.mqtt.port)
 
+    @abstractmethod
     def initialize(self):
         """Initialize the MQTT client."""
+        pass
 
     def start(self):
         """Start the event loop to the MQTT broker so the audio server starts

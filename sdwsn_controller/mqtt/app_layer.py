@@ -22,7 +22,14 @@ logger = logging.getLogger('main.'+__name__)
 
 
 # Topics
-NETWORK_RECONFIG = "network_reconfig/+"
+NETWORK_RECONFIG = "network/reconfiguration/+"
+NEIGHBORS = "network/information/neighbors"
+TSCH_SECHEDULES = "network/information/tsch/schedules"
+ROUTES = "network/information/routing/routes"
+DATA = "network/information/sensed_data"
+ENERGY = "network/performance_metrics/energy"
+LATENCY = "network/performance_metrics/latency"
+PDR = "network/performance_metrics/pdr"
 
 
 class AppLayer(MQTTClient):
@@ -32,6 +39,9 @@ class AppLayer(MQTTClient):
     ):
         self.name = "MQTT based application layer"
         super().__init__(config)
+
+    def initialize(self):
+        return super().initialize()
 
     def on_connect(self, client, userdata, flags, result_code):
         """Callback that is called when the audio player connects to the MQTT
@@ -46,4 +56,13 @@ class AppLayer(MQTTClient):
         """ Callback that is called when the controller receives a NETWORK_RECONFIG
         message on MQTT.
         """
+        pass
+
+    def send_energy(self):
+        pass
+
+    def send_latency(self):
+        pass
+
+    def send_pdr(self):
         pass
