@@ -34,7 +34,7 @@ PORT = 60004
 
 SELF_PATH = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.normpath(os.path.join(
-    SELF_PATH, "native_controller_approx_model.json"))
+    SELF_PATH, "container_controller_approx_model.json"))
 
 
 def run(env, controller, output_folder, simulation_name):
@@ -149,7 +149,7 @@ def test_container_approximation_model():
     os.makedirs(log_dir, exist_ok=True)
     # -------------------- setup controller ---------------------
     config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
-    config.contiki.source = os.getenv('CONTIKI_NG')
+    config.docker.contiki = os.getenv('CONTIKI_NG')
     config.docker.image = os.getenv('DOCKER_BASE_IMG')
     controller_class = CONTROLLERS[config.controller_type]
     controller = controller_class(config)

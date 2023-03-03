@@ -68,7 +68,7 @@ def test_container_controller():
     assert os.getenv('DOCKER_BASE_IMG')
     # -------------------- setup controller --------------------
     config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
-    config.contiki.source = os.getenv('CONTIKI_NG')
+    config.docker.contiki = os.getenv('CONTIKI_NG')
     config.docker.image = os.getenv('DOCKER_BASE_IMG')
     config.contiki.port = PORT
     config.network.socket.port = PORT
