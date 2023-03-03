@@ -26,6 +26,7 @@ import numpy as np
 from sdwsn_controller.config import REWARD_PROCESSORS, TSCH_SCHEDULERS, ROUTING_ALGO
 from sdwsn_controller.reinforcement_learning.reinforcement_learning import ReinforcementLearning
 from sdwsn_controller.reinforcement_learning.env import Env
+from sdwsn_controller.mqtt.app_layer import AppLayer
 from sdwsn_controller.network.network import Network
 
 
@@ -123,6 +124,16 @@ class BaseController(ABC):
             logger.warn("No routing algorithm running")
             self.router = None
 
+        # MQTT interface
+        if config.mqtt.host:
+            self.app_layer = AppLayer(
+                config=config
+            )
+            logger.info(f'MQTT: {self.app_layer.name}')
+        else:
+            logger.warn("No MQTT instance running")
+            self.app_layer = None
+
         # Simulation name
         self.simulation_name = config.name
 
@@ -131,33 +142,41 @@ class BaseController(ABC):
         super().__init__()
 
     # --------------------------Modules access--------------------------
-    @ property
+    @property
     def network(self):
         return self.__network
 
-    @ network.setter
+    @network.setter
     def network(self, val):
         # TODO: Checks to ensure it is valid network class
         # if val is not None:
         self.__network = val
 
-    @ property
+    @property
     def tsch_scheduler(self):
         return self.__tsch_scheduler
 
-    @ tsch_scheduler.setter
+    @tsch_scheduler.setter
     def tsch_scheduler(self, val):
         # assert isinstance(val, TSCHScheduler)
         self.__tsch_scheduler = val
 
-    @ property
+    @property
     def router(self):
         return self.__router
 
-    @ router.setter
+    @router.setter
     def router(self, val):
         # assert isinstance(val, Router)
         self.__router = val
+
+    @property
+    def app_layer(self):
+        return self.__app_layer
+
+    @app_layer.setter
+    def app_layer(self, val):
+        self.__app_layer = val
 
     # --------------------------TSCH functions--------------------------
 
@@ -222,11 +241,15 @@ class BaseController(ABC):
     def start(self):
         if self.network:
             self.network.start()
+        if self.app_layer:
+            self.app_layer.start()
         self.controller_running = True
 
     def stop(self):
         if self.network:
             self.network.stop()
+        if self.app_layer:
+            self.app_layer.stop()
         # Clear the running flag
         self.controller_running = False
 

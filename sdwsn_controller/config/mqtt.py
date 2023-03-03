@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Default values
-DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 1883
 
 # Keys in the JSON configuration file
@@ -174,7 +173,7 @@ class MQTTConfig:
             broker.
     """
 
-    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT, auth=None,
+    def __init__(self, host=None, port=DEFAULT_PORT, auth=None,
                  tls=None):
         """Initialize a :class:`.MQTTConfig` object.
 
@@ -235,7 +234,7 @@ class MQTTConfig:
         if json_object is None:
             json_object = {}
 
-        return cls(host=json_object.get(HOST, DEFAULT_HOST),
+        return cls(host=json_object.get(HOST),
                    port=json_object.get(PORT, DEFAULT_PORT),
                    auth=MQTTAuthConfig.from_json(json_object.get(AUTH)),
                    tls=MQTTTLSConfig.from_json(json_object.get(TLS)))
