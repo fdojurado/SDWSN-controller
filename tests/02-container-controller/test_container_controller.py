@@ -27,7 +27,10 @@ from sdwsn_controller.config import SDWSNControllerConfig, CONTROLLERS
 # TEST: This might not be necessary anymore.
 PORT = 60003
 
-CONFIG_FILE = "container_controller.json"
+# get the path of this example
+SELF_PATH = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.normpath(os.path.join(
+    SELF_PATH, "container_controller.json"))
 
 
 def run_data_plane(controller):

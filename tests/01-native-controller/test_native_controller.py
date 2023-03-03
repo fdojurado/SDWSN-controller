@@ -26,7 +26,10 @@ from sdwsn_controller.config import SDWSNControllerConfig, CONTROLLERS
 # otherwise, the github actions will fail
 PORT = 60002
 
-CONFIG_FILE = "native_controller.json"
+# get the path of this example
+SELF_PATH = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.normpath(os.path.join(
+    SELF_PATH, "native_controller.json"))
 
 
 def run_data_plane(controller):

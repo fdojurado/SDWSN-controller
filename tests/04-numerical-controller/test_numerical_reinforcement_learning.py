@@ -25,7 +25,10 @@ import shutil
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 
-CONFIG_FILE = "numerical_controller_rl.json"
+
+SELF_PATH = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.normpath(os.path.join(
+    SELF_PATH, "numerical_controller_rl.json"))
 
 
 def train(env, log_dir):

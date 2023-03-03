@@ -32,7 +32,9 @@ import shutil
 # TEST: This might not be necessary anymore.
 PORT = 60004
 
-CONFIG_FILE = "native_controller_approx_model.json"
+SELF_PATH = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.normpath(os.path.join(
+    SELF_PATH, "native_controller_approx_model.json"))
 
 
 def run(env, controller, output_folder, simulation_name):
