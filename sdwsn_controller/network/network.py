@@ -102,7 +102,11 @@ class Network():
             return node
         node = Node(id, sid=sid, rank=rank, cycle_seq=cycle_seq)
         if self.energy_callback:
-            node.register_energy_callback(callback=self.energy_callback)
+            node.energy_register_callback(callback=self.energy_callback)
+        if self.delay_callback:
+            node.delay_register_callback(callback=self.delay_callback)
+        if self.pdr_callback:
+            node.pdr_register_callback(callback=self.pdr_callback)
         self.nodes.update({id: node})
         if id > self.max_node_id:
             self.max_node_id = id
@@ -480,14 +484,20 @@ class Network():
     def register_energy_callback(self, callback):
         # Register callback to every node in the network
         for node in self.nodes.values():
-            node.register_energy_callback(callback)
+            node.energy_register_callback(callback)
         self.energy_callback = callback
 
-    def register_delay_callback(self):
-        pass
+    def register_delay_callback(self, callback):
+        # Register callback to every node in the network
+        for node in self.nodes.values():
+            node.delay_register_callback(callback)
+        self.delay_callback = callback
 
-    def register_pdr_callback(self):
-        pass
+    def register_pdr_callback(self, callback):
+        # Register callback to every node in the network
+        for node in self.nodes.values():
+            node.pdr_register_callback(callback)
+        self.pdr_callback = callback
     # --------------------------Controller primitives-----------------------
 
     def stop(self):

@@ -71,8 +71,20 @@ class AppLayer(MQTTClient):
         logger.debug(f'Topic: {ENERGY}')
         logger.debug(f'Message: {message}')
 
-    def send_latency(self):
-        print("sending latency called")
+    def send_latency(self, id, seq, delay):
+        message = json.dumps({'id': id,
+                              'seq': seq,
+                              'delay': delay})
+        self.mqtt.publish(LATENCY, message)
+        logger.debug('Published message on MQTT topic:')
+        logger.debug(f'Topic: {LATENCY}')
+        logger.debug(f'Message: {message}')
 
-    def send_pdr(self):
-        print("sending PDR called")
+    def send_pdr(self, id, seq, pdr):
+        message = json.dumps({'id': id,
+                              'seq': seq,
+                              'pdr': pdr})
+        self.mqtt.publish(PDR, message)
+        logger.debug('Published message on MQTT topic:')
+        logger.debug(f'Topic: {PDR}')
+        logger.debug(f'Message: {message}')

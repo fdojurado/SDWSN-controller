@@ -134,6 +134,10 @@ class BaseController(ABC):
             if self.network:
                 self.network.register_energy_callback(
                     self.app_layer.send_energy)
+                self.network.register_delay_callback(
+                    self.app_layer.send_latency)
+                self.network.register_pdr_callback(
+                    self.app_layer.send_pdr)
         else:
             logger.warn("No MQTT instance running")
             self.app_layer = None

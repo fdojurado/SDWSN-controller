@@ -43,6 +43,7 @@ class PDRSamples():
         node
     ) -> None:
         self.node = node
+        self.callback = None
         self.clear()
 
     def clear(self):
@@ -51,6 +52,9 @@ class PDRSamples():
     def size(self):
         return len(self.samples)
 
+    def register_callback(self, callback):
+        self.callback = callback
+
     def get_sample(self, seq):
         return self.samples.get(seq)
 
@@ -58,7 +62,7 @@ class PDRSamples():
         seqList = list(self.samples.values())
         # Get the averaged pdr for this period
         if seqList:
-            avg_pdr = len(seqList)/seqList[-1].seq
+            avg_pdr = seqList[-1].seq/len(seqList)
         else:
             avg_pdr = 0
         if avg_pdr > 1.0:
@@ -72,6 +76,9 @@ class PDRSamples():
             f'Node {self.node.id}: add pdr with seq {seq}')
         energy_sample = PDR(seq=seq)
         self.samples.update({seq: energy_sample})
+        # Fire callback
+        if self.callback:
+            self.callback(id=self.node.sid, seq=seq, pdr=self.get_average())
         return energy_sample
 
     def print(self):
