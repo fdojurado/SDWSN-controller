@@ -130,6 +130,10 @@ class BaseController(ABC):
                 config=config
             )
             logger.info(f'MQTT: {self.app_layer.name}')
+            # Register callbacks
+            if self.network:
+                self.network.register_energy_callback(
+                    self.app_layer.send_energy)
         else:
             logger.warn("No MQTT instance running")
             self.app_layer = None

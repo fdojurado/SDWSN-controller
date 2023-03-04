@@ -25,8 +25,6 @@ from sdwsn_controller.packet.packet import SDN_IPH_LEN
 
 import struct
 
-# Constants for packet delay calculation
-SLOT_DURATION = 10
 
 logger = logging.getLogger('main.'+__name__)
 
@@ -35,13 +33,13 @@ class PacketDissector():
     def __init__(
             self,
             network,
-            cycle_sequence: int = 0,
-            sequence: int = 0
+            config
     ):
         self.ack_pkt = None
-        self.cycle_sequence = cycle_sequence
-        self.sequence = sequence
+        self.cycle_sequence = 0
+        self.sequence = 0
         self.network = network
+        self.config = config
 
     def handle_serial_packet(self, data):
         # Let's parse serial packet
@@ -109,7 +107,7 @@ class PacketDissector():
                 # We now build the pdr DB
                 node.pdr_add(data_pkt.seq)
                 # We now build the delay DB
-                sampled_delay = data_pkt.asn * SLOT_DURATION
+                sampled_delay = data_pkt.asn * self.config.tsch.slot_duration
                 node.delay_add(data_pkt.seq, sampled_delay)
                 return
             case _:

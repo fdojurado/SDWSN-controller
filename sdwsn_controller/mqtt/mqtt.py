@@ -40,7 +40,6 @@ class MQTTClient(ABC):
 
         self.mqtt.on_connect = self.on_connect
         self.mqtt.on_disconnect = self.on_disconnect
-        self.connect()
 
     def connect(self):
         """Connect to the MQTT broker defined in the configuration."""
@@ -72,26 +71,30 @@ class MQTTClient(ABC):
         """Start the event loop to the MQTT broker so the audio server starts
         listening to MQTT topics and the callback methods are called.
         """
+        self.connect()
         logger.debug('Starting MQTT event loop...')
-        self.mqtt.loop_forever()
+        self.mqtt.loop_start()
 
     def stop(self):
         """Disconnect from the MQTT broker and terminate the audio connection.
         """
         logger.debug('Disconnecting from MQTT broker...')
         self.mqtt.disconnect()
-        logger.debug('Terminating PyAudio object...')
+        logger.debug('Terminating MQTT object...')
 
     def on_connect(self, client, userdata, flags, result_code):
         """Callback that is called when the client connects to the MQTT broker.
         """
-        logger.info('Connected to MQTT broker %s:%s'
-                    ' with result code %s.',
-                    self.config.mqtt.host,
-                    self.config.mqtt.port,
-                    result_code)
+        if result_code == 0:
+            logger.info('Connected to MQTT broker %s:%s'
+                        ' with result code %s.',
+                        self.config.mqtt.host,
+                        self.config.mqtt.port,
+                        result_code)
+        else:
+            logger.error(f"MQTT failed to connect, return error code {result_code}")
 
-    def on_disconnect(self, client, userdata, flags, result_code):
+    def on_disconnect(self, client, userdata, result_code):
         """Callback that is called when the client connects from the MQTT
         broker."""
         # This callback doesn't seem to be called.

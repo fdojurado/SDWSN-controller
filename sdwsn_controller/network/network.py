@@ -56,7 +56,10 @@ class Network():
             self.socket = SinkComm(host=socket_host, port=socket_port)
         else:
             self.socket = None
-        self.packet_dissector = PacketDissector(self)
+        self.packet_dissector = PacketDissector(
+            network=self,
+            config=config
+        )
         self.network_running = False
         self.processing_window = processing_window
         self.read_socket_thread = None
@@ -65,6 +68,10 @@ class Network():
         self.tsch_max_sf = tsch_max_sf
         self.name = "Cooja network"
         self.__timeout = 1.2
+        # Callbacks
+        self.energy_callback = None
+        self.delay_callback = None
+        self.pdr_callback = None
         self.reset_stats()
 
     def reset_stats(self):
@@ -94,6 +101,8 @@ class Network():
                 node.cycle_seq = cycle_seq
             return node
         node = Node(id, sid=sid, rank=rank, cycle_seq=cycle_seq)
+        if self.energy_callback:
+            node.register_energy_callback(callback=self.energy_callback)
         self.nodes.update({id: node})
         if id > self.max_node_id:
             self.max_node_id = id
@@ -467,6 +476,18 @@ class Network():
                 self.read_socket_thread.join()
             self.socket.shutdown()
 
+    # --------------------------------Callbacks-----------------------------
+    def register_energy_callback(self, callback):
+        # Register callback to every node in the network
+        for node in self.nodes.values():
+            node.register_energy_callback(callback)
+        self.energy_callback = callback
+
+    def register_delay_callback(self):
+        pass
+
+    def register_pdr_callback(self):
+        pass
     # --------------------------Controller primitives-----------------------
 
     def stop(self):

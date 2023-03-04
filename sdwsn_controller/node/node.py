@@ -83,6 +83,9 @@ class Node():
     def energy_clear(self):
         self.energy.clear()
 
+    def register_energy_callback(self, callback):
+        self.energy.register_callback(callback=callback)
+
     # ---------------------------------------------------------------------------
 
     def delay_add(self, seq, delay):

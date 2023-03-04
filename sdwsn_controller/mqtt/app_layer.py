@@ -17,6 +17,8 @@
 from sdwsn_controller.mqtt.mqtt import MQTTClient
 
 import logging
+import json
+
 
 logger = logging.getLogger('main.'+__name__)
 
@@ -53,16 +55,24 @@ class AppLayer(MQTTClient):
         logger.info('Subscribed to %s topic.', NETWORK_RECONFIG)
 
     def network_reconfig_process(self):
-        """ Callback that is called when the controller receives a NETWORK_RECONFIG
-        message on MQTT.
+        """ Callback that is called when the controller receives a
+        NETWORK_RECONFIG message on MQTT.
         """
         pass
 
-    def send_energy(self):
-        pass
+    def send_energy(self, id, seq, energy):
+        message = json.dumps({'id': id,
+                              'seq': seq,
+                              'energy': energy})
+
+        self.mqtt.publish(ENERGY,
+                          message)
+        logger.debug('Published message on MQTT topic:')
+        logger.debug(f'Topic: {ENERGY}')
+        logger.debug(f'Message: {message}')
 
     def send_latency(self):
-        pass
+        print("sending latency called")
 
     def send_pdr(self):
-        pass
+        print("sending PDR called")
