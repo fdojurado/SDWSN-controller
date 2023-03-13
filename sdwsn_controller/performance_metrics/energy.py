@@ -76,7 +76,7 @@ class EnergySamples():
             self.last_seq = seq
         # Fire callback
         if self.callback:
-            self.callback(id=self.node.sid, seq=seq, energy=energy)
+            self.callback(id=self.node.id, seq=seq, energy=energy)
         return energy_sample
 
     def print(self):
