@@ -31,6 +31,7 @@ class ReinforcementLearning():
 
         self.env = env
         self.reward_processor = reward_processor
+        self.callback = None
 
         logger.info(f"RL reward processor: {self.reward_processor.name}")
 
@@ -51,5 +52,11 @@ class ReinforcementLearning():
         assert isinstance(val, RewardProcessing)
         self.__reward_processor = val
 
+    def register_callback(self, callback):
+        self.callback = callback
+
     def calculate_reward(self, alpha, beta, delta, sf):
-        return self.reward_processor.calculate_reward(alpha, beta, delta, sf)
+        reward = self.reward_processor.calculate_reward(alpha, beta, delta, sf)
+        if self.callback:
+            self.callback(reward)
+        return reward

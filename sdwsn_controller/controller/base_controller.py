@@ -138,6 +138,9 @@ class BaseController(ABC):
                     self.app_layer.send_latency)
                 self.network.register_pdr_callback(
                     self.app_layer.send_pdr)
+            if self.reinforcement_learning:
+                self.reinforcement_learning.register_callback(
+                    self.app_layer.send_rl_info)
         else:
             logger.warn("No MQTT instance running")
             self.app_layer = None

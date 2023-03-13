@@ -26,6 +26,7 @@ logger = logging.getLogger('main.'+__name__)
 # Topics
 NETWORK_RECONFIG = "network/reconfiguration/+"
 NEIGHBORS = "network/information/neighbors"
+RL = "network/information/rl"
 TSCH_SECHEDULES = "network/information/tsch/schedules"
 ROUTES = "network/information/routing/routes"
 DATA = "network/information/sensed_data"
@@ -69,6 +70,14 @@ class AppLayer(MQTTClient):
                           message)
         logger.debug('Published message on MQTT topic:')
         logger.debug(f'Topic: {ENERGY}')
+        logger.debug(f'Message: {message}')
+
+    def send_rl_info(self, data):
+        message = json.dumps(data)
+        self.mqtt.publish(RL,
+                          message)
+        logger.debug('Published message on MQTT topic:')
+        logger.debug(f'Topic: {RL}')
         logger.debug(f'Message: {message}')
 
     def send_latency(self, id, seq, delay):
