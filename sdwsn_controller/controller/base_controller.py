@@ -127,7 +127,8 @@ class BaseController(ABC):
         # MQTT interface
         if config.mqtt.host:
             self.app_layer = AppLayer(
-                config=config
+                config=config,
+                controller=self
             )
             logger.info(f'MQTT: {self.app_layer.name}')
             # Register callbacks

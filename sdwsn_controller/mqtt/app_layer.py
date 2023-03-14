@@ -33,14 +33,19 @@ DATA = "network/information/sensed_data"
 ENERGY = "network/performance_metrics/energy"
 LATENCY = "network/performance_metrics/latency"
 PDR = "network/performance_metrics/pdr"
+USER_REQ_GET = "network/user_requirements/get"
+USER_REQ_SET = "network/user_requirements/set"
+USER_REQ_CURRENT = "network/user_requirements/set"
 
 
 class AppLayer(MQTTClient):
     def __init__(
             self,
-            config
+            config,
+            controller,
     ):
         self.name = "MQTT based application layer"
+        self.controller = controller
         super().__init__(config)
 
     def initialize(self):
@@ -51,9 +56,35 @@ class AppLayer(MQTTClient):
         broker."""
         super().on_connect(client, userdata, flags, result_code)
         self.mqtt.subscribe(NETWORK_RECONFIG)
+        self.mqtt.subscribe(USER_REQ_SET)
+        self.mqtt.subscribe(USER_REQ_GET)
         self.mqtt.message_callback_add(
             NETWORK_RECONFIG, self.network_reconfig_process)
+        self.mqtt.message_callback_add(
+            USER_REQ_SET, self.user_requirements_set)
+        self.mqtt.message_callback_add(
+            USER_REQ_GET, self.user_requirements_get)
         logger.info('Subscribed to %s topic.', NETWORK_RECONFIG)
+
+    def user_requirements_set(self, client, userdata, message):
+        print("user requirements received")
+        data = dict(
+            topic=message.topic,
+            payload=message.payload.decode()
+        )
+        payload = json.loads(data['payload'])
+        print(payload)
+        self.controller.alpha = payload['alpha']
+        self.controller.beta = payload['beta']
+        self.controller.delta = payload['delta']
+
+    def user_requirements_get(self, client, userdata, message):
+        print("get requirements received")
+        message = json.dumps({'alpha': self.controller.alpha,
+                              'beta': self.controller.beta,
+                              'delta': self.controller.delta})
+        self.mqtt.publish(USER_REQ_CURRENT,
+                          message)
 
     def network_reconfig_process(self):
         """ Callback that is called when the controller receives a
