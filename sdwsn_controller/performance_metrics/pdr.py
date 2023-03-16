@@ -78,7 +78,7 @@ class PDRSamples():
         self.samples.update({seq: energy_sample})
         # Fire callback
         if self.callback:
-            self.callback(id=self.node.sid, seq=seq, pdr=self.get_average())
+            self.callback(id=self.node.id, seq=seq, pdr=self.get_average())
         return energy_sample
 
     def print(self):

@@ -77,7 +77,7 @@ class DelaySamples():
         self.samples.update({seq: delay_sample})
         # Fire callback
         if self.callback:
-            self.callback(id=self.node.sid, seq=seq, delay=delay)
+            self.callback(id=self.node.id, seq=seq, delay=delay)
         return delay_sample
 
     def print(self):
