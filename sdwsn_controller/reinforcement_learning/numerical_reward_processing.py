@@ -40,6 +40,10 @@ class NumericalRewardProcessing(RewardProcessing):
             config.performance_metrics.delay.weights)
         # PDR polynomials coefficients
         self.pdr_trendpoly = np.poly1d(config.performance_metrics.pdr.weights)
+        # offsets
+        self.__power_norm_offset = config.performance_metrics.energy.norm_offset
+        self.__delay_norm_offset = config.performance_metrics.delay.norm_offset
+        self.__reliability_norm_offset = config.performance_metrics.pdr.norm_offset
         # Reward processor name
         self.__name = "Numerical Reward Processor"
         self.__network = kwargs.get("network")
@@ -55,11 +59,14 @@ class NumericalRewardProcessing(RewardProcessing):
         Function to calculate the reward given the SF size
         """
         # Calculate power consumption
-        power_normalized = self.power_trendpoly(sf_size)
+        power_normalized = self.power_trendpoly(
+            sf_size)+self.__power_norm_offset
         # Calculate delay consumption
-        delay_normalized = self.delay_trendpoly(sf_size)
+        delay_normalized = self.delay_trendpoly(
+            sf_size)+self.__delay_norm_offset
         # Calculate pdr consumption
-        pdr_normalized = self.pdr_trendpoly(sf_size)
+        pdr_normalized = self.pdr_trendpoly(
+            sf_size)+self.__reliability_norm_offset
         # Calculate the reward
         reward = 2-1*(alpha*power_normalized+beta *
                       delay_normalized-delta*pdr_normalized)
@@ -68,6 +75,6 @@ class NumericalRewardProcessing(RewardProcessing):
             "reward": reward,
             "power_normalized": power_normalized,
             "delay_normalized": delay_normalized,
-            "pdr_normalized": pdr_normalized
+            "pdr_mean": pdr_normalized
         }
         return info

@@ -93,7 +93,7 @@ class NumericalController(BaseController):
             'delay_mean': 0,
             'delay_normalized': reward['delay_normalized'],
             'pdr_wam': 0,
-            'pdr_mean': reward['pdr_normalized'],
+            'pdr_mean': reward['pdr_mean'],
             'current_sf_len': self.current_slotframe_size,
             'last_ts_in_schedule': self.last_tsch_link,
             'reward': reward['reward']
