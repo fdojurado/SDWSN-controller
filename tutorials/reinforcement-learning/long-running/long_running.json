@@ -16,7 +16,7 @@
         "port": 60001
     },
     "tsch": {
-        "scheduler": "Contention Free Scheduler",
+        "scheduler": "Hard Coded Scheduler",
         "max_channel": 3,
         "max_slotframe": 70,
         "slot_duration": 10
@@ -31,28 +31,29 @@
     "performance_metrics": {
         "energy": {
             "weights": [
-                1.01006447e-08,
-                -2.02891119e-06,
-                1.53305871e-04,
-                -5.38559977e-03,
-                1.95597912e-01
+                1.56292719e-08,
+                -2.99240537e-06,
+                2.12532630e-04,
+                -6.88468887e-03,
+                2.08470100e-01
             ],
             "norm_offset": 0.86
         },
         "delay": {
             "weights": [
-                9.67723818e-08,
-                -1.01647209e-05,
-                7.57321003e-04,
-                -1.76356978e-03
+                2.99098391e-08,
+                -6.28217483e-07,
+                6.09770278e-04,
+                4.66875245e-04
             ],
-            "norm_offset": 0.96
+            "norm_offset": 0.94
         },
         "pdr": {
             "weights": [
-                1.64710368e-18,
+                9.86763397e-18,
                 1.00000000e+00
-            ]
+            ],
+            "norm_offset": 0.0
         }
     },
     "mqtt": {
