@@ -1,0 +1,66 @@
+{
+    "name": "long running",
+    "controller_type": "native controller",
+    "network": {
+        "name": "Cooja",
+        "processing_window": 200,
+        "socket": {
+            "host": "127.0.0.1",
+            "port": 60001
+        }
+    },
+    "contiki": {
+        "script_folder": "examples/elise",
+        "source": "/Users/ffjla/contiki-ng",
+        "simulation_script": "cooja-elise.csc",
+        "port": 60001
+    },
+    "tsch": {
+        "scheduler": "Contention Free Scheduler",
+        "max_channel": 3,
+        "max_slotframe": 70,
+        "slot_duration": 10
+    },
+    "routing": {
+        "algo": "Dijkstra"
+    },
+    "reinforcement_learning": {
+        "reward_processor": "EmulatedRewardProcessing",
+        "max_episode_steps": 50000
+    },
+    "performance_metrics": {
+        "energy": {
+            "weights": [
+                1.01006447e-08,
+                -2.02891119e-06,
+                1.53305871e-04,
+                -5.38559977e-03,
+                1.95597912e-01
+            ],
+            "norm_offset": 0.86
+        },
+        "delay": {
+            "weights": [
+                9.67723818e-08,
+                -1.01647209e-05,
+                7.57321003e-04,
+                -1.76356978e-03
+            ],
+            "norm_offset": 0.96
+        },
+        "pdr": {
+            "weights": [
+                1.64710368e-18,
+                1.00000000e+00
+            ]
+        }
+    },
+    "mqtt": {
+        "host": "localhost",
+        "port": 1883,
+        "authentication": {
+            "username": "foo",
+            "password": "bar"
+        }
+    }
+}
