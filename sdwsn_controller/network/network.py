@@ -441,6 +441,7 @@ class Network():
                     rtx = rtx + 1
                     self.send(data)
                 sleep(self.timeout)
+            sleep(self.timeout)
             return result
 
     # --------------------------socket primitives-----------------------

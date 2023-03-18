@@ -28,7 +28,7 @@ import os
 
 
 CONFIG_FILE = "long_run.json"
-TRAINED_MODEL = "./trained_model/best_model.zip"
+TRAINED_MODEL = "./trained_model_2/best_model.zip"
 
 
 def run(env, model_path, controller, output_folder, simulation_name):
