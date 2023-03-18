@@ -27,7 +27,7 @@ import sys
 import os
 
 
-CONFIG_FILE = "long_running.json"
+CONFIG_FILE = "long_run.json"
 TRAINED_MODEL = "./trained_model/best_model.zip"
 
 

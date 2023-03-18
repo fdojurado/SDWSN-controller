@@ -74,12 +74,12 @@ class PDRSamples():
             return
         logger.debug(
             f'Node {self.node.id}: add pdr with seq {seq}')
-        energy_sample = PDR(seq=seq)
-        self.samples.update({seq: energy_sample})
+        pdr_sample = PDR(seq=seq)
+        self.samples.update({seq: pdr_sample})
         # Fire callback
         if self.callback:
             self.callback(id=self.node.id, seq=seq, pdr=self.get_average())
-        return energy_sample
+        return pdr_sample
 
     def print(self):
         table = Table(title=f"PDR samples (Cycle seq: {self.node.cycle_seq})")
