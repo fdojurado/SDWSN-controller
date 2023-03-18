@@ -93,15 +93,16 @@ class AppLayer(MQTTClient):
         pass
 
     def send_energy(self, id, seq, energy):
-        message = json.dumps({'id': id,
-                              'seq': seq,
-                              'energy': energy})
+        # message = json.dumps({'id': id,
+        #                       'seq': seq,
+        #                       'energy': energy})
 
-        self.mqtt.publish(ENERGY,
-                          message)
-        logger.debug('Published message on MQTT topic:')
-        logger.debug(f'Topic: {ENERGY}')
-        logger.debug(f'Message: {message}')
+        # self.mqtt.publish(ENERGY,
+        #                   message)
+        # logger.debug('Published message on MQTT topic:')
+        # logger.debug(f'Topic: {ENERGY}')
+        # logger.debug(f'Message: {message}')
+        pass
 
     def send_rl_info(self, data):
         message = json.dumps(data)
@@ -112,19 +113,21 @@ class AppLayer(MQTTClient):
         logger.debug(f'Message: {message}')
 
     def send_latency(self, id, seq, delay):
-        message = json.dumps({'id': id,
-                              'seq': seq,
-                              'delay': delay})
-        self.mqtt.publish(LATENCY, message)
-        logger.debug('Published message on MQTT topic:')
-        logger.debug(f'Topic: {LATENCY}')
-        logger.debug(f'Message: {message}')
+        # message = json.dumps({'id': id,
+        #                       'seq': seq,
+        #                       'delay': delay})
+        # self.mqtt.publish(LATENCY, message)
+        # logger.debug('Published message on MQTT topic:')
+        # logger.debug(f'Topic: {LATENCY}')
+        # logger.debug(f'Message: {message}')
+        pass
 
     def send_pdr(self, id, seq, pdr):
-        message = json.dumps({'id': id,
-                              'seq': seq,
-                              'pdr': pdr})
-        self.mqtt.publish(PDR, message)
-        logger.debug('Published message on MQTT topic:')
-        logger.debug(f'Topic: {PDR}')
-        logger.debug(f'Message: {message}')
+        # message = json.dumps({'id': id,
+        #                       'seq': seq,
+        #                       'pdr': pdr})
+        # self.mqtt.publish(PDR, message)
+        # logger.debug('Published message on MQTT topic:')
+        # logger.debug(f'Topic: {PDR}')
+        # logger.debug(f'Message: {message}')
+        pass
