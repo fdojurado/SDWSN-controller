@@ -101,7 +101,7 @@ class Controller(BaseController):
         except FileNotFoundError:
             pass
         except PermissionError as ex:
-            logger.info("Cannot remove previous Cooja output:", ex)
+            logger.error("Cannot remove previous Cooja output:", ex)
             return False
 
         try:
@@ -109,7 +109,7 @@ class Controller(BaseController):
         except FileNotFoundError:
             pass
         except PermissionError as ex:
-            logger.info("Cannot remove previous Cooja log:", ex)
+            logger.error("Cannot remove previous Cooja log:", ex)
             return False
 
         # We need to overwrite the port of the serial socket in the
@@ -215,6 +215,6 @@ class Controller(BaseController):
         super().stop()
 
     def reset(self):
-        logger.info('Resetting controller, etc.')
+        # logger.info('Resetting controller, etc.')
         self.stop()
         self.start()

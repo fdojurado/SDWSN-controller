@@ -99,4 +99,4 @@ class EnergySamples():
             table.add_row(self.node.sid,
                           str(energy.seq), str(energy.energy))
 
-        logger.info(f"Energy samples\n{common.log_table(table)}")
+        logger.debug(f"Energy samples\n{common.log_table(table)}")

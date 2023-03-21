@@ -87,4 +87,4 @@ class NeighborTable():
             table.add_row(str(neighbor.neighbor_id),
                           str(neighbor.rssi), str(neighbor.etx))
 
-        logger.info(f"Neighbor table\n{common.log_table(table)}")
+        logger.debug(f"Neighbor table\n{common.log_table(table)}")

@@ -56,7 +56,7 @@ class Dijkstra(Router):
                 except nx.NetworkXNoPath:
                     logger.exception("path not found")
 
-        logger.info("total path")
-        logger.info(path)
+        logger.debug("total path")
+        logger.debug(path)
         self.network.routes_print()
         return path

@@ -100,4 +100,4 @@ class DelaySamples():
             table.add_row(self.node.sid,
                           str(delay.seq), str(delay.delay))
 
-        logger.info(f"Delay samples\n{common.log_table(table)}")
+        logger.debug(f"Delay samples\n{common.log_table(table)}")

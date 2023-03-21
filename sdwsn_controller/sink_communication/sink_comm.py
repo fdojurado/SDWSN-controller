@@ -144,7 +144,7 @@ class SinkComm(SinkABC):
         Args:
             data (Message): Message object to transmit.
         """
-        logger.info('Sending message over the serial interface')
+        logger.debug('Sending message over the serial interface')
         byte_msg = bytearray()
         byte_msg.extend(bytes.fromhex('7E'))
         data = [data[i:i+1] for i in range(len(data))]
@@ -179,7 +179,7 @@ class SinkComm(SinkABC):
         """
         if self.ser is not None:
             self.empty_socket()
-            logger.info("socket buffer is now empty, we close ...")
+            logger.debug("socket buffer is now empty, we close ...")
             self.ser.close()
             # self.ser.shutdown(socket.SHUT_RDWR)
 

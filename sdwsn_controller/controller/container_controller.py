@@ -125,7 +125,7 @@ class ContainerController(BaseController):
         self.container.script = '/bin/sh -c '+'"cd ' + \
             self.__simulation_folder_container+' && ./run-cooja.py ' + \
             self.__new_simulation_script.split('/')[-1] + '"'
-        logger.info(f"new script: {self.container.script}")
+        # logger.info(f"new script: {self.container.script}")
 
         self.container.start_container()
         super().start()
@@ -144,6 +144,6 @@ class ContainerController(BaseController):
         super().stop()
 
     def reset(self):
-        logger.info('Resetting container, controller, etc.')
+        # logger.info('Resetting container, controller, etc.')
         self.stop()
         self.start()

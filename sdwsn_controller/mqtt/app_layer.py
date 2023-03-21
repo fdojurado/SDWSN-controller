@@ -64,7 +64,7 @@ class AppLayer(MQTTClient):
             USER_REQ_SET, self.user_requirements_set)
         self.mqtt.message_callback_add(
             USER_REQ_GET, self.user_requirements_get)
-        logger.info('Subscribed to %s topic.', NETWORK_RECONFIG)
+        # logger.info('Subscribed to %s topic.', NETWORK_RECONFIG)
 
     def user_requirements_set(self, client, userdata, message):
         print("user requirements received")

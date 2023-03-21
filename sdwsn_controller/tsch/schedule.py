@@ -107,4 +107,4 @@ class TSCHScheduleTable():
             table.add_row(sch_type, str(tsch_schedule.ch),
                           str(tsch_schedule.ts), str(tsch_schedule.dst_id))
 
-        logger.info(f"TSCH schedules\n{common.log_table(table)}")
+        logger.debug(f"TSCH schedules\n{common.log_table(table)}")

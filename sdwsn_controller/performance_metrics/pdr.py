@@ -99,4 +99,4 @@ class PDRSamples():
             table.add_row(self.node.sid,
                           str(pdr.seq))
 
-        logger.info(f"PDR samples\n{common.log_table(table)}")
+        logger.debug(f"PDR samples\n{common.log_table(table)}")

@@ -151,7 +151,7 @@ class Network():
                 nxt_hop = self.nodes_get(route.nexthop_id).sid
                 table.add_row(node.sid, dst_id, nxt_hop)
 
-        logger.info(f"Network routing table\n{common.log_table(table)}")
+        logger.debug(f"Network routing table\n{common.log_table(table)}")
 
     def routes_get(self):
         routes = {}
@@ -160,7 +160,7 @@ class Network():
         return routes
 
     def routes_sendall(self):
-        logger.info('Sending all routes')
+        logger.debug('Sending all routes')
         sent = 0
         num_pkts = 0
         payload = []
@@ -175,7 +175,7 @@ class Network():
                 payload = routed_packed
                 if len(payload) > 90:
                     num_pkts += 1
-                    logger.info(
+                    logger.debug(
                         f'Sending routing packet {num_pkts} with \
                             {len(payload)} bytes')
                     # We send the current payload
@@ -189,7 +189,7 @@ class Network():
         # Send the remain payload if there is one
         if payload:
             num_pkts += 1
-            logger.info(
+            logger.debug(
                 f'Sending routing packet {num_pkts} with {len(payload)} bytes')
             packedData, serial_pkt = common.routing_build_pkt(
                 payload, self.cycle_sequence_increase())
@@ -285,7 +285,7 @@ class Network():
             row += [str(x) for x in value_list]
             table.add_row(*row)
 
-        logger.info(f"TSCH schedules table grid\n{common.log_table(table)}")
+        logger.debug(f"TSCH schedules table grid\n{common.log_table(table)}")
 
     def tsch_clear(self):
         for node in self.nodes.values():
@@ -298,7 +298,7 @@ class Network():
         return routes
 
     def tsch_sendall(self):
-        logger.info(f"Sending all schedules (SF: {self.tsch_slotframe_size})")
+        logger.debug(f"Sending all schedules (SF: {self.tsch_slotframe_size})")
         sent = 0
         num_pkts = 0
         payload = []
@@ -315,7 +315,7 @@ class Network():
                 payload = cell_packed
                 if len(payload) > 90:
                     num_pkts += 1
-                    logger.info(
+                    logger.debug(
                         f'Sending TSCH packet {num_pkts} with {len(payload)} bytes')
                     # We send the current payload
                     current_sf_size = 0
@@ -331,7 +331,7 @@ class Network():
         # Send the remain payload if there is one
         if payload:
             num_pkts += 1
-            logger.info(
+            logger.debug(
                 f'Sending TSCH packet {num_pkts} with {len(payload)} bytes')
             current_sf_size = 0
             if num_pkts == 1:
@@ -390,7 +390,6 @@ class Network():
                         task1, completed=self.packet_dissector.sequence)
                     if self.packet_dissector.sequence >= self.processing_window:
                         result = 1
-                        logger.info("Cycle completed")
                         progress.update(task1, completed=100)
                     sleep(0.1)
             logger.info(f"cycle finished, result: {result}")
@@ -428,10 +427,10 @@ class Network():
             while True:
                 if self.packet_dissector.ack_pkt is not None:
                     if (self.packet_dissector.ack_pkt.reserved0 == ack):
-                        logger.info("correct ACK received")
+                        logger.debug("correct ACK received")
                         result = 1
                         break
-                    logger.info("ACK not received")
+                    logger.debug("ACK not received")
                     # We stop sending the current NC packet if
                     # we reached the max RTx or we received ACK
                     if (rtx >= 7):
@@ -456,7 +455,7 @@ class Network():
                     pass
                 if not self.network_running:
                     break
-            logger.info("Socket reading thread exited.")
+            logger.debug("Socket reading thread exited.")
 
     def socket_start(self) -> bool:
         if self.socket is not None:
@@ -474,7 +473,7 @@ class Network():
 
     def socket_stop(self):
         if self.socket is not None:
-            logger.info(
+            logger.debug(
                 f"Shutting down socket {self.network_running}")
             if self.read_socket_thread is not None:
                 self.read_socket_thread.join()
