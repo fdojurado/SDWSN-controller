@@ -92,7 +92,7 @@ class Controller(BaseController):
     # Controller related functions
 
     def timeout(self):
-        sleep(1.2)
+        sleep(0.02)
 
     def start_cooja(self):
         # cleanup
