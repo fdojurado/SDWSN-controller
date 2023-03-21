@@ -52,7 +52,7 @@ class SinkABC(ABC):
         while True:
             msg, _ = self._recv_internal(timeout=time_left)
             if (msg != 0):
-                logger.debug("Received: %s", msg)
+                # logger.debug("Received: %s", msg)
                 return msg
             # if not, and timeout is None, try indefinitely
             if timeout is None:

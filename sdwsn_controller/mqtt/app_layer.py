@@ -67,19 +67,19 @@ class AppLayer(MQTTClient):
         # logger.info('Subscribed to %s topic.', NETWORK_RECONFIG)
 
     def user_requirements_set(self, client, userdata, message):
-        print("user requirements received")
+        # print("user requirements received")
         data = dict(
             topic=message.topic,
             payload=message.payload.decode()
         )
         payload = json.loads(data['payload'])
-        print(payload)
+        # print(payload)
         self.controller.alpha = payload['alpha']
         self.controller.beta = payload['beta']
         self.controller.delta = payload['delta']
 
     def user_requirements_get(self, client, userdata, message):
-        print("get requirements received")
+        # print("get requirements received")
         message = json.dumps({'alpha': self.controller.alpha,
                               'beta': self.controller.beta,
                               'delta': self.controller.delta})
@@ -108,9 +108,9 @@ class AppLayer(MQTTClient):
         message = json.dumps(data)
         self.mqtt.publish(RL,
                           message)
-        logger.debug('Published message on MQTT topic:')
-        logger.debug(f'Topic: {RL}')
-        logger.debug(f'Message: {message}')
+        # logger.debug('Published message on MQTT topic:')
+        # logger.debug(f'Topic: {RL}')
+        # logger.debug(f'Message: {message}')
 
     def send_latency(self, id, seq, delay):
         # message = json.dumps({'id': id,

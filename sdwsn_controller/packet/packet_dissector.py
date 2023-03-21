@@ -122,7 +122,7 @@ class PacketDissector():
         # If the reported payload length in the serial header doesn't match the packet size,
         # then we drop the packet.
         if (len(pkt.payload) < pkt.payload_len):
-            logger.debug("packet shorter than reported in serial header")
+            logger.warning("packet shorter than reported in serial header")
             return None
         # serial packet succeed
         logger.debug("succeed unpacking serial packet")

@@ -34,7 +34,6 @@ class MQTTClient(ABC):
         """
         self.config = config
         self.mqtt = Client()
-        logger.debug('Creating MQTTT object...')
 
         self.initialize()
 
