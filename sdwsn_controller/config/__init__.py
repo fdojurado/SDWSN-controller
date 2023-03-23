@@ -55,11 +55,13 @@ ROUTING_ALGO = {
 
 from sdwsn_controller.controller.container_controller import ContainerController
 from sdwsn_controller.controller.numerical_controller import NumericalController
+from sdwsn_controller.controller.controller_usb import USBController
 from sdwsn_controller.controller.controller import Controller
 
 CONTROLLERS = {
     "native controller": Controller,
     "container controller": ContainerController,
+    "USB controller": USBController,
     "numerical controller": NumericalController
 }
 # Default values
