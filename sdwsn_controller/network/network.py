@@ -173,7 +173,7 @@ class Network():
                     dst=dst, scr=scr, via=via, payload=payload)
                 routed_packed = route_pkt.pack()
                 payload = routed_packed
-                if len(payload) > 90:
+                if len(payload) > 80:
                     num_pkts += 1
                     logger.debug(
                         f'Sending routing packet {num_pkts} with \
@@ -313,7 +313,7 @@ class Network():
                                                dst=dst)
                 cell_packed = cell_pkt.pack()
                 payload = cell_packed
-                if len(payload) > 90:
+                if len(payload) > 80:
                     num_pkts += 1
                     logger.debug(
                         f'Sending TSCH packet {num_pkts} with {len(payload)} bytes')
