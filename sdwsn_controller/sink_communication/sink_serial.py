@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import socket
+import serial
 import sys
 # import logging
 from sdwsn_controller.sink_communication.sink_abc import SinkABC
@@ -24,15 +24,15 @@ import logging
 logger = logging.getLogger('main.'+__name__)
 
 
-class SinkComm(SinkABC):
+class SinkSerial(SinkABC):
     def __init__(
         self,
         config
     ):
         assert isinstance(config.sink_comm.host_dev, str)
         assert isinstance(config.sink_comm.port_baud, int)
-        self.host = config.sink_comm.host_dev
-        self.port = config.sink_comm.port_baud
+        self.dev = config.sink_comm.host_dev
+        self.baud = config.sink_comm.port_baud
         self.byte_msg = bytearray()
         self.overflow = 0
         self.escape_character = 0
@@ -40,32 +40,11 @@ class SinkComm(SinkABC):
         self.frame_length = 0
         self.msg = None
         self.ser = None
-        self.name = "Socket"
+        self.name = "Serial"
 
     def connect(self):
-        self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_address = (self.host, self.port)
-        self.result = self.ser.connect_ex(server_address)
-        return self.result
-
-    def decodeByte(self, n):
-        data = bytearray()
-        scape_char = 0
-        while len(data) < n:
-            packet = self.ser.recv(n - len(data))
-            if not packet:
-                return None
-            for byte in packet:
-                if scape_char == 1:
-                    scape_char = 0
-                    int_packet = byte ^ (0x20)
-                    byte = int_packet
-                    data.extend(bytes([byte]))
-                elif byte == 0x7D:
-                    scape_char = 1
-                else:
-                    data.extend(bytes([byte]))
-        return data
+        self.ser = serial.Serial(self.dev, self.baud)  # open serial port
+        return self.ser
 
     def _recv_internal(self, timeout):
         """
@@ -80,7 +59,7 @@ class SinkComm(SinkABC):
         try:
             # ser.read can return an empty string
             # or raise a SerialException
-            rx_byte = self.ser.recv(1)
+            rx_byte = self.ser.read()
             # logger.info("rx_byte")
             # logger.info(rx_byte)
             if rx_byte and ord(rx_byte) != 0x7E:
@@ -132,7 +111,7 @@ class SinkComm(SinkABC):
                     return 0
                 return 0
 
-        except socket.error:
+        except serial.error:
             return None
 
         return 0
@@ -155,7 +134,7 @@ class SinkComm(SinkABC):
         byte_msg.extend(bytes.fromhex('7E'))
         logger.debug('packet to send')
         logger.debug(byte_msg.hex())
-        self.ser.send(byte_msg)
+        self.ser.write(byte_msg)
 
     def check_byte(self, byte_data, data):
         if (ord(data) == 0x7E or ord(data) == 0x7D):

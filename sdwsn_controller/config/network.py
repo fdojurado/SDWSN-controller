@@ -25,64 +25,11 @@ DEFAULT_TSCH_MAX_SLOTFRAME = 500
 # Keys in the JSON configuration file
 NAME = "name"
 PROCESSING_WINDOW = 'processing_window'
-SOCKET = "socket"
 HOST = "host"
 PORT = 'port'
 TSCH = 'tsch'
 TSCH_MAX_CHANNEL = "tsch_max_channel"
 TSCH_MAX_SLOTFRAME = "tsch_max_slotframe"
-
-
-class NETWORKSOCKETConfig:
-    """This class represents the authentication settings for a connection to an
-    MQTT broker.
-
-    Attributes:
-        username (str): The username to authenticate to the MQTT broker. `None`
-            if there's no authentication.
-        password (str): The password to authenticate to the MQTT broker. Can be
-            `None`.
-    """
-
-    def __init__(self, host=None, port=None):
-        """Initialize a :class:`.MQTTAuthConfig` object.
-
-        Args:
-            username (str, optional): The username to authenticate to the MQTT
-                broker. `None` if there's no authentication.
-            password (str, optional): The password to authenticate to the MQTT
-                broker. Can be `None`.
-
-        All arguments are optional.
-        """
-        self.host = host
-        self.port = port
-
-    @classmethod
-    def from_json(cls, json_object=None):
-        """Initialize a :class:`.MQTTAuthConfig` object with settings from a
-        JSON object.
-
-        Args:
-            json_object (optional): The JSON object with the MQTT
-                authentication settings. Defaults to {}.
-
-        Returns:
-            :class:`.MQTTAuthConfig`: An object with the MQTT authentication
-            settings.
-
-        The JSON object should have the following format:
-
-        {
-            "username": "foobar",
-            "password": "secretpassword"
-        }
-        """
-        if json_object is None:
-            json_object = {}
-
-        return cls(host=json_object.get(HOST, DEFAULT_HOST),
-                   port=json_object.get(PORT, DEFAULT_PORT))
 
 
 class NETWORKConfig:
@@ -99,8 +46,7 @@ class NETWORKConfig:
 
     def __init__(self,
                  name=None,
-                 processing_window=DEFAULT_PROC_WINDOW,
-                 socket=None
+                 processing_window=DEFAULT_PROC_WINDOW
                  ):
         """Initialize a :class:`.MQTTConfig` object.
 
@@ -120,16 +66,6 @@ class NETWORKConfig:
         self.name = name
         self.processing_window = processing_window
 
-        if socket is None:
-            self.socket = NETWORKSOCKETConfig()
-        else:
-            self.socket = socket
-
-        # if tsch is None:
-        #     self.tsch = NETWORKTSCHConfig()
-        # else:
-        #     self.tsch = tsch
-
     @classmethod
     def from_json(cls, json_object=None):
         """Initialize a :class:`.MQTTConfig` object with settings from a JSON
@@ -145,15 +81,8 @@ class NETWORKConfig:
         The JSON object should have the following format:
 
         {
-            "processing_window": 200,
-            "socket": {
-                "host": "127.0.0.1",
-                "port": 123
-            },
-            "tsch": {
-                "tsch_max_channel": 3,
-                "tsch_max_slotframe": 500
-            }
+            "name": "Cooja",
+            "processing_window": 200
         }
         """
         if json_object is None:
@@ -162,6 +91,5 @@ class NETWORKConfig:
         return cls(
             name=json_object.get(NAME),
             processing_window=json_object.get(
-                PROCESSING_WINDOW, DEFAULT_PROC_WINDOW),
-            socket=NETWORKSOCKETConfig.from_json(json_object.get(SOCKET))
+                PROCESSING_WINDOW, DEFAULT_PROC_WINDOW)
         )

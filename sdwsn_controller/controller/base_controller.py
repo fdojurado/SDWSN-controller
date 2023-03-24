@@ -23,8 +23,9 @@ import gym
 
 import numpy as np
 
-from sdwsn_controller.config import REWARD_PROCESSORS, TSCH_SCHEDULERS, ROUTING_ALGO
+from sdwsn_controller.config import REWARD_PROCESSORS, TSCH_SCHEDULERS, ROUTING_ALGO, SINK_COMMUNICATION
 from sdwsn_controller.reinforcement_learning.reinforcement_learning import ReinforcementLearning
+from sdwsn_controller.sink_communication.sink_abc import SinkABC
 from sdwsn_controller.reinforcement_learning.env import Env
 from sdwsn_controller.mqtt.app_layer import AppLayer
 from sdwsn_controller.network.network import Network
@@ -65,10 +66,21 @@ class BaseController(ABC):
                 TSCH scheduler. Defaults to None.
         """
 
+        # Create sink comm interface
+        if config.sink_comm.name:
+            sink_comm_class = SINK_COMMUNICATION[config.sink_comm.name]
+            self.sink_comm = sink_comm_class(config)
+            assert isinstance(self.sink_comm, SinkABC)
+            logger.info(f"Sink comm: {self.sink_comm.name}")
+        else:
+            logger.warn("No sink communication interface running")
+            self.sink_comm = None
+
         # Create network
         if config.network.name:
             self.network = Network(
-                config=config
+                config=config,
+                socket=self.sink_comm
             )
             assert isinstance(self.network, Network)
             logger.info(f"Network: {self.network.name}")

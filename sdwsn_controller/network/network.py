@@ -31,7 +31,6 @@ from sdwsn_controller.node.node import Node
 from sdwsn_controller.packet.packet import Cell_Packet_Payload
 from sdwsn_controller.packet.packet import RA_Packet_Payload
 from sdwsn_controller.packet.packet_dissector import PacketDissector
-from sdwsn_controller.sink_communication.sink_comm import SinkComm
 
 from time import sleep
 
@@ -43,19 +42,15 @@ logger = logging.getLogger('main.'+__name__)
 class Network():
     def __init__(
         self,
-        config
+        config,
+        socket
     ) -> None:
-        socket_host = config.network.socket.host
-        socket_port = config.network.socket.port
         processing_window = config.network.processing_window
         tsch_max_ch = config.tsch.max_channel
         tsch_max_sf = config.tsch.max_slotframe
         self.nodes = {}
         self.max_node_id = 0
-        if socket_host is not None and socket_port is not None:
-            self.socket = SinkComm(host=socket_host, port=socket_port)
-        else:
-            self.socket = None
+        self.socket = socket
         self.packet_dissector = PacketDissector(
             network=self,
             config=config

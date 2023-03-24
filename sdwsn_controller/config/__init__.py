@@ -14,6 +14,8 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from sdwsn_controller.sink_communication.sink_comm import SinkComm
+from sdwsn_controller.sink_communication.sink_serial import SinkSerial
 from sdwsn_controller.reinforcement_learning.reward_processing \
     import EmulatedRewardProcessing
 from sdwsn_controller.reinforcement_learning.numerical_reward_processing import NumericalRewardProcessing
@@ -29,6 +31,7 @@ from sdwsn_controller.routing.dijkstra import Dijkstra
 
 
 from sdwsn_controller.exceptions import ConfigurationFileNotFoundError
+from sdwsn_controller.config.sink_comm import SINKCOMMConfig
 from sdwsn_controller.config.network import NETWORKConfig
 from sdwsn_controller.config.routing import ROUTINGConfig
 from sdwsn_controller.config.contiki import CONTIKIConfig
@@ -42,6 +45,11 @@ from pathlib import Path
 REWARD_PROCESSORS = {
     'EmulatedRewardProcessing': EmulatedRewardProcessing,
     "NumericalRewardProcessing": NumericalRewardProcessing
+}
+
+SINK_COMMUNICATION = {
+    'socket': SinkComm,
+    "serial": SinkSerial
 }
 
 TSCH_SCHEDULERS = {
@@ -80,6 +88,7 @@ NAME = 'my_example'
 CONTROLLER_TYPE = "controller_type"
 MQTT = 'mqtt'
 NETWORK = 'network'
+SINK_COMM = "sink_comm"
 TSCH = 'tsch'
 ROUTING = 'routing'
 CONTIKI = 'contiki'
@@ -103,7 +112,7 @@ class SDWSNControllerConfig:
     """
 
     def __init__(self, name='default', controller_type=None, mqtt=None,
-                 network=None, tsch=None, routing=None,
+                 network=None, sink_comm=None, tsch=None, routing=None,
                  contiki=None, reinforcement_learning=None, docker=None,
                  performance_metrics=None):
         """Initialize a :class:`.SDWSNControllerConfig` object.
@@ -136,6 +145,8 @@ class SDWSNControllerConfig:
         #     self.network = NETWORKConfig()
         # else:
         self.network = network
+
+        self.sink_comm = sink_comm
 
         # if tsch is None:
         #     self.tsch = TSCHConfig()
@@ -258,6 +269,8 @@ class SDWSNControllerConfig:
                        CONTROLLER_TYPE, DEFAULT_CONTROLLER_TYPE),
                    mqtt=MQTTConfig.from_json(configuration.get(MQTT)),
                    network=NETWORKConfig.from_json(configuration.get(NETWORK)),
+                   sink_comm=SINKCOMMConfig.from_json(
+                       configuration.get(SINK_COMM)),
                    tsch=TSCHConfig.from_json(configuration.get(TSCH)),
                    routing=ROUTINGConfig.from_json(configuration.get(ROUTING)),
                    contiki=CONTIKIConfig.from_json(configuration.get(CONTIKI)),

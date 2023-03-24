@@ -11,11 +11,12 @@
     },
     "network": {
         "name": "USB network",
-        "processing_window": 50,
-        "socket": {
-            "host": "127.0.0.1",
-            "port": 60001
-        }
+        "processing_window": 50
+    },
+    "sink_comm": {
+        "name": "serial",
+        "host": "127.0.0.1",
+        "port": 60001
     },
     "tsch": {
         "scheduler": "Contention Free Scheduler",
