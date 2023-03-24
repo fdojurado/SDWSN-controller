@@ -42,9 +42,9 @@ class SinkSerial(SinkABC):
         self.ser = None
         self.name = "Serial"
 
-    def connect(self):
+    def connect(self, **kwargs):
         self.ser = serial.Serial(self.dev, self.baud)  # open serial port
-        return self.ser
+        return 0
 
     def _recv_internal(self, timeout):
         """
