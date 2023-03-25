@@ -51,6 +51,7 @@ dependencies = [
     'networkx',
     'pandas',
     'pyserial',
+    'paho-mqtt',
     # 'plac',
     'pyfiglet',
     # 'pymongo',
