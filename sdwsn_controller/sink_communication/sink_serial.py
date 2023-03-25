@@ -34,9 +34,20 @@ class SinkSerial(SinkABC):
         self.dev = config.sink_comm.host_dev
         self.baud = config.sink_comm.port_baud
         self.__name = "Serial"
+        self.__ser = None
+        super().__init__()
 
+    @property
     def name(self):
         return self.__name
+
+    @property
+    def ser(self):
+        return self.__ser
+
+    @ser.setter
+    def ser(self, ser):
+        self.__ser = ser
 
     def connect(self, **kwargs):
         self.ser = serial.Serial(self.dev, self.baud)  # open serial port

@@ -34,9 +34,20 @@ class SinkComm(SinkABC):
         self.host = config.sink_comm.host_dev
         self.port = config.sink_comm.port_baud
         self.__name = "Socket"
+        self.ser = None
+        super().__init__()
 
+    @property
     def name(self):
         return self.__name
+
+    @property
+    def ser(self):
+        return self.__ser
+
+    @ser.setter
+    def ser(self, ser):
+        self.__ser = ser
 
     def connect(self):
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

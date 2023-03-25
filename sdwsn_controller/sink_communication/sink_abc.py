@@ -30,7 +30,7 @@ class SinkABC(ABC):
 
     @abstractmethod
     def __init__(
-        self,
+        self
     ):
         """
         Abstract class for sink communication.
@@ -41,7 +41,6 @@ class SinkABC(ABC):
         self.frame_start = 0
         self.frame_length = 0
         self.msg = None
-        self.ser = None
 
     @abstractmethod
     def name(self):
@@ -50,6 +49,28 @@ class SinkABC(ABC):
 
         Returns:
             str: Name of the sink.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def ser(self):
+        """
+        Get the serial object.
+
+        Returns:
+            serial: Serial object.
+        """
+        pass
+
+    @ser.setter
+    @abstractmethod
+    def ser(self, ser):
+        """
+        Set the serial object.
+
+        Args:
+            ser (serial): Serial object.
         """
         pass
 
