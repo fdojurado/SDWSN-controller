@@ -66,17 +66,6 @@ class SinkABC(ABC):
         """
         pass
 
-    @ser.setter
-    @abstractmethod
-    def ser(self, ser):
-        """
-        Set the serial object.
-
-        Args:
-            ser (serial): Serial object.
-        """
-        pass
-
     @abstractmethod
     def connect(self, **kwargs):
         """
@@ -114,12 +103,9 @@ class SinkABC(ABC):
         """
         pass
 
-    def _recv_internal(self, timeout):
+    def _recv_internal(self):
         """
         Read a message from the sink.
-
-        Args:
-            timeout (_type_):  Seconds to wait for a message.
 
         Returns:
             int, Message: Message received.
@@ -184,7 +170,7 @@ class SinkABC(ABC):
 
         return 0
 
-    def recv(self, timeout: Optional[float] = None):
+    def recv(self, timeout: Optional[float] = None) -> Optional[bytearray]:
         """
         Block waiting for a message from the sink.
 
@@ -198,22 +184,17 @@ class SinkABC(ABC):
         start = time()
         time_left = timeout
 
-        while True:
-            msg, _ = self._recv_internal(timeout=time_left)
-            if (msg != 0):
+        while time_left is None or time_left > 0:
+            msg, _ = self._recv_internal()
+            if msg != 0:
                 # logger.debug("Received: %s", msg)
                 return msg
-            # if not, and timeout is None, try indefinitely
             if timeout is None:
                 continue
-            # try next one only if there still is time, and with
-            # reduced timeout
             else:
                 time_left = timeout - (time() - start)
-                if time_left > 0:
-                    continue
-                else:
-                    return None
+
+        return None
 
     def check_byte(self, byte_data, data):
         if (ord(data) == 0x7E or ord(data) == 0x7D):
