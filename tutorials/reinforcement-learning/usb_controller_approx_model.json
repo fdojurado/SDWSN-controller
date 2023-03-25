@@ -11,12 +11,12 @@
     },
     "network": {
         "name": "USB network",
-        "processing_window": 50
+        "processing_window": 10
     },
     "sink_comm": {
         "name": "serial",
-        "host": "127.0.0.1",
-        "port": 60001
+        "host_dev": "/dev/tty.usbmodemL12371",
+        "port_baud": 115200
     },
     "tsch": {
         "scheduler": "Contention Free Scheduler",
