@@ -15,11 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import socket
-import sys
-# import logging
 from sdwsn_controller.sink_communication.sink_abc import SinkABC
+
 import logging
+import socket
 
 logger = logging.getLogger('main.'+__name__)
 
