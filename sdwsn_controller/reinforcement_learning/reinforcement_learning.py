@@ -18,7 +18,7 @@ from sdwsn_controller.reinforcement_learning.reward_processing import RewardProc
 
 import logging
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class ReinforcementLearning():

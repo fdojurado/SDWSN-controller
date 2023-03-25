@@ -26,7 +26,7 @@ import logging
 # Constants for packet delay calculation
 SLOT_DURATION = 10
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class RewardProcessing(ABC):

@@ -23,7 +23,7 @@ import numpy as np
 import logging
 
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class NumericalRewardProcessing(RewardProcessing):

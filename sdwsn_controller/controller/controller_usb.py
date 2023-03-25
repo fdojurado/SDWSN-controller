@@ -22,7 +22,7 @@ from sdwsn_controller.controller.base_controller import BaseController
 from time import sleep
 
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class USBController(BaseController):

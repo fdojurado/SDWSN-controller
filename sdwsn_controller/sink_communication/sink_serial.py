@@ -20,7 +20,7 @@ from sdwsn_controller.sink_communication.sink_abc import SinkABC
 import logging
 import serial
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class SinkSerial(SinkABC):

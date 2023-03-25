@@ -17,7 +17,7 @@
 from abc import ABC, abstractmethod
 import logging
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class TSCHScheduler(ABC):

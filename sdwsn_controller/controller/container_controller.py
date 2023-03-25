@@ -25,7 +25,7 @@ from sdwsn_controller.docker.docker import CoojaDocker
 from time import sleep
 from typing import Dict
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class ContainerController(BaseController):

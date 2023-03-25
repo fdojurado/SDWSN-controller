@@ -26,7 +26,7 @@ from sdwsn_controller.packet.packet import SDN_IPH_LEN
 import struct
 
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class PacketDissector():

@@ -27,7 +27,7 @@ from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 from time import sleep
 
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class Controller(BaseController):

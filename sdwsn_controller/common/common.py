@@ -24,7 +24,7 @@ from rich.console import Console
 from rich.text import Text
 import logging
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 def log_table(rich_table):

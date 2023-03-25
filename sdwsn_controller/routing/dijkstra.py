@@ -18,7 +18,7 @@ from sdwsn_controller.routing.router import Router
 import networkx as nx
 import logging
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class Dijkstra(Router):

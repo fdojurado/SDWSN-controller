@@ -34,11 +34,7 @@ from sdwsn_controller.network.network import Network
 from time import sleep
 
 
-logger = logging.getLogger('main.'+__name__)
-
-# RL_ENV = {
-#     "sdwsn": Env
-# }
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class BaseController(ABC):
@@ -49,21 +45,12 @@ class BaseController(ABC):
     ):
         """
         The BaseController class is an abstract class. Some functionalities are
-        declared as abstract methods, classes that inherits from the
-        BaseController should take care of them. The controller has six main
-        modules: network, reward processing, routing, and TSCH scheduler.
+        declared as abstract methods, classes that inherit from the BaseController
+        should take care of them. The controller has four main modules: network,
+        reward processing, routing, and TSCH scheduler.
 
         Args:
-            network (Network object, optional): Data plane infrastructure.
-                Defaults to None.
-            reward_processing (RewardProcessing object, optional):Reward
-                processing for RL. Defaults to None.
-            processing_window (int, optional): Number of packets for a
-                new cycle. Defaults to 200.
-            routing (Router object, optional): Centralized routing algorithm.
-                Defaults to None.
-            tsch_scheduler (Scheduler object, optional): Centralized
-                TSCH scheduler. Defaults to None.
+            config: A configuration object that defines the parameters for the controller.
         """
 
         # Create sink comm interface

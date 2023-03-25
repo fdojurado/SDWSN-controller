@@ -18,7 +18,7 @@ from sdwsn_controller.tsch.scheduler import TSCHScheduler
 from sdwsn_controller.tsch.schedule import cell_type
 import logging
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class HardCodedScheduler(TSCHScheduler):

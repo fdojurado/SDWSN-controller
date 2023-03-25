@@ -24,7 +24,7 @@ from sdwsn_controller.performance_metrics.pdr import PDRSamples
 from sdwsn_controller.routing.route import RoutingTable
 from sdwsn_controller.tsch.schedule import TSCHScheduleTable
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class Node():

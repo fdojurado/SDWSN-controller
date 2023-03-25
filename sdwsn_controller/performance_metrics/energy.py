@@ -22,7 +22,7 @@ from rich.table import Table
 from sdwsn_controller.common import common
 
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class Energy():
