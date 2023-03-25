@@ -50,6 +50,7 @@ dependencies = [
     'gym',
     'networkx',
     'pandas',
+    'pyserial',
     # 'plac',
     'pyfiglet',
     # 'pymongo',
