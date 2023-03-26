@@ -219,8 +219,8 @@ class RA_Packet:
 class RA_Packet_Payload:
 
     def __init__(self, payload, **kwargs):
-        self.scr = kwargs.get("scr", 0)
-        self.scr = addrConversion.to_int(self.scr).addr
+        self.src = kwargs.get("src", 0)
+        self.src = addrConversion.to_int(self.src).addr
         self.dst = kwargs.get("dst", 0)
         self.dst = addrConversion.to_int(self.dst).addr
         self.via = kwargs.get("via", 0)
@@ -230,9 +230,9 @@ class RA_Packet_Payload:
     def pack(self):
         if self.payload:
             packed = struct.pack('>2s2s2s'+str(len(self.payload)) +
-                                 's', self.scr, self.dst, self.via, bytes(self.payload))
+                                 's', self.src, self.dst, self.via, bytes(self.payload))
         else:
-            packed = struct.pack('!2s2s2s', self.scr, self.dst, self.via)
+            packed = struct.pack('!2s2s2s', self.src, self.dst, self.via)
         return packed
 
 
