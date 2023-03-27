@@ -163,16 +163,14 @@ def main():
     # -------------------- setup controller ---------------------
     config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
     controller_class = CONTROLLERS[config.controller_type]
-    controller = controller_class(config)
-    # ----------------- Environment ----------------------------
-    env = controller.reinforcement_learning.env
-    # --------------------Start RL --------------------------------
-    run(env, controller, output_folder, controller.simulation_name)
+    with controller_class(config) as controller:
+        # ----------------- Environment ----------------------------
+        env = controller.reinforcement_learning.env
+        # --------------------Start RL --------------------------------
+        run(env, controller, output_folder, controller.simulation_name)
 
-    result_analysis(
-        output_folder+controller.simulation_name+'.csv', output_folder)
-
-    controller.stop()
+        result_analysis(
+            output_folder+controller.simulation_name+'.csv', output_folder)
 
     # Delete folders
     try:

@@ -152,6 +152,13 @@ class BaseController(ABC):
 
         super().__init__()
 
+    # --------------------------With statement--------------------------
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.stop()
+
     # --------------------------Modules access--------------------------
     @property
     def network(self):

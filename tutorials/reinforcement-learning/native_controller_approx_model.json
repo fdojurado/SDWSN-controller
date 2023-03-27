@@ -21,7 +21,7 @@
     },
     "contiki": {
         "script_folder": "examples/elise",
-        "source": "/Users/fernando/contiki-ng",
+        "source": "/Users/ffjla/contiki-ng",
         "simulation_script": "cooja-elise.csc",
         "port": 60001
     },

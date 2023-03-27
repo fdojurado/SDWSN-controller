@@ -417,7 +417,7 @@ class Network:
 
     # --------------------------socket primitives-----------------------
 
-    def socket_read(self):
+    def read_socket(self):
         if self.socket is not None:
             while (1):
                 try:
@@ -430,7 +430,7 @@ class Network:
                     break
             logger.debug("Socket reading thread exited.")
 
-    def socket_start(self) -> bool:
+    def start_socket(self) -> bool:
         if self.socket is not None:
             # Connect serial
             if self.socket.connect() != 0:
@@ -440,11 +440,11 @@ class Network:
             logger.info("Socket up and running")
             # Read serial
             self.read_socket_thread = threading.Thread(
-                target=self.socket_read)
+                target=self.read_socket)
             self.read_socket_thread.start()
             return True
 
-    def socket_stop(self):
+    def stop_socket(self):
         if self.socket is not None:
             logger.debug(
                 f"Shutting down socket {self.network_running}")
@@ -477,11 +477,11 @@ class Network:
         self.network_running = False
         self.nodes_clear()
         # Stop the socket
-        self.socket_stop()
+        self.stop_socket()
 
     def start(self):
         # Start the socket interface
-        sock = self.socket_start()
+        sock = self.start_socket()
         if not sock:
             self.stop()
             return
