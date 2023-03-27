@@ -3,11 +3,12 @@
     "controller_type": "container controller",
     "network": {
         "name": "Cooja",
-        "processing_window": 200,
-        "socket": {
-            "host": "127.0.0.1",
-            "port": 60001
-        }
+        "processing_window": 200
+    },
+    "sink_comm": {
+        "name": "socket",
+        "host_dev": "127.0.0.1",
+        "port_baud": 60001
     },
     "tsch": {
         "scheduler": "Hard Coded Scheduler",

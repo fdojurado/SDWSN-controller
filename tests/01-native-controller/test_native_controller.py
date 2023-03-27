@@ -69,7 +69,7 @@ def test_native_controller():
     config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
     config.contiki.source = os.getenv('CONTIKI_NG')
     config.contiki.port = PORT
-    config.network.socket.port = PORT
+    config.network.sink_comm.port_baud = PORT
     controller_class = CONTROLLERS[config.controller_type]
     controller = controller_class(config)
     # --------------------Start data plane ------------------------
