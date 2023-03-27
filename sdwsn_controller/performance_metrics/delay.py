@@ -22,7 +22,7 @@ from rich.table import Table
 from sdwsn_controller.common import common
 
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class Delay():
@@ -46,6 +46,7 @@ class DelaySamples():
         node
     ) -> None:
         self.node = node
+        self.callback = None
         self.clear()
 
     def clear(self):
@@ -53,6 +54,9 @@ class DelaySamples():
 
     def size(self):
         return len(self.samples)
+
+    def register_callback(self, callback):
+        self.callback = callback
 
     def get_sample(self, seq):
         return self.samples.get(seq)
@@ -69,9 +73,12 @@ class DelaySamples():
             return
         logger.debug(
             f'Node {self.node.id}: add delay {delay}, seq {seq}')
-        energy_sample = Delay(seq=seq, delay=delay)
-        self.samples.update({seq: energy_sample})
-        return energy_sample
+        delay_sample = Delay(seq=seq, delay=delay)
+        self.samples.update({seq: delay_sample})
+        # Fire callback
+        if self.callback:
+            self.callback(id=self.node.id, seq=seq, delay=delay)
+        return delay_sample
 
     def print(self):
         table = Table(
@@ -93,4 +100,4 @@ class DelaySamples():
             table.add_row(self.node.sid,
                           str(delay.seq), str(delay.delay))
 
-        logger.info(f"Delay samples\n{common.log_table(table)}")
+        logger.debug(f"Delay samples\n{common.log_table(table)}")

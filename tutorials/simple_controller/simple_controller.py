@@ -14,20 +14,12 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-from sdwsn_controller.network.network import Network
-from sdwsn_controller.tsch.contention_free_scheduler import ContentionFreeScheduler
-from sdwsn_controller.controller.controller import Controller
-from sdwsn_controller.routing.dijkstra import Dijkstra
+from sdwsn_controller.config import SDWSNControllerConfig, CONTROLLERS
 from rich.logging import RichHandler
 import logging.config
 import sys
 
-SIMULATION_FOLDER = 'examples/elise'
-CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
-PYTHON_SCRIPT = 'cooja-orchestra.csc'
-PORT = 60001
-
+CONFIG_FILE = "native_controller.json"
 
 def run_data_plane(controller):
     controller.reset()
@@ -75,27 +67,9 @@ def main():
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
     # -------------------- setup controller --------------------
-
-    # Network
-    network = Network(processing_window=200,
-                      socket_host='127.0.0.1', socket_port=PORT)
-
-    # TSCH scheduler
-    tsch_scheduler = ContentionFreeScheduler()
-
-    # Routing algorithm
-    routing = Dijkstra()
-
-    controller = Controller(
-        # Controller related
-        contiki_source=CONTIKI_SOURCE,
-        simulation_folder=SIMULATION_FOLDER,
-        simulation_script=PYTHON_SCRIPT,
-        port=PORT,
-        network=network,
-        routing=routing,
-        tsch_scheduler=tsch_scheduler
-    )
+    config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
+    controller_class = CONTROLLERS[config.controller_type]
+    controller = controller_class(config)
     # --------------------Start data plane ------------------------
     # Let's start the data plane first
     run_data_plane(controller)

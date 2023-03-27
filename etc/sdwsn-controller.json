@@ -1,0 +1,72 @@
+{
+    "name": "example",
+    "controller_type": "native controller",
+    "mqtt": {
+        "host": "localhost",
+        "port": 1883,
+        "authentication": {
+            "username": "foobar",
+            "password": "secretpassword"
+        },
+        "tls": {
+            "ca_certificates": "",
+            "client_certificate": "",
+            "client_key": ""
+        }
+    },
+    "network": {
+        "name": "Cooja",
+        "processing_window": 200
+    },
+    "sink_comm": {
+        "name": "socket",
+        "host_dev": "127.0.0.1",
+        "port_baud": 60001
+    },
+    "tsch": {
+        "scheduler": "Contention Free Scheduler",
+        "max_channel": 3,
+        "max_slotframe": 500,
+        "slot_duration": 10
+    },
+    "routing": {
+        "algo": "Dijkstra"
+    },
+    "contiki": {
+        "script_folder": "examples/elise",
+        "source": "/Users/fernando/contiki-ng",
+        "simulation_script": "cooja-orchestra.csc",
+        "port": 60001
+    },
+    "docker": {
+        "image": "contiker/contiki-ng",
+        "script_folder": "examples/elise",
+        "target": "/home/user/contiki-ng",
+        "contiki": "/Users/fernando/contiki-ng",
+        "simulation_script": "cooja-elise.csc",
+        "privileged": "true",
+        "detach": "true",
+        "port": 60001
+    },
+    "reinforcement_learning": {
+        "reward_processor": "EmulatedRewardProcessing",
+        "max_episode_steps": 100
+    },
+    "performance_metrics": {
+        "energy": {
+            "min": 0,
+            "max": 5000,
+            "norm_offset": 0.0
+        },
+        "delay": {
+            "min": 10,
+            "max": 15000,
+            "norm_offset": 0.0
+        },
+        "pdr": {
+            "min": 0,
+            "max": 100,
+            "norm_offset": 0.0
+        }
+    }
+}

@@ -26,7 +26,7 @@ import logging
 # Constants for packet delay calculation
 SLOT_DURATION = 10
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class RewardProcessing(ABC):
@@ -48,24 +48,18 @@ class RewardProcessing(ABC):
 class EmulatedRewardProcessing(RewardProcessing):
     def __init__(
         self,
-        network,
-        power_min: int = 0,
-        power_max: int = 5000,
-        delay_min: int = SLOT_DURATION,
-        delay_max: int = 15000,
-        power_norm_offset: float = 0.0,
-        delay_norm_offset: float = 0.0,
-        reliability_norm_offset: float = 0.0
+        config,
+        **kwargs,
     ):
-        self.__power_min = power_min
-        self.__power_max = power_max
-        self.__delay_min = delay_min
-        self.__delay_max = delay_max
-        self.__power_norm_offset = power_norm_offset
-        self.__delay_norm_offset = delay_norm_offset
-        self.__reliability_norm_offset = reliability_norm_offset
-        self.__name = "Emulated Reward Processing"
-        self.__network = network
+        self.__power_min = config.performance_metrics.energy.min
+        self.__power_max = config.performance_metrics.energy.max
+        self.__delay_min = config.performance_metrics.delay.min
+        self.__delay_max = config.performance_metrics.delay.max
+        self.__power_norm_offset = config.performance_metrics.energy.norm_offset
+        self.__delay_norm_offset = config.performance_metrics.delay.norm_offset
+        self.__reliability_norm_offset = config.performance_metrics.pdr.norm_offset
+        self.__name = "Emulated Reward Processor"
+        self.__network = kwargs.get("network")
 
         super().__init__()
 
@@ -73,7 +67,7 @@ class EmulatedRewardProcessing(RewardProcessing):
     def name(self):
         return self.__name
 
-    def calculate_reward(self, alpha, beta, delta) -> dict:
+    def calculate_reward(self, alpha, beta, delta, _) -> dict:
         sample_time = datetime.now().timestamp() * 1000.0
         # Get the normalized average power consumption for this cycle
         power_wam, power_mean, power_normalized = self.__get_network_power_consumption()
@@ -128,7 +122,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             table.add_row("Average", str(sum_energy/len(samples)))
             return table
 
-        logger.info(
+        logger.debug(
             f"Power samples (SF: {self.__network.tsch_slotframe_size}) \
                 \n{common.log_table(power_samples_table(power_samples))}")
         # We now need to compute the weighted arithmetic mean
@@ -137,7 +131,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         # We now need to normalize the power WAM
         normalized_power = self.__power_norm_offset + ((power_wam - self.__power_min) /
                                                        (self.__power_max-self.__power_min))
-        logger.info(f'normalized power {normalized_power}')
+        logger.debug(f'normalized power {normalized_power}')
         return power_wam, power_mean, normalized_power
 
     def __power_weighted_arithmetic_mean(self, power_samples):
@@ -163,7 +157,7 @@ class EmulatedRewardProcessing(RewardProcessing):
         wam = np.dot(normalized_weights, all_power_transpose)
         # Overall network mean
         normal_mean = all_power.sum()/len(all_power_samples)
-        logger.info(f'power network WAM {wam} normal mean {normal_mean}')
+        logger.debug(f'power network WAM {wam} normal mean {normal_mean}')
         return wam, normal_mean
 
     def __power_compute_wam_weight(self, node):
@@ -205,7 +199,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             table.add_row("Average", str(sum_delay/len(samples)))
             return table
 
-        logger.info(
+        logger.debug(
             f"Delay samples (SF: {self.__network.tsch_slotframe_size})\
                 \n{common.log_table(delay_samples_table(delay_samples))}")
         # We now need to compute the weighted arithmetic mean
@@ -279,7 +273,7 @@ class EmulatedRewardProcessing(RewardProcessing):
             table.add_row("Average", str(sum_pdr/len(samples)))
             return table
 
-        logger.info(
+        logger.debug(
             f"PDR samples (SF: {self.__network.tsch_slotframe_size})\n{common.log_table(pdr_samples_table(pdr_samples))}")
         # We now need to compute the weighted arithmetic mean
         pdr_wam, pdr_mean = self.__pdr_weighted_arithmetic_mean(

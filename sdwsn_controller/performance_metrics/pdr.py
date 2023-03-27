@@ -22,7 +22,7 @@ from rich.table import Table
 from sdwsn_controller.common import common
 
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class PDR():
@@ -43,6 +43,7 @@ class PDRSamples():
         node
     ) -> None:
         self.node = node
+        self.callback = None
         self.clear()
 
     def clear(self):
@@ -51,6 +52,9 @@ class PDRSamples():
     def size(self):
         return len(self.samples)
 
+    def register_callback(self, callback):
+        self.callback = callback
+
     def get_sample(self, seq):
         return self.samples.get(seq)
 
@@ -58,7 +62,7 @@ class PDRSamples():
         seqList = list(self.samples.values())
         # Get the averaged pdr for this period
         if seqList:
-            avg_pdr = len(seqList)/seqList[-1].seq
+            avg_pdr = seqList[-1].seq/len(seqList)
         else:
             avg_pdr = 0
         if avg_pdr > 1.0:
@@ -70,9 +74,12 @@ class PDRSamples():
             return
         logger.debug(
             f'Node {self.node.id}: add pdr with seq {seq}')
-        energy_sample = PDR(seq=seq)
-        self.samples.update({seq: energy_sample})
-        return energy_sample
+        pdr_sample = PDR(seq=seq)
+        self.samples.update({seq: pdr_sample})
+        # Fire callback
+        if self.callback:
+            self.callback(id=self.node.id, seq=seq, pdr=self.get_average())
+        return pdr_sample
 
     def print(self):
         table = Table(title=f"PDR samples (Cycle seq: {self.node.cycle_seq})")
@@ -92,4 +99,4 @@ class PDRSamples():
             table.add_row(self.node.sid,
                           str(pdr.seq))
 
-        logger.info(f"PDR samples\n{common.log_table(table)}")
+        logger.debug(f"PDR samples\n{common.log_table(table)}")

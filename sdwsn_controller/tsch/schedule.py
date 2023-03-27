@@ -4,7 +4,7 @@ import types
 import logging
 
 # Protocols encapsulated in sdn IP packet
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 cell_type = types.SimpleNamespace()
 cell_type.UC_RX = 2
 cell_type.UC_TX = 1
@@ -107,4 +107,4 @@ class TSCHScheduleTable():
             table.add_row(sch_type, str(tsch_schedule.ch),
                           str(tsch_schedule.ts), str(tsch_schedule.dst_id))
 
-        logger.info(f"TSCH schedules\n{common.log_table(table)}")
+        logger.debug(f"TSCH schedules\n{common.log_table(table)}")

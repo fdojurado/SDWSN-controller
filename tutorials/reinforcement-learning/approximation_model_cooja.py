@@ -14,42 +14,21 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import sys
-import pandas as pd
-
-from gym.envs.registration import register
-import gym
-
-import logging.config
-
-import numpy as np
-
-import os
+from sdwsn_controller.config import SDWSNControllerConfig, CONTROLLERS
+from sdwsn_controller.result_analysis import run_analysis
 
 from rich.logging import RichHandler
 
-from sdwsn_controller.network.network import Network
-from sdwsn_controller.controller.container_controller \
-    import ContainerController
-from sdwsn_controller.reinforcement_learning.reward_processing \
-    import EmulatedRewardProcessing
-from sdwsn_controller.result_analysis import run_analysis
-from sdwsn_controller.routing.dijkstra import Dijkstra
-from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
+import pandas as pd
+import numpy as np
 
-
+import logging.config
 import shutil
+import sys
+import os
 
-from stable_baselines3.common.monitor import Monitor
 
-DOCKER_IMAGE = 'contiker/contiki-ng'
-SIMULATION_FOLDER = 'examples/elise'
-DOCKER_TARGET = '/home/user/contiki-ng'
-CONTIKI_SOURCE = '/Users/fernando/contiki-ng'
-SIMULATION_SCRIPT = 'cooja-elise.csc'
-PORT = 60003
-
-MAX_SLOTFRAME_SIZE = 70
+CONFIG_FILE = "native_controller_approx_model.json"
 
 
 def run(env, controller, output_folder, simulation_name):
@@ -69,9 +48,9 @@ def run(env, controller, output_folder, simulation_name):
     last_ts_in_schedule = observations['last_ts_in_schedule']
     controller.user_requirements = (0.4, 0.3, 0.3)
     increase = 1
-    for _ in range(200):
+    for _ in range(1000000):
         if increase:
-            if sf_size < MAX_SLOTFRAME_SIZE - 2:
+            if sf_size < env.max_slotframe_size - 2:
                 action = 0
             else:
                 increase = 0
@@ -90,10 +69,14 @@ def run(env, controller, output_folder, simulation_name):
         assert observations['last_ts_in_schedule'] > 1
         # Current SF size
         sf_size = observations['current_sf_len']
-        assert sf_size > 1 and sf_size <= MAX_SLOTFRAME_SIZE
+        assert sf_size > 1 and sf_size <= env.max_slotframe_size
         # Add row to DataFrame
         new_cycle = pd.DataFrame([info])
         df = pd.concat([df, new_cycle], axis=0, ignore_index=True)
+        if 'TimeLimit.truncated' in info:
+            if info['TimeLimit.truncated'] == True:
+                print('Number of max episodes reached')
+                break
     df.to_csv(output_folder+simulation_name+'.csv')
     # env.render()
     # env.close()
@@ -103,41 +86,47 @@ def result_analysis(path, output_folder):
     df = pd.read_csv(path)
     # Normalized power
     run_analysis.plot_fit_curves(
-        df,
-        'power',
-        output_folder,
-        'current_sf_len',
-        'power_normalized',
-        r'$|C|$',
-        r'$\widetilde{P}$',
-        4,
-        [8, 0.89],
-        [0.86, 0.9]
+        df=df,
+        title='power',
+        path=output_folder,
+        x_axis='current_sf_len',
+        y_axis='power_normalized',
+        x_axis_name=r'$|C|$',
+        y_axis_name=r'$\widetilde{P}$',
+        degree=4,
+        # txt_loc=[8, 0.89],
+        # y_axis_limit=[0.86, 0.9]
     )
     # Normalized delay
     run_analysis.plot_fit_curves(
-        df,
-        'delay',
-        output_folder,
-        'current_sf_len',
-        'delay_normalized',
-        r'$|C|$',
-        r'$\widetilde{D}$',
-        3,
-        [8, 0.045],
-        [0, 0.95]
+        df=df,
+        title='delay',
+        path=output_folder,
+        x_axis='current_sf_len',
+        y_axis='delay_normalized',
+        x_axis_name=r'$|C|$',
+        y_axis_name=r'$\widetilde{D}$',
+        degree=3,
+        # txt_loc=[8, 0.045],
+        # y_axis_limit=[0, 0.95]
     )
     run_analysis.plot_fit_curves(
-        df,
-        'reliability',
-        output_folder,
-        'current_sf_len',
-        'pdr_mean',
-        r'$|C|$',
-        r'$\widetilde{R}$',
-        1,
-        [25, 0.7],
-        [0.65, 1]
+        df=df,
+        title='reliability',
+        path=output_folder,
+        x_axis='current_sf_len',
+        y_axis='pdr_mean',
+        x_axis_name=r'$|C|$',
+        y_axis_name=r'$\widetilde{R}$',
+        degree=1,
+        # txt_loc=[25, 0.7],
+        # y_axis_limit=[0.65, 1]
+    )
+    # Metrics vs. Slotframe Size
+    run_analysis.plot_against_sf_size(
+        df=df,
+        title="slotframe_size",
+        path=output_folder
     )
 
 
@@ -164,13 +153,6 @@ def main():
     logger.addHandler(file_handler)
     logger.addHandler(stream_handler)
     # ----------------- RL environment, setup --------------------
-    # Register the environment
-    register(
-        # unique identifier for the env `name-version`
-        id="sdwsn-v1",
-        entry_point="sdwsn_controller.reinforcement_learning.env:Env",
-    )
-
     # Create output folder
     output_folder = './output/'
     os.makedirs(output_folder, exist_ok=True)
@@ -179,47 +161,16 @@ def main():
     log_dir = './tensorlog/'
     os.makedirs(log_dir, exist_ok=True)
     # -------------------- setup controller ---------------------
-    # Network
-    network = Network(processing_window=200,
-                      socket_host='127.0.0.1', socket_port=PORT)
-    # TSCH scheduler
-    tsch_scheduler = HardCodedScheduler()
+    config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
+    controller_class = CONTROLLERS[config.controller_type]
+    with controller_class(config) as controller:
+        # ----------------- Environment ----------------------------
+        env = controller.reinforcement_learning.env
+        # --------------------Start RL --------------------------------
+        run(env, controller, output_folder, controller.simulation_name)
 
-    # Reward processor
-    reward_processor = EmulatedRewardProcessing(network=network)
-
-    # Routing algorithm
-    routing = Dijkstra()
-
-    controller = ContainerController(
-        docker_image=DOCKER_IMAGE,
-        simulation_folder=SIMULATION_FOLDER,
-        simulation_script=SIMULATION_SCRIPT,
-        docker_target=DOCKER_TARGET,
-        contiki_source=CONTIKI_SOURCE,
-        port=PORT,
-        # Reward processor
-        network=network,
-        reward_processing=reward_processor,
-        routing=routing,
-        tsch_scheduler=tsch_scheduler
-    )
-    # ----------------- RL environment ----------------------------
-    env_kwargs = {
-        'simulation_name': 'approximation_model_cooja',
-        'folder': output_folder,
-        'controller': controller
-    }
-    # Create an instance of the environment
-    env = gym.make('sdwsn-v1', **env_kwargs)
-    env = Monitor(env, log_dir)
-    # --------------------Start RL --------------------------------
-    run(env, controller, output_folder, 'approximation_model_cooja')
-
-    result_analysis(
-        output_folder+'approximation_model_cooja.csv', output_folder)
-
-    controller.stop()
+        result_analysis(
+            output_folder+controller.simulation_name+'.csv', output_folder)
 
     # Delete folders
     try:

@@ -27,7 +27,7 @@ from rich.progress import Progress
 from time import sleep
 from typing import Dict, Optional
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class CoojaDocker():

@@ -22,7 +22,7 @@ from rich.table import Table
 from sdwsn_controller.common import common
 
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class Energy():
@@ -46,6 +46,7 @@ class EnergySamples():
         node
     ) -> None:
         self.node = node
+        self.callback = None
         self.clear()
 
     def clear(self):
@@ -54,6 +55,9 @@ class EnergySamples():
 
     def size(self):
         return len(self.samples)
+
+    def register_callback(self, callback):
+        self.callback = callback
 
     def get_sample(self, seq):
         return self.samples.get(seq)
@@ -70,6 +74,9 @@ class EnergySamples():
         self.samples.update({seq: energy_sample})
         if seq > self.last_seq:
             self.last_seq = seq
+        # Fire callback
+        if self.callback:
+            self.callback(id=self.node.id, seq=seq, energy=energy)
         return energy_sample
 
     def print(self):
@@ -92,4 +99,4 @@ class EnergySamples():
             table.add_row(self.node.sid,
                           str(energy.seq), str(energy.energy))
 
-        logger.info(f"Energy samples\n{common.log_table(table)}")
+        logger.debug(f"Energy samples\n{common.log_table(table)}")

@@ -27,26 +27,13 @@ from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 from time import sleep
 
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class Controller(BaseController):
     def __init__(
         self,
-        # Controller related
-        contiki_source: str = '/Users/fernando/contiki-ng',
-        simulation_folder: str = 'examples/elise',
-        simulation_script: str = 'cooja-elise.csc',
-        # Network listening port
-        port: int = 60001,
-        # Network
-        network: object = None,
-        # RL related
-        reward_processing: object = None,
-        # Routing
-        routing: object = None,
-        # TSCH scheduler
-        tsch_scheduler: object = None
+        config
     ):
         """
         This controller is intended to run run Cooja natively and without GUI.
@@ -64,30 +51,32 @@ class Controller(BaseController):
             tsch_scheduler (Scheduler object, optional): Centralized TSCH scheduler. Defaults to None.
         """
 
-        assert isinstance(contiki_source, str)
-        assert isinstance(simulation_folder, str)
-        assert isinstance(simulation_script, str)
+        # self.config = config
 
-        logger.info("Building controller")
+        # assert isinstance(contiki_source, str)
+        # assert isinstance(simulation_folder, str)
+        # assert isinstance(simulation_script, str)
+
+        logger.info("Building native controller")
 
         # Controller related variables
         self.__proc = None
 
-        self.__contiki_source = contiki_source
+        self.__contiki_source = config.contiki.source
         self.__cooja_log = os.path.join(
-            self.__contiki_source, simulation_folder, 'COOJA.log')
+            self.__contiki_source, config.contiki.script_folder, 'COOJA.log')
         self.__testlog = os.path.join(
-            self.__contiki_source, simulation_folder, 'COOJA.testlog')
+            self.__contiki_source, config.contiki.script_folder, 'COOJA.testlog')
         self.__simulation_folder = os.path.join(
-            self.__contiki_source, simulation_folder)
+            self.__contiki_source, config.contiki.script_folder)
         self.__cooja_path = os.path.normpath(
             os.path.join(self.__contiki_source, "tools", "cooja"))
         self.__simulation_script = os.path.join(
-            self.__contiki_source, simulation_folder, simulation_script)
+            self.__contiki_source, config.contiki.script_folder, config.contiki.simulation_script)
 
         self.__new_simulation_script = None
 
-        self.__port = port
+        self.__port = config.contiki.port
 
         logger.info(f"Contiki source: {self.__contiki_source}")
         logger.info(f"Cooja log: {self.__cooja_log}")
@@ -97,16 +86,13 @@ class Controller(BaseController):
         logger.info(f"Simulation script: {self.__simulation_script}")
 
         super().__init__(
-            reward_processing=reward_processing,
-            routing=routing,
-            network=network,
-            tsch_scheduler=tsch_scheduler
+            config
         )
 
     # Controller related functions
 
     def timeout(self):
-        sleep(1.2)
+        sleep(0.02)
 
     def start_cooja(self):
         # cleanup
@@ -115,7 +101,7 @@ class Controller(BaseController):
         except FileNotFoundError:
             pass
         except PermissionError as ex:
-            logger.info("Cannot remove previous Cooja output:", ex)
+            logger.error("Cannot remove previous Cooja output:", ex)
             return False
 
         try:
@@ -123,7 +109,7 @@ class Controller(BaseController):
         except FileNotFoundError:
             pass
         except PermissionError as ex:
-            logger.info("Cannot remove previous Cooja log:", ex)
+            logger.error("Cannot remove previous Cooja log:", ex)
             return False
 
         # We need to overwrite the port of the serial socket in the
@@ -229,6 +215,6 @@ class Controller(BaseController):
         super().stop()
 
     def reset(self):
-        logger.info('Resetting controller, etc.')
+        # logger.info('Resetting controller, etc.')
         self.stop()
         self.start()

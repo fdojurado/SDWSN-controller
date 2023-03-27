@@ -708,13 +708,11 @@ def plot_fit_curves(df, title, path, x_axis, y_axis, x_axis_name, y_axis_name,
     power_trendpoly = np.poly1d(trend)
 
     if degree == 4:
-        txt = r'$\widetilde{P}(|C|)=|C|^4*(%.2E)' % (trend[0]) +\
-            r'$|C|^3*(%.2E)+|C|^2*(%.2E)$' % (trend[1], trend[2]) +\
-            r'$|C| *(%.2E)+(%.2E)$' % (trend[3], trend[4])
+        txt = r'$\widetilde{P}(|C|)=|C|^4*(%.2E)+|C|^3*(%.2E)+|C|^2*(%.2E)+|C| *(%.2E)+(%.2E)$' % (
+            trend[0], trend[1], trend[2], trend[3], trend[4])
     if degree == 3:
-        txt = r'$\widetilde{D}(|C|)=|C|^3*(%.2E)$' % (trend[0]) +\
-            r'$|C|^2*(%.2E)+|C|*(%.2E)+(%.2E)$' % (
-                trend[1], trend[2], trend[3])
+        txt = r'$|C|^3*(%.2E)+|C|^2*(%.2E)+|C|*(%.2E)+(%.2E)$' % (
+            trend[0], trend[1], trend[2], trend[3])
     if degree == 1:
         txt = r'$\widetilde{R}(|C|)=|C|*(%.2E)+(%.2E)$' % (trend[0], trend[1])
 
@@ -724,6 +722,9 @@ def plot_fit_curves(df, title, path, x_axis, y_axis, x_axis_name, y_axis_name,
         ax.text(txt_loc[0], txt_loc[1], txt, style='italic',
                 bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 3},
                 fontsize=equation_font_size)
+    else:
+        # print the trend vector
+        print(f'{title} trend vector: {trend}')
 
     ax.grid(True, 'major', 'both', linestyle='--',
             color='0.75', linewidth=0.6, zorder=0)

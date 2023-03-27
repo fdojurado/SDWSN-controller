@@ -22,7 +22,7 @@ from sdwsn_controller.common import common
 from rich.table import Table
 import logging
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 # ---------------------------------------------------------------------------

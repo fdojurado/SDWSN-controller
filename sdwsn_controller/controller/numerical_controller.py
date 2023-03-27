@@ -16,81 +16,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from datetime import datetime
 
-from sdwsn_controller.reinforcement_learning.reward_processing import RewardProcessing
 from sdwsn_controller.controller.base_controller import BaseController
-
-import numpy as np
 
 import logging
 
-logger = logging.getLogger('main.'+__name__)
-
-
-class NumericalRewardProcessing(RewardProcessing):
-    def __init__(
-        self,
-        power_weights: np = np.array(
-            [-2.34925404e-06,  2.38160571e-04, -8.87979911e-03, 3.25046326e-01]
-        ),
-        delay_weights: np = np.array(
-            [-3.52867079e-06, 2.68498049e-04, -2.37508338e-03, 4.84268817e-02]
-        ),
-        pdr_weights: np = np.array(
-            [-0.00121819, 0.88141225]
-        )
-    ):
-        # Power polynomials coefficients
-        self.power_trendpoly = np.poly1d(power_weights)
-        # delay polynomials coefficients
-        self.delay_trendpoly = np.poly1d(delay_weights)
-        # PDR polynomials coefficients
-        self.pdr_trendpoly = np.poly1d(pdr_weights)
-        # Reward processor name
-        self.__name = "Numerical Reward Processing"
-
-        super().__init__()
-
-    @property
-    def name(self):
-        return self.__name
-
-    def calculate_reward(self, alpha, beta, delta, sf_size):
-        """
-        Function to calculate the reward given the SF size
-        """
-        # Calculate power consumption
-        power_normalized = self.power_trendpoly(sf_size)
-        # Calculate delay consumption
-        delay_normalized = self.delay_trendpoly(sf_size)
-        # Calculate pdr consumption
-        pdr_normalized = self.pdr_trendpoly(sf_size)
-        # Calculate the reward
-        reward = 2-1*(alpha*power_normalized+beta *
-                      delay_normalized-delta*pdr_normalized)
-        # print(f"reward: {reward}")
-        info = {
-            "reward": reward,
-            "power_normalized": power_normalized,
-            "delay_normalized": delay_normalized,
-            "pdr_normalized": pdr_normalized
-        }
-        return info
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class NumericalController(BaseController):
     def __init__(
         self,
-        # Network
-        network: object = None,
-        # RL related
-        reward_processing: object = None,
+        config
     ):
 
         logger.info("Building numerical controller")
 
         super().__init__(
-            network=network,
-            reward_processing=reward_processing
+            config=config
         )
 
     # Controller related functions
@@ -137,21 +79,21 @@ class NumericalController(BaseController):
 
     def calculate_reward(self, alpha, beta, delta, slotframe_size):
         sample_time = datetime.now().timestamp() * 1000.0
-        reward = self.reward_processing.calculate_reward(
+        reward = self.reinforcement_learning.calculate_reward(
             alpha, beta, delta, slotframe_size)
         info = {
             "timestamp": sample_time,
             "alpha": alpha,
             "beta": beta,
             "delta": delta,
-            'power_wam': 0,
-            'power_mean': 0,
+            'power_wam': reward['power_normalized'],
+            'power_mean': reward['power_normalized'],
             'power_normalized': reward['power_normalized'],
-            'delay_wam': 0,
-            'delay_mean': 0,
+            'delay_wam': reward['delay_normalized'],
+            'delay_mean': reward['delay_normalized'],
             'delay_normalized': reward['delay_normalized'],
-            'pdr_wam': 0,
-            'pdr_mean': reward['pdr_normalized'],
+            'pdr_wam': reward['pdr_mean'],
+            'pdr_mean': reward['pdr_mean'],
             'current_sf_len': self.current_slotframe_size,
             'last_ts_in_schedule': self.last_tsch_link,
             'reward': reward['reward']

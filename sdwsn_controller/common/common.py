@@ -24,7 +24,7 @@ from rich.console import Console
 from rich.text import Text
 import logging
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 def log_table(rich_table):
@@ -183,7 +183,6 @@ def next_coprime(num):
         num += 1
         # Check if num is coprime with all other sf sizes
         is_coprime = compare_coprime(num)
-    logger.debug(f'next coprime found {num}')
     return num
 
 
@@ -193,5 +192,4 @@ def previous_coprime(num):
         num -= 1
         # Check if num is coprime with all other sf sizes
         is_coprime = compare_coprime(num)
-    logger.debug(f'previous coprime found {num}')
     return num

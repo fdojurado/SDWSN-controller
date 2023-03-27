@@ -1,0 +1,32 @@
+{
+    "name": "example",
+    "controller_type": "container controller",
+    "network": {
+        "name": "Cooja",
+        "processing_window": 200
+    },
+    "sink_comm": {
+        "name": "socket",
+        "host_dev": "127.0.0.1",
+        "port_baud": 60001
+    },
+    "tsch": {
+        "scheduler": "Contention Free Scheduler",
+        "max_channel": 3,
+        "max_slotframe": 70,
+        "slot_duration": 10
+    },
+    "routing": {
+        "algo": "Dijkstra"
+    },
+    "docker": {
+        "image": "contiker/contiki-ng",
+        "script_folder": "examples/elise",
+        "target": "/home/user/contiki-ng",
+        "contiki": "/Users/ffjla/contiki-ng",
+        "simulation_script": "cooja-orchestra.csc",
+        "privileged": "true",
+        "detach": "true",
+        "port": 60001
+    }
+}

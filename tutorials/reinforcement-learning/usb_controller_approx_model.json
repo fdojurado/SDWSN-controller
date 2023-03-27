@@ -1,0 +1,51 @@
+{
+    "name": "native controller approx model",
+    "controller_type": "USB controller",
+    "mqtt": {
+        "host": "localhost",
+        "port": 1883,
+        "authentication": {
+            "username": "foo",
+            "password": "bar"
+        }
+    },
+    "network": {
+        "name": "USB network",
+        "processing_window": 10
+    },
+    "sink_comm": {
+        "name": "serial",
+        "host_dev": "/dev/tty.usbmodemL12371",
+        "port_baud": 115200
+    },
+    "tsch": {
+        "scheduler": "Contention Free Scheduler",
+        "max_channel": 3,
+        "max_slotframe": 70,
+        "slot_duration": 10
+    },
+    "routing": {
+        "algo": "Dijkstra"
+    },
+    "reinforcement_learning": {
+        "reward_processor": "EmulatedRewardProcessing",
+        "max_episode_steps": 300
+    },
+    "performance_metrics": {
+        "energy": {
+            "min": 0,
+            "max": 5000,
+            "norm_offset": 0.0
+        },
+        "delay": {
+            "min": 10,
+            "max": 15000,
+            "norm_offset": 0.0
+        },
+        "pdr": {
+            "min": 0,
+            "max": 100,
+            "norm_offset": 0.0
+        }
+    }
+}

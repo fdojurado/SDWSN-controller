@@ -24,7 +24,7 @@ from sdwsn_controller.performance_metrics.pdr import PDRSamples
 from sdwsn_controller.routing.route import RoutingTable
 from sdwsn_controller.tsch.schedule import TSCHScheduleTable
 
-logger = logging.getLogger('main.'+__name__)
+logger = logging.getLogger(f'main.{__name__}')
 
 
 class Node():
@@ -80,6 +80,9 @@ class Node():
     def energy_get_last(self):
         return self.energy.get_sample_last()
 
+    def energy_register_callback(self, callback):
+        self.energy.register_callback(callback=callback)
+
     def energy_clear(self):
         self.energy.clear()
 
@@ -96,6 +99,9 @@ class Node():
     def delay_get_average(self):
         return self.delay.get_average()
 
+    def delay_register_callback(self, callback):
+        self.delay.register_callback(callback=callback)
+
     def delay_clear(self):
         self.delay.clear()
 
@@ -110,6 +116,9 @@ class Node():
 
     def pdr_get_average(self):
         return self.pdr.get_average()
+
+    def pdr_register_callback(self, callback):
+        self.pdr.register_callback(callback=callback)
 
     def pdr_clear(self):
         self.pdr.clear()
