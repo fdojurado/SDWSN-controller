@@ -152,7 +152,7 @@ def test_container_approximation_model():
     config.docker.contiki = os.getenv('CONTIKI_NG')
     config.docker.image = os.getenv('DOCKER_BASE_IMG')
     config.docker.port = PORT
-    config.network.sink_comm.port_baud = PORT
+    config.sink_comm.port_baud = PORT
     controller_class = CONTROLLERS[config.controller_type]
     controller = controller_class(config)
     # ----------------- RL environment ----------------------------
