@@ -3,7 +3,7 @@
     "controller_type": "numerical controller",
     "reinforcement_learning": {
         "reward_processor": "NumericalRewardProcessing",
-        "max_episode_steps": 50000
+        "max_episode_steps": 50
     },
     "performance_metrics": {
         "energy": {
