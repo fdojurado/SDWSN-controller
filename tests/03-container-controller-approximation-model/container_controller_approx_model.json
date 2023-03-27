@@ -31,6 +31,6 @@
     },
     "reinforcement_learning": {
         "reward_processor": "EmulatedRewardProcessing",
-        "max_episode_steps": 200
+        "max_episode_steps": 5
     }
 }

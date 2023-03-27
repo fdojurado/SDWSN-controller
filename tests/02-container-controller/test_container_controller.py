@@ -70,6 +70,7 @@ def test_container_controller():
     config = SDWSNControllerConfig.from_json_file(CONFIG_FILE)
     config.docker.contiki = os.getenv('CONTIKI_NG')
     config.docker.image = os.getenv('DOCKER_BASE_IMG')
+    config.docker.port = PORT
     config.sink_comm.port_baud = PORT
     controller_class = CONTROLLERS[config.controller_type]
     controller = controller_class(config)
