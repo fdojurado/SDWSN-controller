@@ -48,7 +48,7 @@ dependencies = [
     'matplotlib',
     'docker',
     'setuptools==65.5.0',
-    'gym',
+    # 'gym',
     'networkx',
     'pandas',
     'pyserial',
