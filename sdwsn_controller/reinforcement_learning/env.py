@@ -17,8 +17,8 @@
 
 """ This is the implementation of the Software-Defined Wireless Sensor Network
 environment """
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
 import random
 from random import randrange
