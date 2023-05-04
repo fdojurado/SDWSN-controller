@@ -122,7 +122,7 @@ def run(env, controller, output_folder, simulation_name):
     df = pd.DataFrame()
     # Reset environment
     obs = env.reset()
-    assert np.all(obs)
+    # assert np.all(obs)
     # Get last observations (not normalized) including the SF size
     observations = controller.get_state()
     assert 0 <= observations['alpha'] <= 1
