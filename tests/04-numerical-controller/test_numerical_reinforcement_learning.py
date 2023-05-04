@@ -38,7 +38,7 @@ def train(env, log_dir):
     model = PPO("MlpPolicy", env,
                 tensorboard_log=log_dir, verbose=0)
 
-    model.learn(total_timesteps=int(50e3),
+    model.learn(total_timesteps=int(1e3),
                 tb_log_name='training')
     # Let's save the model
     path = "".join([log_dir, "ppo_sdwsn"])
