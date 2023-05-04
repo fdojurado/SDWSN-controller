@@ -36,7 +36,7 @@ def run(env, model_path, controller, output_folder, simulation_name):
     # Pandas df to store results at each iteration
     df = pd.DataFrame()
     # Reset environment
-    obs = env.reset()
+    obs, _ = env.reset()
     for _ in range(1000000):
         action, _ = model.predict(obs, deterministic=True)
         obs, reward, done, truncated, info = env.step(action)

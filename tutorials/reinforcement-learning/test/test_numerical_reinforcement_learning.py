@@ -41,7 +41,7 @@ def evaluation(env, model_path, controller, output_folder, simulation_name):
     for i in range(10):
         # Pandas df to store results at each iteration
         df = pd.DataFrame()
-        obs = env.reset()
+        obs, _ = env.reset()
         done = False
         acc_reward = 0
         # Get last observations non normalized

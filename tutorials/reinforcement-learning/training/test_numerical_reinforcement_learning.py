@@ -56,7 +56,7 @@ def evaluation(env, model_path):
 
     # Test the trained agent
     for _ in range(50):
-        obs = env.reset()
+        obs, _ = env.reset()
         done = False
         acc_reward = 0
         # Get last observations non normalized
