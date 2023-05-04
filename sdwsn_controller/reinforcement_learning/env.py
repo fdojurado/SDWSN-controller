@@ -161,7 +161,8 @@ class Env(gym.Env):
             observation, last_ts_in_schedule/self.max_slotframe_size)
         observation = np.append(
             observation, slotframe_size/self.max_slotframe_size)
-        return observation  # reward, done, info can't be included
+        info = metrics
+        return observation, info  # reward, done, info can't be included
 
     def render(self, mode='console'):
         pass
