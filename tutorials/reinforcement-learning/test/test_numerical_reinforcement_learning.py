@@ -19,20 +19,15 @@ import sys
 
 
 from sdwsn_controller.config import SDWSNControllerConfig, CONTROLLERS
-from sdwsn_controller.reinforcement_learning.wrappers\
-    import SaveOnBestTrainingRewardCallback
 
-from stable_baselines3.common.monitor import Monitor
+
 from sdwsn_controller.result_analysis.run_analysis import run_analysis
 
 
-import numpy as np
 import pandas as pd
 
-import shutil
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.monitor import Monitor
 
 
 CONFIG_FILE = "numerical_controller_rl.json"

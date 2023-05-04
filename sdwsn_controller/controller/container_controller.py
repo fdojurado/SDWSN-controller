@@ -89,9 +89,10 @@ class ContainerController(BaseController):
         self.__port = config.docker.port
 
         # Container
-        self.container = CoojaDocker(docker_image=config.docker.image, script=run_simulation_file, mount=mount,
-                                     sysctls=sysctls, ports=ports, privileged=config.docker.privileged, detach=config.docker.detach,
-                                     log_file=self.__cooja_log)
+        self.container = CoojaDocker(docker_image=config.docker.image, script=run_simulation_file,
+                                     mount=mount, sysctls=sysctls, ports=ports,
+                                     privileged=config.docker.privileged,
+                                     detach=config.docker.detach, log_file=self.__cooja_log)
 
         logger.info(f"Contiki source: {self.__contiki_source}")
         logger.info(f"Cooja log: {self.__cooja_log}")

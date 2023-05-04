@@ -24,12 +24,8 @@ from sdwsn_controller.reinforcement_learning.wrappers\
 
 from stable_baselines3.common.monitor import Monitor
 
-import numpy as np
-
-import shutil
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.monitor import Monitor
 
 
 CONFIG_FILE = "numerical_controller_rl.json"

@@ -14,8 +14,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Dict, Tuple, Optional, List, Any, Callable
-from contextlib import ExitStack
+from typing import Dict, Optional, List, Any, Callable
 
 import time
 import logging
