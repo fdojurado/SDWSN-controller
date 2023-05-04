@@ -66,7 +66,7 @@ def run(env, controller, output_folder, simulation_name):
             else:
                 increase = 1
 
-        _, _, _, info = env.step(action)
+        _, _, _, truncated,info = env.step(action)
         # Get last observations non normalized
         observations = controller.get_state()
         assert 0 <= observations['alpha'] <= 1
@@ -79,10 +79,10 @@ def run(env, controller, output_folder, simulation_name):
         # Add row to DataFrame
         new_cycle = pd.DataFrame([info])
         df = pd.concat([df, new_cycle], axis=0, ignore_index=True)
-        if 'TimeLimit.truncated' in info:
-            if info['TimeLimit.truncated'] == True:
-                print('Number of max episodes reached')
-                break
+        if truncated is True:
+            # if info['TimeLimit.truncated'] == True:
+            print('Number of max episodes reached')
+            break
     df.to_csv(output_folder+simulation_name+'.csv')
     # env.render()
     # env.close()

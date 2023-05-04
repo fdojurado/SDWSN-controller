@@ -105,11 +105,13 @@ class Env(gym.Env):
             done = True
             reward = -4
 
-        return observation, reward, done, info
+        return observation, reward, done, False, info
 
     """ Reset the environment, reset the routing and the TSCH schedules """
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        # We need the following line to seed self.np_random
+        super().reset(seed=seed)
         # Reset the container controller
         self.controller.reset()
         # We now wait until we reach the processing_window

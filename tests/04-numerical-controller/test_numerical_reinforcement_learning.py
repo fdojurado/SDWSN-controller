@@ -80,7 +80,7 @@ def evaluation(env, model_path):
                 print("Unknow user requirements.")
         while (not done):
             action, _ = model.predict(obs, deterministic=True)
-            obs, reward, done, _ = env.step(action)
+            obs, reward, done, _, _ = env.step(action)
             # Get last observations non normalized
             observations = env.controller.get_state()
             acc_reward += reward
