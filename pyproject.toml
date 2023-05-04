@@ -45,7 +45,7 @@ keywords = [
 
 dependencies = [
     # 'setuptools==64',
-    'stable_baselines3[extra]',
+    'stable_baselines3[extra]>=2.0.0a1',
     'matplotlib',
     'docker',
     # 'gym',
