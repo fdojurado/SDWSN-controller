@@ -19,7 +19,7 @@ The ELISE project comprises two main components or repositories: data plane , co
 
 * Control plane: In its core, it runs on Python_. This plane provides support to all functionalities listed in the architecture including reinforcement learning, the code resides in SDWSN-Controller_.
 
-ELISE repository has all components added as submodules, and it also has scripts to automate experiments in the FIT-IoT-LAB_ platform. If you don't need to perform experiments in the FIT-IoT-LAB_ platform you only need to clone the Contiki-NG-SDWSN_ and the SDWSN-Controller_ repositories.
+ELISE repository has all components added as submodules, and it also has scripts to automate experiments in the FIT-IoT-LAB_ platform.
 
 Contents
 =========

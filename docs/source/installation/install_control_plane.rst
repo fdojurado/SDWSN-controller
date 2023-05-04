@@ -28,6 +28,18 @@ Before jumping into the following steps, you at least need to install Python_, a
 
 To install the package, execute the following commands.
 
+#. Clone the repository::
+
+    $ git clone https://github.com/fdojurado/SDWSN-controller.git
+
+#. You may want to create a virtual environment, in the repository folder run::
+
+    $ python -m venv venv
+
+#. Activate the virtual environment::
+
+    $ source venv/bin/activate
+
 #. In the repository folder run::
 
     $ python -m pip install .

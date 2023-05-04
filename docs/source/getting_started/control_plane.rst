@@ -8,7 +8,6 @@ The SDWSN-Controller_ features the main functionalities described below:
 
 * Multiple controller types including a container controller for the Cooja network simulator (Only docker is supported) and a controller for FIT-IoT-LAB_ platforms.
 * A Reinforcement learning module to manage the environment, reward processing, and etc.
-* A mongo database that stores network information.
 * TSCH module for designing and building schedules.
 * Routing module to manage routing paths of the data plane.
 * Serial interface that handles the communication with the sink node of the data plane.

@@ -10,12 +10,12 @@ The same installation instructions of Contiki-NG_ apply here. Information on sup
 
 Cooja simulation
 ^^^^^^^^^^^^^^^^^^^^^
-We currently support Docker_. Installation instructions can be found in `here <https://github.com/contiki-ng/contiki-ng/wiki/Docker>`_. \
+We currently support Docker_. Installation instructions can be found in `here <https://docs.contiki-ng.org/en/develop/doc/getting-started/Docker.html>`_. \
 Remember to create an alias for your Contiki-NG (e.g. contiker).
 
 Real-world deployment
 ^^^^^^^^^^^^^^^^^^^^^
 You just need to compile your code and upload your firmware to your device.
 
-.. _Contiki-NG: https://github.com/contiki-ng/contiki-ng
+.. _Contiki-NG: https://docs.contiki-ng.org/en/develop/
 .. _Docker: https://www.docker.com/
