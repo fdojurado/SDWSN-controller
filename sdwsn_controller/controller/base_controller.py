@@ -19,7 +19,7 @@ from abc import ABC, abstractmethod
 
 import logging
 
-import gymnasium as gym
+import gym
 
 import numpy as np
 

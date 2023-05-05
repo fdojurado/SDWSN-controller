@@ -17,8 +17,8 @@
 
 """ This is the implementation of the Software-Defined Wireless Sensor Network
 environment """
-import gymnasium as gym
-from gymnasium import spaces
+import gym
+from gym import spaces
 import numpy as np
 import random
 from random import randrange
@@ -105,13 +105,11 @@ class Env(gym.Env):
             done = True
             reward = -4
 
-        return observation, reward, done, False, info
+        return observation, reward, done, info
 
     """ Reset the environment, reset the routing and the TSCH schedules """
 
-    def reset(self, seed=None, options=None):
-        # We need the following line to seed self.np_random
-        super().reset(seed=seed)
+    def reset(self):
         # Reset the container controller
         self.controller.reset()
         # We now wait until we reach the processing_window
@@ -161,8 +159,7 @@ class Env(gym.Env):
             observation, last_ts_in_schedule/self.max_slotframe_size)
         observation = np.append(
             observation, slotframe_size/self.max_slotframe_size)
-        info = metrics
-        return observation, info  # reward, done, info can't be included
+        return observation  # reward, done, info can't be included
 
     def render(self, mode='console'):
         pass
