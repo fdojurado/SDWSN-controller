@@ -135,7 +135,7 @@ jobs:
           docker pull $DOCKER_BASE_IMG
       - name: Run rocker
         run: |
-          systemctl start docker
+          sudo -E systemctl start docker
       - name: Test with pytest
         run: |
           cd ${{ env.SDWSN-controller }}
