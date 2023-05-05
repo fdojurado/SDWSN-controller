@@ -115,6 +115,9 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           cd ${{ env.SDWSN-controller }}
           python -m pip install .
+      - name: Check setuptools version
+        run: |
+          python -m pip show setuptools
       - name: Lint with flake8
         run: |
            pwd
