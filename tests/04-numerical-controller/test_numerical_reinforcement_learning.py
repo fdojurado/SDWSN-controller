@@ -38,7 +38,7 @@ def train(env, log_dir):
     model = PPO("MlpPolicy", env,
                 tensorboard_log=log_dir, verbose=0)
 
-    model.learn(total_timesteps=int(1e3),
+    model.learn(total_timesteps=int(1e5),
                 tb_log_name='training')
     # Let's save the model
     path = "".join([log_dir, "ppo_sdwsn"])
@@ -80,7 +80,8 @@ def evaluation(env, model_path):
                 print("Unknow user requirements.")
         while (not done):
             action, _ = model.predict(obs, deterministic=True)
-            obs, reward, done, _, _ = env.step(action)
+            obs, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
             # Get last observations non normalized
             observations = env.controller.get_state()
             acc_reward += reward
