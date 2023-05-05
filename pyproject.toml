@@ -44,7 +44,7 @@ keywords = [
 # dynamic = ["dependencies"]
 
 dependencies = [
-    'setuptools==67.7.2',
+#     'setuptools==67.7.2',
     'stable_baselines3[extra]==1.8.0',
     'matplotlib',
     'docker',
