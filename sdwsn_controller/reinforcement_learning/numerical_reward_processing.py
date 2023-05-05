@@ -16,8 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from sdwsn_controller.reinforcement_learning.reward_processing import RewardProcessing
 
-from datetime import datetime
-
 import numpy as np
 
 import logging

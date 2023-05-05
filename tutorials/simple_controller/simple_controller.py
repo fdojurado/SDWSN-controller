@@ -21,6 +21,7 @@ import sys
 
 CONFIG_FILE = "native_controller.json"
 
+
 def run_data_plane(controller):
     controller.reset()
     # We now wait until we reach the processing_window

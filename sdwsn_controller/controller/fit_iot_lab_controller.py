@@ -19,7 +19,6 @@ from sdwsn_controller.controller.base_controller import BaseController
 
 from time import sleep
 
-from rich.progress import Progress
 import logging
 
 logger = logging.getLogger(f'main.{__name__}')

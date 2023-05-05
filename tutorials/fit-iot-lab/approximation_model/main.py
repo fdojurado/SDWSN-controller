@@ -22,7 +22,7 @@ from sdwsn_controller.routing.dijkstra import Dijkstra
 from sdwsn_controller.controller.fit_iot_lab_controller import FitIoTLABController
 from sdwsn_controller.tsch.hard_coded_schedule import HardCodedScheduler
 from stable_baselines3.common.monitor import Monitor
-from gym.envs.registration import register
+from gymnasium.envs.registration import register
 from rich.logging import RichHandler
 from fit_iot_lab import common
 import pandas as pd
@@ -31,7 +31,7 @@ import numpy as np
 import logging
 # import shutil
 import sys
-import gym
+import gymnasium as gym
 import os
 import argparse
 
@@ -121,7 +121,7 @@ def run(env, controller, output_folder, simulation_name):
     # Pandas df to store results at each iteration
     df = pd.DataFrame()
     # Reset environment
-    obs = env.reset()
+    obs, _ = env.reset()
     assert np.all(obs)
     # Get last observations (not normalized) including the SF size
     observations = controller.get_state()

@@ -133,6 +133,9 @@ jobs:
           echo "Using $DOCKER_BASE_IMG for this run"
           echo "Pulling image $DOCKER_BASE_IMG from dockerhub";
           docker pull $DOCKER_BASE_IMG
+      - name: Run rocker
+        run: |
+          sudo -E systemctl start docker
       - name: Test with pytest
         run: |
           cd ${{ env.SDWSN-controller }}

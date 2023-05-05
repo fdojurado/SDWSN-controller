@@ -17,8 +17,8 @@
 
 """ This is the implementation of the Software-Defined Wireless Sensor Network
 environment """
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
 import random
 from random import randrange
@@ -57,7 +57,7 @@ class Env(gym.Env):
         # We define the observation space
         # They will be the user requirements, power, delay, pdr, last ts active in schedule, and current slotframe size
         self.n_observations = 8
-        self.observation_space = spaces.Box(low=0, high=1,
+        self.observation_space = spaces.Box(low=-1, high=1,
                                             shape=(self.n_observations, ), dtype=np.float32)
 
     """ Step action """
@@ -82,21 +82,9 @@ class Env(gym.Env):
         while (not self.controller.wait()):
             print("resending schedules")
             self.controller.send_tsch_schedules()
-        # Calculate the reward and metrics
-        metrics = self.controller.calculate_reward(
-            self.controller.alpha, self.controller.beta, self.controller.delta,
-            sf_len)
-        # Append to the observations
-        observation = np.append(
-            state['user_requirements'], metrics['power_normalized'])
-        observation = np.append(observation, metrics['delay_normalized'])
-        observation = np.append(observation, metrics['pdr_mean'])
-        observation = np.append(
-            observation, state['last_ts_in_schedule']/self.max_slotframe_size)
-        observation = np.append(observation, sf_len/self.max_slotframe_size)
+        observation, info = self._get_obs()
         done = False
-        info = metrics
-        reward = metrics['reward']
+        reward = info['reward']
         # self.max_slotframe_size is the maximum slotframe size
         # TODO: Set the maximum slotframe size at the creation
         # of the environment
@@ -105,11 +93,39 @@ class Env(gym.Env):
             done = True
             reward = -4
 
-        return observation, reward, done, info
+        return observation, reward, done, False, info
+
+    def _get_obs(self):
+        state = self.controller.get_state()
+        metrics = self.controller.calculate_reward(
+            self.controller.alpha, self.controller.beta, self.controller.delta,
+            state['current_sf_len'])
+        # Append to the observations
+        user_requirements = np.array(
+            state['user_requirements'], dtype=np.float32)
+        power_normalized = np.array(
+            metrics['power_normalized'], dtype=np.float32)
+        observation = np.append(user_requirements, power_normalized)
+        delay_normalized = np.array(
+            metrics['delay_normalized'], dtype=np.float32)
+        observation = np.append(observation, delay_normalized)
+        pdr_mean = np.array(metrics['pdr_mean'], dtype=np.float32)
+        observation = np.append(observation, pdr_mean)
+        last_ts_in_schedule = np.array(
+            state['last_ts_in_schedule']/self.max_slotframe_size, dtype=np.float32)
+        observation = np.append(
+            observation, last_ts_in_schedule)
+        slotframe_size = np.array(
+            state['current_sf_len']/self.max_slotframe_size, dtype=np.float32)
+        observation = np.append(
+            observation, slotframe_size)
+        return observation, metrics
 
     """ Reset the environment, reset the routing and the TSCH schedules """
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        # We need the following line to seed self.np_random
+        super().reset(seed=seed)
         # Reset the container controller
         self.controller.reset()
         # We now wait until we reach the processing_window
@@ -147,19 +163,8 @@ class Env(gym.Env):
         # slotframe_size = last_ts_in_schedule
         self.controller.current_slotframe_size = slotframe_size
         # We now save the user requirements
-        user_requirements = self.controller.user_requirements
-        # We now save the observations with reward None
-        metrics = self.controller.calculate_reward(
-            self.controller.alpha, self.controller.beta, self.controller.delta, slotframe_size)
-        # Append to the observations
-        observation = np.append(user_requirements, metrics['power_normalized'])
-        observation = np.append(observation, metrics['delay_normalized'])
-        observation = np.append(observation, metrics['pdr_mean'])
-        observation = np.append(
-            observation, last_ts_in_schedule/self.max_slotframe_size)
-        observation = np.append(
-            observation, slotframe_size/self.max_slotframe_size)
-        return observation  # reward, done, info can't be included
+        observation, info = self._get_obs()
+        return observation, info  # reward, done, info can't be included
 
     def render(self, mode='console'):
         pass

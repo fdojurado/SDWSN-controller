@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import gym
+import gymnasium as gym
 import os
 import numpy as np
 from stable_baselines3.common.callbacks import BaseCallback
