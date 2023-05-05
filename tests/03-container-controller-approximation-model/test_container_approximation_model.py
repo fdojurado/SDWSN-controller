@@ -66,7 +66,7 @@ def run(env, controller, output_folder, simulation_name):
             else:
                 increase = 1
 
-        _, _, _, truncated,info = env.step(action)
+        _, _, _, truncated, info = env.step(action)
         # Get last observations non normalized
         observations = controller.get_state()
         assert 0 <= observations['alpha'] <= 1
