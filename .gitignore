@@ -62,6 +62,8 @@ Thumbs.db
 
 # Sphinx documentation
 docs/_build/
+# Exclude dist in slides folder
+!slides/*/dist/
 
 # Applications
 *.app

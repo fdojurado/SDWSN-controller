@@ -17,7 +17,6 @@
 from fit_iot_lab import common
 import os
 import argparse
-import pathlib
 import logging
 from rich.logging import RichHandler
 

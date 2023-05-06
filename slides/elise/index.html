@@ -20,7 +20,7 @@
 	<div class="reveal">
 		<div class="slides">
 			<header>
-				https://people.compute.dtu.dk/ffjla/ &middot; Fernando Jurado-Lasso &middot; 5 Aug 2022
+				https://people.compute.dtu.dk/ffjla/ &middot; Fernando Jurado-Lasso &middot; 10 May 2023
 			</header>
 			<section>
 				<!-- <h1 class="r-fit-text">RL Tips and Tricks</h1>
@@ -30,8 +30,9 @@
 						<div class="col-xs-7">
 							<div class="col-xs-12">
 								<h3 id='main-title'>Research Work</h3>
-								<p id="subtitle">A reinforcement learning framework to optimize the sloftframe size of
-									TSCH in IoT networks
+								<p id="subtitle">ELISE: A Reinforcement Learning Framework to
+									Optimize the Sloftframe Size of TSCH in
+									SDN-Based IoT Networks
 								</p>
 							</div>
 						</div>
@@ -41,8 +42,8 @@
 							website</a>) <em>et al.</em> <br>
 						<a href="https://www.compute.dtu.dk/english/research/research-sections/ese"
 							target="_blank">Embedded Systems Engineering (ESE) section</a> <br>
-						<a href="https://www.dtu.dk/english"
-						target="_blank">Technical University of Denmark - DTU</a><br>
+						<a href="https://www.dtu.dk/english" target="_blank">Technical University of Denmark -
+							DTU</a><br>
 						<a href="https://github.com/fdojurado" target="_blank">github.com/fdojurado</a> <br>
 					</div>
 				</div>
@@ -51,43 +52,181 @@
 				<h3>Presentation outline</h3>
 				<ul>
 					<li>
-						<a href="#/research-objectives">Research objectives (ROs)</a>
+						<a href="#/research-objectives">ELISE Research Objectives (ROs)</a>
 					</li>
 					<li>
-						<a href="#/system-architecture">System architecture</a>
+						<a href="#/reprogrammable-iot-network">Reprogrammable IoT Network</a>
 					</li>
 					<li>
-						<a href="#/sdwsn">Software-Defined Wireless Sensor Network (SDWSN)</a>
+						<a href="#/tsch">Introduction to TSCH</a>
 					</li>
 					<li>
-						<a href="#/reinforcement-learning">Reinforcement learning</a>
+						<a href="#/intro-reinforcement-learning">Introduction to Reinforcement Learning</a>
 					</li>
 					<li>
-						<a href="#/sdwsn-approximation-model">SDWSN approximation model</a>
+						<a href="#/system-architecture">ELISE System Architecture</a>
+					</li>
+					<li>
+						<a href="#/reinforcement-learning-module">ELISE Reinforcement Learning Module</a>
 					</li>
 					<li>
 						<a href="#/results">Results</a>
-					</li>
-					<li>
-						<a href="#/publication-venues">Publication venues</a>
 					</li>
 				</ul>
 			</section>
 			<section id="research-objectives">
 				<h4>Research objectives (ROs)</h4>
 				<ol>
-					<li class="list-space">To develop a framework (?) that enables centralized network resource
-						management and run-time reconfiguration of WSNs.</li>
-					<li class="list-space">To develop a reinforcement learning (RL) solution that leverage the framework
+					<li class="fragment list-space">To develop a framework that enables centralized network resource
+						management and run-time reconfiguration of IoT network.</li>
+					<li class="fragment list-space">To develop a reinforcement learning (RL) solution that leverage the
+						framework
 						to dynamically adapt the network reliability, power efficiency, and delay of the WSN giving a
 						set of user requirements.</li>
-					<li class="list-space">To design a reward model based on a multi-objective function that enables the
-						selection of the best network configuration that matches user requirements.</li>
+					<li class=" fragment list-space">To design a reward model based on a multi-objective function that
+						enables the
+						selection of the optimal slotframe size given a set of user requirements.</li>
 				</ol>
+			</section>
+			<section id="reprogrammable-iot-network">
+				<h4>
+					Reprogrammable IoT network
+				</h4>
+				<p>
+					To enable runtime network resource management, we have defined <em>four</em> main network
+					functions.
+				</p>
+				<ol>
+					<!-- <li class="list-space">
+							<b>Data packets:</b> This type of packet sends the sensed data to the controller.
+						</li> -->
+					<li class="list-space">
+						<b>Neighbor Discovery (ND):</b> This packet discover other sensor devices in the sender
+						transmission range. It also allows to discover neighbors with path to the controller.
+					</li>
+					<li class="list-space">
+						<b>Neighbor Advertisement (NA):</b> This packet sends messages to report their own and their
+						neighbors' status
+						to the controller including the current power consumption, rank (# hops to the controller),
+						and links to neighbors.
+					</li>
+					<li class="list-space">
+						<b>Network configuration - TSCH schedules:</b> This is a control packet to stablish the
+						upcoming TSCH schedule (Tx, Rx timeslots and channels) for all \(n\in N\). Where \(N\) is
+						the number of sensor nodes in the network.
+					</li>
+					<li class="list-space">
+						<b>Network configuration - Routes:</b> This is a control packet to stablish the upcoming
+						forwarding
+						paths for all \(n\in N\).
+					</li>
+				</ol>
+			</section>
+			<section id="tsch">
+				<section>
+					<h4>Introduction to TSCH</h4>
+					<p>
+						Time Slotted Channel Hopping (TSCH) is a MAC protocol that uses time synchronization to schedule
+						communication in
+						time-slots. It is based on the IEEE 802.15.4e standard.
+					</p>
+					<p>
+						TSCH is a deterministic protocol that provides high reliability and low power consumption.
+						However, its performance largely depends on the TSCH schedule.
+					</p>
+				</section>
+				<section>
+					<h4>TSCH schedule</h4>
+					<p>
+						TSCH schedule is a set of time-slots that are assigned to each node in the network. Each
+						time-slot is assigned to a specific channel and a specific node.
+					</p>
+					<p>
+						TSCH schedule is defined by the following parameters:
+					</p>
+					<ul>
+						<li class="fragment list-space">Slotframe size (\(|C|\))</li>
+						<li class="fragment list-space">Number of time-slots</li>
+						<li class="fragment list-space">Number of channels</li>
+					</ul>
+				</section>
+				<section>
+					<h4>TSCH schedule example</h4>
+					<img src="images/tsch-schedule.png" alt="tsch-schedule" style="max-width: 50%">
+				</section>
+				<section>
+					<h4>Orchestra TSCH scheduler</h4>
+					<p>
+						Orchestra is an autonomous TSCH scheduler. It
+						runs without any central scheduling entity nor negotiation. The key idea
+						is to provision a set of slots for different traffic planes, and to
+						define the slots in such a way that they can be automatically
+						installed/removed as the RPL topology evolves.
+					</p>
+					<p>
+						<b>Orchestra</b> mainly <b>uses three</b> slotframes in its default configuration:
+						<em>time source</em>, <em>unicast</em>, and <em>default</em>.
+						The time source is used to sync the node with its parent. The default slotframe is used for any
+						other traffic than time source and unicast messages.
+					</p>
+				</section>
+			</section>
+			<section id="intro-reinforcement-learning">
+				<section>
+					<h3>Introduction to Reinforcement Learning</h3>
+					<p>
+						Reinforcement Learning (RL) is a machine learning technique that enables an agent to learn
+						through trial and error by interacting with its environment.
+					</p>
+					<p>
+						RL is composed of the following elements:
+					</p>
+					<ul>
+						<li class="fragment list-space">Agent</li>
+						<li class="fragment list-space">Environment</li>
+						<li class="fragment list-space">State</li>
+						<li class="fragment list-space">Action</li>
+						<li class="fragment list-space">Reward</li>
+					</ul>
+				</section>
+				<section>
+					<h3>Agent</h3>
+					<p>
+						An agent is an entity that interacts with the environment. It is responsible for taking
+						actions and learning from the environment.
+					</p>
+				</section>
+				<section>
+					<h3>Environment</h3>
+					<p>
+						An environment is the world in which the agent interacts. It is responsible for providing
+						feedback to the agent.
+					</p>
+				</section>
+				<section>
+					<h4>State</h4>
+					<p>
+						A state is a representation of the environment at a given time. It is used by the agent to
+						make decisions.
+					</p>
+				</section>
+				<section>
+					<h4>Action</h4>
+					<p>
+						An action is a decision made by the agent. It is used to change the state of the environment.
+					</p>
+				</section>
+				<section>
+					<h4>Reward</h4>
+					<p>
+						A reward is a feedback from the environment to the agent. It is used to evaluate the agent's
+						actions.
+					</p>
+				</section>
 			</section>
 			<section id="system-architecture">
 				<section>
-					<h3>System architecture</h3>
+					<h3>ELISE System architecture</h3>
 				</section>
 				<section>
 					<h4>Unified Concepts: </h4>
@@ -101,40 +240,265 @@
 					<h4>Architecture diagram </h4>
 					<img src="images/architecture.png" alt="rl101" style="max-width: 50%">
 				</section>
-			</section>
-			<section id="sdwsn">
 				<section>
-					<h4>
-						SDWSN
-					</h4>
+					<h4>TSCH slotframe design</h4>
 					<p>
-						To enable runtime network resource management, we have defined <em>five</em> main network
-						functions.
+						We have defined <b>four different slotframes</b> to enable SDN concepts in the sensor network:
+						time
+						source, control plane, data plane, and default.
+						The time source and default slotframes performs same tasks as Orchestra, whereas the control
+						plane
+						slotframe is used for all control traffic; TSCH schedules and routes configuration.
+						Additionally, the data plane slotframe is used for data packets.
 					</p>
-					<ol>
-						<li class="list-space">
-							<b>Data packets:</b> This type of packet sends the sensed data to the controller.
-						</li>
-						<li class="list-space">
-							<b>Neighbor Discovery (ND):</b> This packet discover other sensor devices in the sender
-							transmission range. It also allows to discover neighbors with path to the controller.
-						</li>
-						<li class="list-space">
-							<b>Neighbor Advertisement (NA):</b> This packet sends messages to report their own and their
-							neighbors' status
-							to the controller including the current power consumption, rank, and links to neighbors.
-						</li>
-						<li class="list-space">
-							<b>Network configuration - TSCH schedules:</b> This is a control packet to stablish the
-							schedules (Tx, Rx timeslots and channels) for all \(n\in N\).
-						</li>
-						<li class="list-space">
-							<b>Network configuration - Routes:</b> This is a control packet to stablish the forwarding
-							paths for all \(n\in N\). Where \(N\) is the number of sensor nodes in the network.
-						</li>
-					</ol>
+				</section>
+			</section>
+			<section id="reinforcement-learning-module">
+				<section>
+					<h4>ELISE Reinforcement learning module</h4>
+					<p>Recall aims of the RL module:</p>
+					<ul>
+						<li class="list-space">To develop a reinforcement learning (RL) solution that leverage the
+							framework to dynamically adapt the network reliability, power efficiency, and delay of the
+							WSN giving a set of user requirements</li>
+						<li class="list-space">To design a reward model based on a multi-objective function that enables
+							the selection of the optimal slotframe size given a set of user requirements</li>
+					</ul>
 				</section>
 				<section>
+					<h4>RL module diagram</h4>
+					<img src="images/elise-rl-module.png" alt="rl101" style="max-width: 50%">
+					<p>ELISE follows the typical three-tier principles
+						for SDWSNs, where the control plane layer collects
+						data, orchestrates resources, performs intelligent calculations,
+						and deploys new network configurations into sensor nodes.</p>
+				</section>
+				<section>
+					<h4>State space</h4>
+					<p>
+						The state space (\(\mathcal{S}\)) is the set of all possible states that the agent can observe.
+						It is defined by
+						the following parameters:
+					</p>
+					<ul>
+						<li class="list-space">user requirements weights (\(\alpha\), \(\beta\), \(\gamma\)) which are
+							user-defined coefficients for power consumption,
+							delay, and reliability, respectively.
+						</li>
+						<li class="list-space">power (p), delay (d) and packet delivery ratio (r).</li>
+						<li class="list-space" style="color:blue">last active timeoffset in the schedule (\(\lambda\))
+						</li>
+						<li class="list-space" style="color:blue">the current slotframe size (\(|C|\))</li>
+					</ul>
+					\(\mathcal{S} \triangleq \{(\alpha_1, \beta_1,\gamma_1,p_1,d_1,r_1,\lambda_1, |C|_1),...,\\
+					(\alpha_{i}, \beta_{i},\gamma_{i},p_i,d_i,r_i,\lambda_{i},|C|_{i})\}\)
+				</section>
+				<section>
+					<h4>Action space</h4>
+					<p>
+						The action space (\(\mathcal{A}\)) is the set of all possible actions that the agent can take.
+						We have defined three possible actions:
+					</p>
+					<!-- <p> -->
+					\(\mathcal{A}= \begin{cases}\Uparrow |C|,\\
+					\Downarrow |C|,\\
+					|C|\end{cases}\)
+					<!-- </p> -->
+					<!-- <ul>
+						<li class="list-space">increase the slotframe size</li>
+						<li class="list-space">decrease the slotframe size</li>
+						<li class="list-space">keep the current slotframe size</li>
+					</ul> -->
+					<p>
+						The upcoming slotframe size is then calculated as follows.
+					</p>
+					<p class="list-space">
+						\( |C|^{DP} \triangleq \{a:gcd(a,|C|^{EB},|C|^{CP},|C|^{DF})=1\}\)
+					</p>
+					<p>
+						Where gcd represents the greatest common divisor, and
+						\(|C|^{EB}\),\(|C|^{CP}\), and \(|C|^{DF}\) are the slotframe sizes of the
+						EB, control, and default traffic planes.
+					</p>
+				</section>
+				<section>
+					<h4>Immediate Reward function</h4>
+					<p>
+						The reward function (\(\mathcal{R}\)) is a function that maps the state-action pair to a real
+						number. It is used to evaluate the agent's actions.
+					</p>
+					<p>
+						We have defined the reward function as follows.
+					</p>
+					<p>
+						\(\mathcal{R}(s,a)=\begin{cases} -\mathcal{G}_{max}, \qquad
+						if~|C|^{DP}\geq\mu~or~|C|^{DP}\leq\lambda
+						\\
+						\Upsilon-\Omega, \qquad\qquad if~\lambda<|C|^{DP}<\mu \end{cases}\) </p>
+							<p>
+								Where \(\mathcal{G}_{max} \)is the maximum penalty for taking an invalid slotframe size.
+								\(\mu\) is the maximum slotframe size.
+								$\Upsilon$ is a constant that makes sure the immediate reward stays always positive.
+								$\Omega$ is the multi-objective cost function.
+							</p>
+							<!-- \(\mathcal{R} \triangleq \alpha \times p + \beta \times d + \gamma \times r\) -->
+							<!-- <p>
+								Where \(\alpha\), \(\beta\), and \(\gamma\) are the user requirements weights for power
+								consumption, delay, and reliability, respectively.
+							</p> -->
+				</section>
+				<section>
+					<h4>Multi-objective cost function</h4>
+					<p>
+						We have defined the multi-objective cost function as follows.
+					</p>
+					<p>
+						\(\Omega = \alpha \cdot \widetilde{p} + \beta \cdot \widetilde{d} + \gamma \cdot
+						(1-\widetilde{r})\) subject to \(\alpha + \beta
+						+
+						\gamma = 1\) and
+						\(\\0\le \alpha,\beta,\delta \le 1\)
+					</p>
+				</section>
+				<section>
+					<h4>
+						Terminating conditions
+					</h4>
+					<p>
+						These conditions state when a episode should end. We have defined three terminal conditions.
+					</p>
+					<ul class="medium-text">
+						<li>
+							<b>Maximum number of iterations:</b> episodes end when the maximum number of actions taken
+							has
+							been reached.
+							The maximum number of iterations has to be greater than the iterations needed to reach the
+							optimal state.
+						</li>
+						<li>
+							<b>Minimum slotframe size:</b> episodes terminate early if the chosen slotframe size is
+							below
+							the minimum slotframe size of the TSCH schedule.
+							This is a penalty for taking an action that misconfigures the network.
+						</li>
+						<li>
+							<b>Maximum slotframe size:</b> episodes terminate early if the chosen slotframe size exceeds
+							the
+							maximum sloftframe size of the TSCH schedule.
+							This is a penalty for taking an action with a large slotframe size that leads to a worse
+							accumulative rewards, therefore minimizing the learning time of the DQN.
+						</li>
+					</ul>
+				</section>
+			</section>
+			<!-- <section>
+				<h3>Observations</h3>
+				<ul>
+					<li class="fragment"><b>User Requirements (UR):</b> This is the actual user requirements weights;
+						power (\(\alpha\)), delay
+						(\(\beta\)), and reliability (\(\delta\)). Users can dynamically change the UR weights to
+						satisfy their needs. </li>
+					<li class="fragment"><b>Power:</b> This is the average network power consumption at the current
+						timestep.
+					</li>
+					<li class="fragment"><b>Delay:</b> This is the average network packet delay at the current timestep.
+					</li>
+					<li class="fragment"><b>Reliability:</b> This is the average network packet delivery ratio at the
+						current
+						timestep.</li>
+				</ul>
+			</section> -->
+			<!-- <section>
+				<h4>User requirements</h4>
+				<p>The user inputs are the desired weights for specific user requirements. Where:</p>
+				$$ \alpha+\beta+\delta=1 $$ and $$ 0\le \alpha,\beta,\delta \le 1 $$
+			</section> -->
+			<section id="results">
+				<section>
+					<h4>
+						Results
+					</h4>
+					<p>
+						We used M3 sensor nodes from the Grenoble site of the FIT IoT LAB. We have built a network of 10
+						sensor nodes with a maximum depth of 3 hops.
+						The below figure shows the topology.
+					</p>
+					<img src="images/topology-full.png" alt="rl101" style="max-width: 90%">
+				</section>
+				<section>
+					<h4>Evaluation of ELISE</h4>
+					<h4> for different set of user requirements</h4>
+					<img src="images/elise-results.png" alt="rl101" style="max-width: 65%">
+				</section>
+				<section>
+					<h4>Comparison of ELISE with Orchestra</h4>
+					<img src="images/elise-orchestra.png" alt="rl101" style="max-width: 65%">
+				</section>
+			</section>
+			<section>
+				<h4>Conclusion</h4>
+				<ul>
+					<li>
+						We have proposed ELISE, a novel RL-based approach for TSCH scheduling in IoT networks.
+					</li>
+					<li>
+						We have shown that ELISE can satisfy different user requirements.
+					</li>
+					<li>
+						We have shown that ELISE outperforms Orchestra in terms of power consumption and delay, and it
+						still provides good performance in terms of reliability.
+					</li>
+				</ul>
+			</section>
+			<section>
+				<h4>Future work</h4>
+				<ul>
+					<li>
+						We will extend ELISE to elaborate a TSCH schedule fully designed by the RL agent that
+						self-adapts to the user
+						requirements.
+					</li>
+					<li>
+						We will extend ELISE to support mobility.
+					</li>
+				</ul>
+			</section>
+			<section>
+				<h4>References</h4>
+				<ul>
+					<li class="list-space">
+						<em>Nguyen, Tri Gia, et al.</em> <a href="https://doi.org/10.1109/TCCN.2021.3102971"
+							data-preview-link>Federated deep reinforcement learning for traffic monitoring in SDN-based
+							IoT networks</a>. IEEE Transactions on Cognitive Communications and Networking 7.4 (2021):
+						1048-1065.
+					</li>
+					<li class="list-space">
+						<em>Duquennoy, Simon, et al.</em> <a href="https://doi.org/10.1145/2809695.2809714"
+							data-preview-link>Orchestra: Robust mesh networks through autonomously scheduled TSCH</a>.
+						Proceedings of the 13th ACM conference on embedded networked sensor systems. 2015
+					</li>
+				</ul>
+			</section>
+			<section>
+				<h4>
+					Thank you
+				</h4>
+				<p>
+					Thank you for your attention. I am open to any question.
+				</p>
+			</section>
+			<section data-visibility="uncounted">
+				<h4>
+					Backup slides
+				</h4>
+			</section>
+			<section data-visibility="uncounted">
+				<section data-visibility="uncounted">
+					<h4>
+						Packet formats
+					</h4>
+				</section>
+				<section data-visibility="uncounted">
 					<h4>
 						Packet formats - Data packet
 					</h4>
@@ -152,7 +516,7 @@
 						(routes, TSCH schedules).
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Packet formats - Neighbor Discovery (ND)
 					</h4>
@@ -162,7 +526,7 @@
 						and the packet CRC field is the checksum of the packet.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Packet formats - Neighbor Advertisement (NA)
 					</h4>
@@ -171,7 +535,7 @@
 						The payload of the NA consist of the neighbors' address, RSSI and LQI values.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Packet formats - TSCH schedules
 					</h4>
@@ -189,7 +553,7 @@
 						destination address is used for Tx links to set the neighbor address.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Packet formats - Routes
 					</h4>
@@ -200,34 +564,11 @@
 					</p>
 				</section>
 			</section>
-			<section id="reinforcement-learning">
-				<h3>Reinforcement Learning</h3>
-				<img src="images/rl.png" alt="rl101" style="max-width: 50%">
-			</section>
-			<section>
-				<h3>Observations</h3>
-				<ul>
-					<li class="fragment"><b>User Requirements (UR):</b> This is the actual user requirements weights;
-						power (\(\alpha\)), delay
-						(\(\beta\)), and reliability (\(\delta\)). Users can dynamically change the UR weights to
-						satisfy their needs. </li>
-					<li class="fragment"><b>Power:</b> This is the average network power consumption at the current
-						timestep.
-					</li>
-					<li class="fragment"><b>Delay:</b> This is the average network packet delay at the current timestep.
-					</li>
-					<li class="fragment"><b>Reliability:</b> This is the average network packet delivery ratio at the
-						current
-						timestep.</li>
-				</ul>
-			</section>
-			<section>
-				<h4>User requirements</h4>
-				<p>The user inputs are the desired weights for specific user requirements. Where:</p>
-				$$ \alpha+\beta+\delta=1 $$ and $$ 0\le \alpha,\beta,\delta \le 1 $$
-			</section>
-			<section>
-				<section>
+			<section data-visibility="uncounted">
+				<section data-visibility="uncounted">
+					<h4>Power consumption calculations</h4>
+				</section>
+				<section data-visibility="uncounted">
 					<h4>Power consumption</h4>
 					<p>
 						We defined the network power consumption (\(\overline{P_N}\)) as the average power consumption
@@ -274,7 +615,7 @@
 						We have set \(t_{sample}\) to 60 seconds.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>Average power consumption</h4>
 					<p>The average power consumption (\(\overline{P_{n}}\)) of sensor node \(n\), at sample time \(t\),
 						is calculated
@@ -303,7 +644,7 @@
 						it does forget previous values but it requires a buffer implementation.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Average network power consumption
 					</h4>
@@ -328,7 +669,7 @@
 						Where \(\overline{p}\in \overline{P_n}\) and \(w \in W\) which is the set of weights.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Average network power consumption
 					</h4>
@@ -348,7 +689,7 @@
 						and \(nbr_n\) denotes the number of neighbors in sensor node \(n\).
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Normalized average network power consumption
 					</h4>
@@ -364,8 +705,11 @@
 					</p>
 				</section>
 			</section>
-			<section>
-				<section>
+			<section data-visibility="uncounted">
+				<section data-visibility="uncounted">
+					<h4>Delay calculations</h4>
+				</section>
+				<section data-visibility="uncounted">
 					<h4>
 						Delay
 					</h4>
@@ -386,7 +730,7 @@
 						Delay packets are processed when DATA packets are received.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Average delay per node
 					</h4>
@@ -400,7 +744,7 @@
 						Where \(m>0\) and denotes the delay samples obtained during timestep \(t\).
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Average network delay
 					</h4>
@@ -421,7 +765,7 @@
 						\(rank_N+1\) assures that the weight is not zero for sensor nodes with the highest rank.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Normalized average network delay
 					</h4>
@@ -438,8 +782,11 @@
 					</p>
 				</section>
 			</section>
-			<section>
-				<section>
+			<section data-visibility="uncounted">
+				<section data-visibility="uncounted">
+					<h4>Reliability calculations</h4>
+				</section>
+				<section data-visibility="uncounted">
 					<h4>
 						Reliability
 					</h4>
@@ -458,7 +805,7 @@
 						are the number of received and transmitted packets, respectively.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Average reliability per node
 					</h4>
@@ -472,7 +819,7 @@
 						Where \(k>0\) and denotes the PDR samples obtained during timestep \(t\).
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						Average network reliability
 					</h4>
@@ -496,114 +843,11 @@
 					</equation>
 				</section>
 			</section>
-			<section>
-				<h4>
-					Action space
-				</h4>
-				<p>
-					Since the aim of the RL algorithm is to find the optimal slotframe size given a set of user
-					requirements, we have defined two actions. To increase and decrease the slotframe size.
-				</p>
-				<p>
-					The selection of the next and previous slotframe size is done by finding the size that is mutually
-					prime to other slotframes running in the network.
-				</p>
-				<p>
-					For example, <b>Orchestra</b> mainly <b>uses three</b> slotframes in its default configuration:
-					<em>time source</em>, <em>unicast</em>, and <em>default</em>.
-					The time source is used to sync the node with its parent. The default slotframe is used for any
-					other traffic than time source and unicast messages.
-				</p>
-				<p>
-					We have defined <b>four different slotframes</b> to enable SDN concepts in the sensor network: time
-					source, control plane, data plane, and default.
-					The time source and default slotframes performs same tasks as Orchestra, whereas the control plane
-					slotframe is used for all control traffic; TSCH schedules and routes configuration.
-					Additionally, the data plane slotframe is used for data packets.
-				</p>
-			</section>
-			<section>
-				<section>
-					<h4>
-						Reward function design
-					</h4>
-					<p>
-						<b>Aim:</b> to design a reward function that maximizes the accumulative reward for a given set
-						of
-						user requirements.
-					</p>
-					<p>
-						We consider three user requirements; <em>power consumption</em>, <em>delay</em> and
-						<em>reliability</em>.
-						The reward function aims to minimize the network power consumption and the delay, while
-						maximizing
-						the network reliability.
-						Mathematically,
-					</p>
-					<equation>
-						\[\begin{aligned}
-						\min~ &amp; \widetilde{P_N} \\
-						subject~to &amp;~|N|>0, t_{sample}>0, t\geqslant0, 0\le \gamma \le 1, \sum_{i=1}^{n}w_i >
-						0,~and~rank_N > 0 \\
-						\end{aligned} \]
-					</equation>
-					<equation>
-						\[\begin{aligned}
-						\min~ &amp; \widetilde{D_N}\\
-						subject~to &amp;~slot_{dur}>0, m>0, rank_N > 0 \\
-						\end{aligned} \]
-					</equation>
-					<equation>
-						\[\begin{aligned}
-						\max~ &amp; \widetilde{R_N} \\
-						subject~to &amp;~Pkt_{n_{tx}}>0, k>0, |N|>0~and~rank_N > 0 \\
-						\end{aligned} \]
-					</equation>
+			<section data-visibility="uncounted">
+				<section data-visibility="uncounted">
+					<h4>Approximation model</h4>
 				</section>
-				<section>
-					<h4>
-						Reward function
-					</h4>
-					<p>
-						Considering user inputs as the desired weights for specific user requirements, the reward
-						obtained after the execution of an action is
-					</p>
-					<equation>
-						\[
-						Reward = \max~~ \alpha*\widetilde{P_N}+\beta*\widetilde{D_N}-\delta*\widetilde{R_N}
-						\]
-					</equation>
-				</section>
-			</section>
-			<section>
-				<h4>
-					Termination conditions
-				</h4>
-				<p>
-					These conditions state when a episode should end. We have defined three terminal conditions.
-				</p>
-				<ul class="medium-text">
-					<li>
-						<b>Maximum number of iterations:</b> episodes end when the maximum number of actions taken has
-						been reached.
-						The maximum number of iterations has to be greater than the iterations needed to reach the
-						optimal state.
-					</li>
-					<li>
-						<b>Minimum slotframe size:</b> episodes terminate early if the chosen slotframe size is below
-						the minimum slotframe size of the TSCH schedule.
-						This is a penalty for taking an action that misconfigures the network.
-					</li>
-					<li>
-						<b>Maximum slotframe size:</b> episodes terminate early if the chosen slotframe size exceeds the
-						maximum sloftframe size of the TSCH schedule.
-						This is a penalty for taking an action with a large slotframe size that leads to a worse
-						accumulative rewards, therefore minimizing the learning time of the DQN.
-					</li>
-				</ul>
-			</section>
-			<section id="sdwsn-approximation-model">
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						SDWSN approximation model
 					</h4>
@@ -630,7 +874,7 @@
 						around 10 hours.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						The SDWSN approximation model
 					</h4>
@@ -645,7 +889,7 @@
 						using the minimum mean square error (MMSE) estimator (\(E=\sum_{j=0}^{k}|p(x_j)-y_i|^2\)).
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						SDWSN approximation model - FIT IoT-LAB platform
 					</h4>
@@ -670,7 +914,7 @@
 						and one for \(\widetilde{P_N}\), \(\widetilde{D_N}\), and \(\widetilde{R_N}\), respectively.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						SDWSN approximation model - FIT IoT-LAB Network topology
 					</h4>
@@ -681,7 +925,7 @@
 					</p>
 					<img src="images/topology-full.png" alt="rl101" style="max-width: 90%">
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						SDWSN approximation model - FIT IoT-LAB platform
 					</h4>
@@ -692,91 +936,12 @@
 						and plotting the normalized values for the power, delay and reliability metrics.
 					</p>
 				</section>
-				<section>
+				<section data-visibility="uncounted">
 					<h4>
 						SDWSN approximation model - FIT IoT-LAB platform - results
 					</h4>
 					<img src="images/approximation_model_fitted_curves.png" alt="rl101" style="max-width: 80%">
 				</section>
-			</section>
-			<section id="results">
-				<h4>
-					Results
-				</h4>
-			</section>
-			<section id="publication-venues">
-				<h4>
-					Publication venues
-				</h4>
-				<ul>
-					<li class="list-space">
-						IEEE Internet of Things Journal (Submission to publication \(\approx\) 19 weeks)
-						<ul>
-							<li>
-								<a class="list-space" href="https://ieee-iotj.org/" data-preview-link>Special issue :
-									<em>Smart Cities and
-										Systems: Theories, Tools, Trends, Applications, Challenges, and
-										Opportunities</em></a>
-								<ul>
-									<li class="list-space">
-										Submission Deadline: October 1, 2022
-									</li>
-									<li class="list-space">
-										First Review Due: November 15, 2022
-									</li>
-								</ul>
-							</li>
-						</ul>
-					</li>
-					<li class="list-space">
-						IEEE Network - ComSoc Magazine
-						<ul>
-							<li>
-								<a class="list-space"
-									href="https://www.comsoc.org/publications/magazines/ieee-network/cfp/networked-sensing-systems-sustainable-society"
-									data-preview-link="false">Special issue :
-									<em>Networked Sensing Systems for A Sustainable Society</em></a>
-								<ul>
-									<li class="list-space">
-										Submission Deadline: September 30, 2022
-									</li>
-									<li class="list-space">
-										First Review Due: November 15, 2022
-									</li>
-									<li class="list-space">
-										Challenge: No more than three math equations allowed
-									</li>
-								</ul>
-							</li>
-						</ul>
-					</li>
-					<li class="list-space">
-						<a href="http://www.ieee-ies.org/pubs/transactions-on-industrial-informatics"
-							data-preview-link="false">IEEE Transactions on Industrial Informatics</a>
-						(Submission to publication \(\approx\) 16.6 weeks)
-					</li>
-					<li class="list-space">
-						<a href="https://ieee-sensors.org/sensors-journal/" data-preview-link>
-							IEEE Sensors Journal
-						</a>
-						(Submission to publication \(\approx\) 6.2 weeks)
-					</li>
-					<li class="list-space">
-						<a href="https://newslab.ece.ohio-state.edu/ton/" data-preview-link>IEEE/ACM Transactions on
-							Networking</a>
-						(Submission to publication \(\approx\) 57.1 weeks)
-					</li>
-				</ul>
-			</section>
-			<section>
-				<h4>References</h4>
-				<ul>
-					<li class="list-space">
-						<a href="https://doi.org/10.1109/TCCN.2021.3102971" data-preview-link>Federated Deep
-							Reinforcement Learning for traffic monitoring in SDN-based IoT networks</a>, in IEEE
-						Transactions on Cognitive Communications and Networking, vol. 7, no. 4, pp. 1048-1065, Dec. 2021
-					</li>
-				</ul>
 			</section>
 		</div>
 	</div>

@@ -19,7 +19,6 @@ from rich.logging import RichHandler
 from stable_baselines3 import PPO
 
 import pandas as pd
-import numpy as np
 
 import logging.config
 import shutil
@@ -37,17 +36,17 @@ def run(env, model_path, controller, output_folder, simulation_name):
     # Pandas df to store results at each iteration
     df = pd.DataFrame()
     # Reset environment
-    obs = env.reset()
+    obs, _ = env.reset()
     for _ in range(1000000):
         action, _ = model.predict(obs, deterministic=True)
-        obs, reward, done, info = env.step(action)
+        obs, reward, done, truncated, info = env.step(action)
         # Add row to DataFrame
         new_cycle = pd.DataFrame([info])
         df = pd.concat([df, new_cycle], axis=0, ignore_index=True)
-        if 'TimeLimit.truncated' in info:
-            if info['TimeLimit.truncated'] == True:
-                print('Number of max episodes reached')
-                break
+        if truncated:
+            # if info['TimeLimit.truncated'] == True:
+            print('Number of max episodes reached')
+            break
     df.to_csv(output_folder+simulation_name+'.csv')
     # env.render()
     # env.close()

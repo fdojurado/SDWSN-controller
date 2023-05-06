@@ -24,12 +24,8 @@ from sdwsn_controller.reinforcement_learning.wrappers\
 
 from stable_baselines3.common.monitor import Monitor
 
-import numpy as np
-
-import shutil
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.monitor import Monitor
 
 
 CONFIG_FILE = "numerical_controller_rl.json"
@@ -60,7 +56,7 @@ def evaluation(env, model_path):
 
     # Test the trained agent
     for _ in range(50):
-        obs = env.reset()
+        obs, _ = env.reset()
         done = False
         acc_reward = 0
         # Get last observations non normalized
