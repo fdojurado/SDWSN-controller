@@ -102,13 +102,13 @@ Run the network
 
         $ source venv/bin/activate
 
-#. Navigate to the simple controller tutorial directory.
+#. Navigate to the long-run tutorial directory.
 
     .. code-block:: console
 
-        $ cd examples/simple-controller
+        $ cd tutorials/reinforcement_learning/long_run
 
-#. Prepare the configuration file (JSON) for the controller. In this case, we will use the default configuration file provided in the repository with the below modifications.
+#. Prepare the configuration file (JSON) for the controller. In this case, we will use the below configuration.
 
     .. code-block:: json
 
@@ -132,6 +132,38 @@ Run the network
             },
             "routing": {
                 "algo": "Dijkstra"
+            },
+            "reinforcement_learning": {
+                "reward_processor": "EmulatedRewardProcessing",
+                "max_episode_steps": 50000
+            },
+            "performance_metrics": {
+                "energy": {
+                    "weights": [
+                        1.56292719e-08,
+                        -2.99240537e-06,
+                        2.12532630e-04,
+                        -6.88468887e-03,
+                        2.08470100e-01
+                    ],
+                    "norm_offset": 0.86
+                },
+                "delay": {
+                    "weights": [
+                        2.99098391e-08,
+                        -6.28217483e-07,
+                        6.09770278e-04,
+                        4.66875245e-04
+                    ],
+                    "norm_offset": 0.94
+                },
+                "pdr": {
+                    "weights": [
+                        9.86763397e-18,
+                        1.00000000e+00
+                    ],
+                    "norm_offset": 0.0
+                }
             }
         }
 
@@ -139,7 +171,12 @@ Run the network
 
     .. code-block:: console
 
-        $ python3 simple_controller.py
+        $ python3 long_run.py
+
+.. admonition:: Note
+    :class: tip
+
+    Bear in mind that the collection of data from the sensor nodes may take some minutes. You can monitor the progress of the data collection in the terminal.
 
 Visualization tool
 ------------------
@@ -176,10 +213,12 @@ You may want to connect a visualization tool to the controller to monitor the ne
             "host": "localhost",
             "port": 1883,
             "authentication": {
-                "username": "foobar",
-                "password": "123"
+                "username": "foo",
+                "password": "bar"
             }
         }
+
+* As we are running the MQTT broker locally, we need to start it before running the visualization tool. Then, open a new terminal and start the MQTT broker.
 
 * Run the visualization tool.
 
