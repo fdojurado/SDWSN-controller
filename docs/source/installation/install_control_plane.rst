@@ -26,7 +26,7 @@ Install
 
 Before jumping into the following steps, you at least need to install Python_, and Docker_ (For Cooja simulations).
 
-To install the package, execute the following commands.
+Then, install the package, execute the below commands.
 
 #. Clone the repository::
 
