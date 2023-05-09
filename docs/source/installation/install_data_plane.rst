@@ -7,9 +7,11 @@ The data plane adopts the Contiki-NG_ operating system, but we have modified it 
 Installation instructions
 -------------------------
 
-You first need to clone the Contiki-NG-SDWSN_ repository::
+You first need to clone the Contiki-NG-SDWSN_ repository.
 
-    $ git clone https://github.com/fdojurado/contiki-ng
+    .. code-block:: console
+
+        $ git clone https://github.com/fdojurado/contiki-ng
 
 The same installation instructions of Contiki-NG_ apply here. Information on supported platforms, networking modules, storage systems, tutorials, etc. can be found on the `Contiki-NG website <https://www.contiki-ng.org/>`_.
 

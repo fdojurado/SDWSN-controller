@@ -28,33 +28,45 @@ Before jumping into the following steps, you at least need to install Python_, a
 
 Then, install the package, execute the below commands.
 
-#. Clone the repository::
+#. Clone the repository.
 
-    $ git clone https://github.com/fdojurado/SDWSN-controller.git
+    .. code-block:: console
 
-#. You may want to create a virtual environment, in the repository folder run::
+        $ git clone https://github.com/fdojurado/SDWSN-controller.git
 
-    $ python -m venv venv
+#. You may want to create a virtual environment, in the repository folder run.
 
-#. Activate the virtual environment::
+    .. code-block:: console
 
-    $ source venv/bin/activate
+        $ python -m venv venv
 
-#. In the repository folder run::
+#. Activate the virtual environment.
 
-    $ python -m pip install .
+    .. code-block:: console
+
+        $ source venv/bin/activate
+
+#. In the repository folder run.
+
+    .. code-block:: console
+
+        $ python -m pip install .
 
 Run under development
 =====================
 
-You may want to run the package in development mode by::
+You may want to run the package in development mode by.
+
+.. code-block:: console
 
     $ python -m pip install -e .
 
 
 Verify control plane installation
 ==================================
-You can verify the installation of the control plane by running::
+You can verify the installation of the control plane by running.
+
+.. code-block:: console
 
     $ python -m pip list
 

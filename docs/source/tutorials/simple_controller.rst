@@ -7,7 +7,9 @@ This tutorial sets up a simple controller that configures the routing paths and 
 Configuration file
 -------------------
 
-Here, we need a configuration JSON file that specifies the modules that we want to use in the controller. For this example, we use the following configuration file::
+Here, we need a configuration JSON file that specifies the modules that we want to use in the controller. For this example, we use the following configuration file.
+
+.. code-block:: json
 
     {
         "name": "example",
@@ -52,9 +54,11 @@ Running the controller
 
 The python file for this example is ``simple_controller.py`` which is located in `tutorials/simple_controller/`.
 
-To run the controller, we just need to execute the below command inside the example folder::
+To run the controller, we just need to execute the below command inside the example folder.
 
-    python simple_controller.py
+.. code-block:: console
+
+    $ python simple_controller.py
 
 The script starts the controller and Cooja. It then waits for the sink to connect. Once the sink is connected, the controller starts collecting network information. Next, it starts sending the configuration to the data plane. The controller stops once the cycle is finished.
 
