@@ -1,8 +1,8 @@
-.. _installation:
+.. _elise-installation:
 
-============
-Installation
-============
+==================
+ELISE Installation
+==================
 
 ELISE requires the installation of the below components.
 
