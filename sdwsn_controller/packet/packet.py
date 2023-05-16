@@ -27,7 +27,7 @@ SDN_NAPL_LEN = 6  # Size of neighbor advertisement payload size */
 # SDN_NCH_LEN = 6   # Size of network configuration routing and schedules packet header */
 SDN_RAH_LEN = 6  # Size of RA header routing packet*/
 SDN_SAH_LEN = 6  # Size of SA header schedule packet*/
-SDN_DATA_LEN = 10  # Size of data packet */
+SDN_DATA_LEN = 11  # Size of data packet */
 SDN_SERIAL_PACKETH_LEN = 8
 
 # Message types for the serial interface
@@ -294,21 +294,23 @@ class Data_Packet:
         self.temp = kwargs.get("temp", 0)
         self.humidity = kwargs.get("humidity", 0)
         self.light = kwargs.get("light", 0)
-        self.asn_ls2b = kwargs.get("asn_ls2b", 0)
-        self.asn_ms2b = kwargs.get("asn_ms2b", 0)
-        self.asn = (self.asn_ms2b << 16) | (self.asn_ls2b)
+        self.asn_ls4b_lsb = kwargs.get("asn_ls4b_lsb", 0)
+        self.asn_ls4b_msb = kwargs.get("asn_ls4b_msb", 0)
+        self.asn_ms1b = kwargs.get("asn_ms1b", 0)
+        self.asn_ls4b = (self.asn_ls4b_msb << 16) | (self.asn_ls4b_lsb)
+        self.asn = (self.asn_ms1b << 32) | (self.asn_ls4b)
 
     # optional: nice string representation of packet for printing purposes
     def __repr__(self):
-        return "DataPacketPayload(cycle_seq={}, seq={}, temp={}, humidity={}, light={}, asn={})".format(
-            self.cycle_seq, self.seq, self.temp, self.humidity, self.light, self.asn)
+        return "DataPacketPayload(cycle_seq={}, seq={}, temp={}, humidity={}, light={}, asn_ms1b={}, asn_ls4b={})".format(
+            self.cycle_seq, self.seq, self.temp, self.humidity, self.light, self.asn_ms1b, self.asn_ls4b)
 
     @classmethod
     def unpack(cls, packed_data):
-        cycle_seq, seq, temp, humidity, light, asn_ls2b, asn_ms2b = struct.unpack(
-            '!HBBBBHH', packed_data)
+        cycle_seq, seq, temp, humidity, light, asn_ls4b_lsb, asn_ls4b_msb, asn_ms1b = struct.unpack(
+            '!HBBBBHHB', packed_data)
         return cls(cycle_seq=cycle_seq, seq=seq, temp=temp, humidity=humidity,
-                   light=light, asn_ls2b=asn_ls2b, asn_ms2b=asn_ms2b)
+                   light=light, asn_ls4b_lsb=asn_ls4b_lsb, asn_ls4b_msb=asn_ls4b_msb, asn_ms1b=asn_ms1b)
 
 
 class NA_Packet:
