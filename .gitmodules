@@ -1,7 +1,7 @@
 [submodule "contiki-ng"]
 	path = contiki-ng
-	url = git@github.com:fdojurado/contiki-ng.git
+	url = https://github.com/fdojurado/contiki-ng.git
 	branch = develop
 [submodule "iot-lab-contiki-ng"]
 	path = iot-lab-contiki-ng
-	url = git@github.com:fdojurado/iot-lab-contiki-ng.git
+	url = https://github.com/fdojurado/iot-lab-contiki-ng.git
