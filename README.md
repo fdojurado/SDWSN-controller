@@ -41,7 +41,7 @@ This repository has all components added as submodules, and it also has scripts 
 
 * GitHub repository: https://github.com/fdojurado/SDWSN-controller
 * GitHub repository: https://github.com/fdojurado/contiki-ng
-* Documentation: https://github.com/fdojurado/SDWSN-controller/wiki
+* Documentation: http://sdwsn-controller.readthedocs.io/
 <!-- * Web site: http://contiki-ng.org -->
 <!-- * Nightly testbed runs: https://contiki-ng.github.io/testbed -->
 
