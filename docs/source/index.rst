@@ -39,19 +39,20 @@ If you wish to cite ELISE in your academic work, you can add this:
 .. code-block:: bibtex
 
    @article{ELISE,
-  title={ELISE: A Reinforcement Learning Framework to Optimize the Sloftframe Size of the TSCH Protocol in IoT Networks},
-  author={Jurado Lasso, Fabian Fernando and Barzegaran, Mohammadreza and Jurado, Jesus Fabian and Fafoutis, Xenofon},
-  year={2023},
-  publisher={TechRxiv}
-}
+   title={ELISE: A Reinforcement Learning Framework to Optimize the Sloftframe Size of the TSCH Protocol in IoT Networks},
+   author={Jurado Lasso, Fabian Fernando and Barzegaran, Mohammadreza and Jurado, Jesus Fabian and Fafoutis, Xenofon},
+   year={2023},
+   publisher={TechRxiv},
+   doi={10.36227/techrxiv.23212442.v1}
+   }
 
 
-Indices and tables
-==================
+.. Indices and tables
+.. ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`
 
 .. |sdwsn_architecture| image:: images/architecture.png
    :width: 400
