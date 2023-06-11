@@ -43,7 +43,7 @@ If you wish to cite ELISE in your academic work, you can add this:
    author={Jurado Lasso, Fabian Fernando and Barzegaran, Mohammadreza and Jurado, Jesus Fabian and Fafoutis, Xenofon},
    year={2023},
    publisher={TechRxiv},
-   doi={10.36227/techrxiv.23212442.v1}
+   doi={10.36227/techrxiv.23212442.v2}
    }
 
 
