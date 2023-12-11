@@ -9,6 +9,11 @@
             "port": 60001
         }
     },
+    "sink_comm": {
+        "name": "socket",
+        "host_dev": "127.0.0.1",
+        "port_baud": 60001
+    },
     "contiki": {
         "script_folder": "examples/elise",
         "source": "/Users/ffjla/contiki-ng",
